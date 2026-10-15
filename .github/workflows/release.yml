@@ -58,6 +58,9 @@ jobs:
         run: npm ci
 
       - name: Bygg och publicera Windows-paket
+        # En manuell körning (workflow_dispatch) från en gren publicerar aldrig
+        # en release – annars skapas ett tomt "releasemärke" med grenens namn.
+        if: ${{ github.ref_type == 'tag' }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -72,7 +75,7 @@ jobs:
           args: --bundles nsis,msi
 
       - name: Hämta signerade filer för webbplatsen
-        if: ${{ env.PUBLISH_SITE == 'true' }}
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +87,7 @@ jobs:
           ls -la site/downloads
 
       - name: Bygg webbplatsen
-        if: ${{ env.PUBLISH_SITE == 'true' }}
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
         working-directory: site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +97,7 @@ jobs:
           npm run build
 
       - name: Publicera till Cloudflare Pages
-        if: ${{ env.PUBLISH_SITE == 'true' }}
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
         working-directory: site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -359,17 +359,19 @@ html[data-theme="mork"] .i-moon { display: none; }
 
 /* --------------------------- Versionshistorik -------------------------- */
 .timeline { list-style: none; margin: 0; padding: 0; }
-.timeline li {
+/* Endast direkta barn får tidslinjens linje och punkt – annars ärvs de
+   ner i versionsnoteringarnas underliggande listor. */
+.timeline > li {
   position: relative; padding: 0 0 34px 30px;
   border-left: 1px solid var(--border);
 }
-.timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
-.timeline li::before {
+.timeline > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.timeline > li::before {
   content: ""; position: absolute; left: -5.5px; top: 6px;
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--bg); border: 1.5px solid var(--border-strong);
 }
-.timeline li.is-latest::before { background: var(--text); border-color: var(--text); }
+.timeline > li.is-latest::before { background: var(--text); border-color: var(--text); }
 .rel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; }
 .rel-tag {
   font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
@@ -384,8 +386,14 @@ html[data-theme="mork"] .i-moon { display: none; }
   margin: 0 0 5px; font-size: 0.72rem; letter-spacing: 0.11em;
   text-transform: uppercase; color: var(--text-3); font-weight: 620;
 }
-.rel-group ul { margin: 0; padding-left: 18px; }
-.rel-group li { font-size: 0.93rem; color: var(--text-2); margin-bottom: 3px; }
+.rel-group ul { margin: 0; padding-left: 18px; list-style: none; }
+.rel-group li {
+  position: relative; font-size: 0.93rem; color: var(--text-2); margin-bottom: 3px;
+}
+.rel-group li::before {
+  content: ""; position: absolute; left: -18px; top: 0.55em;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--border-strong);
+}
 .timeline-empty {
   border-left: 1px dashed var(--border-strong) !important;
   color: var(--text-2); font-size: 0.96rem; padding-left: 30px !important;
