@@ -7,7 +7,7 @@
  *   någonsin i klienten).
  * - Kopierar statiska filer till dist/, som är det enda som publiceras.
  */
-import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -127,9 +127,16 @@ async function buildUpdateManifest(releases) {
   );
   if (!exe?.url || !sig?.url) return null;
 
-  const res = await fetch(sig.url);
-  if (!res.ok) throw new Error(`signaturen kunde inte hämtas (${res.status})`);
-  const signature = (await res.text()).trim();
+  // Signaturen läses lokalt om filen redan finns (releaseflödet lägger den i
+  // site/downloads), annars hämtas den från utgivningsadressen.
+  let signature = '';
+  try {
+    signature = (await readFile(join(HERE, 'downloads', sig.name), 'utf8')).trim();
+  } catch {
+    const res = await fetch(sig.url);
+    if (!res.ok) throw new Error(`signaturen kunde inte hämtas (${res.status})`);
+    signature = (await res.text()).trim();
+  }
   if (!signature) throw new Error("signaturen var tom");
 
   return {
@@ -185,6 +192,18 @@ async function main() {
     await copyFile(join(HERE, file), join(DIST, file));
   }
   await cp(join(HERE, 'assets'), join(DIST, 'assets'), { recursive: true });
+
+  // Nedladdningsfiler publiceras tillsammans med sidan. Det är endast
+  // byggda artefakter (installern + signatur) – aldrig appens källkod.
+  // Releaseflödet lägger filerna i site/downloads innan detta steg.
+  const downloads = join(HERE, 'downloads');
+  try {
+    await cp(downloads, join(DIST, 'downloads'), { recursive: true });
+    const count = (await readdir(downloads)).length;
+    console.log(`✓ downloads/ kopierad (${count} filer)`);
+  } catch {
+    // Ingen mapp ännu – sidan visar då ärligt "inte tillgänglig".
+  }
 
   console.log(`✓ byggd till dist/ (updater=${payload.updater})`);
 }

@@ -37,3 +37,6 @@ node_modules
 # Agentverktygens lokala state
 .agents/
 .claude/
+
+# Publicerade installationsfiler (byggda artefakter, aldrig i källkod)
+site/downloads/
