@@ -33,3 +33,7 @@ node_modules
 
 # Lokalt verktygsstate
 .freebuff
+
+# Agentverktygens lokala state
+.agents/
+.claude/

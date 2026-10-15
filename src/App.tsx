@@ -73,7 +73,7 @@ const navLabels: Record<string, Partial<Record<PanelType, string>>> = {
 
 function getPageTitle(activePanel: PanelType, activePage: string): string {
   const fallback: Record<PanelType, string> = {
-    elev: 'Växverket',
+    elev: 'Elda',
     speciallarar: 'Speciallärare',
     admin: 'Admin',
   };
@@ -188,7 +188,7 @@ function AppContent() {
         <div className="page-head">
           <h1>{title}</h1>
           <div className="breadcrumb">
-            <b>Växverket</b>
+            <b>Elda</b>
             <span>•</span>
             <span>{panelLabels[activePanel]}</span>
             <span>•</span>

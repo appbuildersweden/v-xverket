@@ -312,7 +312,7 @@ const AdminAiSettingsPanel: React.FC = () => (
     <div className="card" style={{ marginBottom: 18 }}>
       <div className="card-title">AI-modeller</div>
       <div className="card-sub">
-        AI-anropen görs av Växverkets server mot OpenRouter.
+        AI-anropen görs av Eldas server mot OpenRouter.
       </div>
       <div className="list-item">
         <div className="stat-icon" style={{ width: 34, height: 34 }}><Sparkles size={15} /></div>

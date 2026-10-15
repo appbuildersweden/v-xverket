@@ -1,0 +1,5 @@
+# Cloudflare Pages-projekt för Elda-hemsidan.
+# Publiceringsdir är endast dist/ – ingen appkällkod följer med.
+name = "elda"
+compatibility_date = "2026-10-15"
+pages_build_output_dir = "dist"

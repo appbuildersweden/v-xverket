@@ -104,9 +104,9 @@ export function buildDocx(content: DocContent): Document {
   }
 
   return new Document({
-    creator: 'Växverket',
+    creator: 'Elda',
     title: content.title,
-    description: 'Skapad av Växverkets AI-assistent',
+    description: 'Skapad av Eldas AI-assistent',
     styles: {
       default: {
         document: { run: { font: FONT, size: 22 } },

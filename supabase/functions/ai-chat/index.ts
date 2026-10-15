@@ -90,7 +90,7 @@ function allow(key: string): boolean {
 // ----------------------------------------------------------------
 
 const COMMON = [
-  'Du är Växverkets AI-assistent.',
+  'Du är Eldas AI-assistent.',
   'Svara alltid på svenska om användaren skriver svenska, och på användarens språk i övrigt.',
   'Använd enkel, tydlig text. Använd markdown med rubriker (##), punktlistor och fetstil där det hjälper läsbarheten.',
   'Skriv kod i kodblock som börjar och slutar med tre tillbakatecken när kod behövs.',
@@ -141,7 +141,7 @@ Du hjälper till med:
 - Administrativ planering och organisation.
 - Skapa informationsmaterial, instruktioner och meddelanden.
 - Sammanställa och strukturera texter.
-- Förklara hur Växverket fungerar (roller: elev, speciallärare, admin).
+- Förklara hur Elda fungerar (roller: elev, speciallärare, admin).
 - Administrativa uppgifter utifrån information administratören har tillgång till.
 
 VIKTIGT: Du får ALDRIG utföra eller simulera ändringar av konton, roller eller
@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
           // OpenRouter ber om dessa för att visa appen i deras lista.
           'HTTP-Referer': SUPABASE_URL,
-          'X-Title': 'Växverket',
+          'X-Title': 'Elda',
         },
         body: JSON.stringify({
           model,

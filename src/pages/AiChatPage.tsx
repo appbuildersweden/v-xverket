@@ -192,7 +192,7 @@ export const AiChatPage: React.FC<AiChatPageProps> = ({ panel }) => {
         <Info size={15} />
         <span>
           {TITLES[panel]} är ansluten. Svar kommer från AI-tjänsten via
-          Växverkets server. Dela aldrig känsliga personuppgifter här.
+          Eldas server. Dela aldrig känsliga personuppgifter här.
         </span>
       </div>
 
@@ -200,7 +200,7 @@ export const AiChatPage: React.FC<AiChatPageProps> = ({ panel }) => {
         <div className="chat-thread">
           {messages.length === 0 ? (
             <div className="chat-intro">
-              <img src="/vaxverket-logo.png" alt="Växverket" />
+              <img src="/elda-icon.png" alt="Elda" />
               <h2>{TITLES[panel]}</h2>
               <p>{INTRO[panel]}</p>
             </div>

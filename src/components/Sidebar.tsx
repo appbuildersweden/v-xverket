@@ -281,8 +281,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <img src="/vaxverket-logo.png" alt="Växverket logotyp" />
-        <span>Växverket</span>
+        <img src="/elda-icon.png" alt="Eldas logotyp" />
+        <span>Elda</span>
       </div>
 
       {/* Panelväljare — endast administratörer får växla mellan paneler */}

@@ -51,7 +51,7 @@ export const Profil: React.FC<ProfilProps> = ({ role, onClose }) => {
           <div>
             <div className="card-title">Profil & inställningar</div>
             <div className="card-sub" style={{ marginBottom: 0 }}>
-              {roleLabels[role]} • Växverket
+              {roleLabels[role]} • Elda
             </div>
           </div>
           <button className="btn btn-outline btn-sm" onClick={onClose}>

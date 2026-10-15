@@ -54,7 +54,7 @@ export const Login: React.FC = () => {
       {/* Identitetssida med bannern */}
       <div className="login-identity">
         <div className="login-banner">
-          <img src="/login-banner.png" alt="Växverket — vy över Ronneby" />
+          <img src="/login-banner.png" alt="Vy över Ronneby" />
         </div>
         <h1>Välkommen tillbaka</h1>
         <p>Din plats för lärande, planering och utveckling.</p>
@@ -76,7 +76,7 @@ export const Login: React.FC = () => {
         </div>
 
         <form className="login-card" onSubmit={handleSubmit}>
-          <h2>Logga in på Växverket</h2>
+          <h2>Logga in på Elda</h2>
           <p className="lead">
             Logga in med kontot du har fått av din administratör.
           </p>
