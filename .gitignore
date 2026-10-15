@@ -1,0 +1,35 @@
+# Miljö och hemligheter
+.env
+.env.local
+.env.*.local
+
+# Building
+dist
+dist-ssr
+*.tsbuildinfo
+
+# Tauri / Rust
+src-tauri/target
+src-tauri/gen
+
+# Cloudflare
+.wrangler
+site/dist
+
+# Hemligheter och signeringsnycklar (skal aldrig publiceras)
+*.key
+*.pem
+supabase/.temp
+
+# Tillfälliga testartefakter
+funktionstest-dokument.docx
+
+# Dependencies
+node_modules
+
+# Misc
+.DS_Store
+*.log
+
+# Lokalt verktygsstate
+.freebuff
