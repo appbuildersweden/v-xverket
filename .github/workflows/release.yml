@@ -103,6 +103,16 @@ jobs:
           prerelease: false
           args: --bundles nsis,msi
 
+      - name: Bygg gränssnittet – kontrollkörning utan release
+        # En manuell körning från en gren publicerar ingen release, men här
+        # byggs gränssnittet ändå så att konfigurationskontrollen nedan får
+        # något att titta på.
+        if: ${{ github.ref_type != 'tag' }}
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
       - name: Kontrollera att appbygget fick Supabase-konfigurationen
         # Körs efter bygget, i samma jobb, och stoppar körningen om adressen
         # inte hamnade i det byggda gränssnittet. Då upptäcks en trasig
