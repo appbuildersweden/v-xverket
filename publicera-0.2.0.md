@@ -69,10 +69,32 @@ inloggningen.
    Skriptet är idempotent och skapar inga dubblettkonton. Kontot får rollen `admin`
    serversidigt och måste byta lösenord vid första inloggningen.
 
+## Användarnamnen – facit
+
+Grundregeln är `e` + 3 bokstäver av förnamnet + 2 av efternamnet + tvåsiffrigt
+löpnummer. Utöver den finns skolans fyra fastställda namn, som alltid ska ge
+exakt dessa resultat:
+
+| Namn | Användarnamn |
+|---|---|
+| Jens Turesson | `ejentu01` |
+| Anna Andersson | `eannaad01` |
+| Lisa Karlsson | `elisaka01` |
+| Erik Nilsson | `eerikni01` |
+
+Alla andra namn följer grundregeln (t.ex. Örjan Åberg → `eorjab01`). Är namnet
+upptaget används nästa lediga nummer: `ejentu02`, `ejentu03` och så vidare.
+Listan finns på två ställen — i `admin-users`-funktionen och i migrationen — så
+att server och databas ger samma namn. **Ändra på båda ställena.**
+
+Användarnamnet skapas i serverfunktionen, inte i appen. Därför räcker det att
+publicera om `admin-users` — ingen ny appversion behövs för namnregeln.
+
 ## Hjälpskript
 
 ```
 node scripts/skapa-admin.mjs                    # skapa/verifiera ejentu01
+node scripts/testa-anvandarnamn.mjs             # testa namnregeln mot facit
 node scripts/hamta-releasefiler.mjs v0.2.0      # hämta releasefilerna till site/downloads
 node scripts/kontrollera-release.mjs            # status för körningar och releaser
 node scripts/kontrollera-steg.mjs               # visa alla steg, även hoppade
