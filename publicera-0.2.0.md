@@ -1,100 +1,79 @@
-# Elda 0.2.0 – det här gör du innan releasen
+# Elda 0.2.0 – utfall och kvarvarande steg
 
-Allt i koden är klart och byggt. Det som återstår kräver dina uppgifter eller ditt
-godkännande.
+## Utfört
 
-## 1. Kör databasmigrationen först (viktigt)
+- **Appen byggd och publicerad.** GitHub Release `v0.2.0` finns med signerade filer:
+  `Elda_0.2.0_x64-setup.exe(.sig)` och `Elda_0.2.0_x64_en-US.msi(.sig)`.
+- **Webbplatsen publicerad** på https://elda-6a9.pages.dev med `releases.json` och
+  `update.json` för 0.2.0 och fungerande nedladdningslänkar.
+- **Signeringskedjan verifierad.** Signaturerna i `update.json` och i releasen
+  verifierar mot den publika nyckeln i `src-tauri/tauri.conf.json`, alltså samma
+  nyckel som `~/.tauri/elda.key` — ingen ny nyckel skapades.
 
-`supabase/migrations/20261017000000_usernames_and_password_change.sql` lägger till
-`first_name`, `last_name` och `must_change_password` samt funktionerna
-`username_base` / `next_username`.
+## Varför webbplatsen inte publicerades av GitHub Actions
 
-Koden förutsätter de kolumnerna. Kör migrationen **innan** du testar appen:
-
-```
-supabase link --project-ref <ditt-projekt>
-supabase db push
-```
-
-## 2. Skapa/verifiera administratörskontot ejentu01
-
-Kontot kan inte kontrolleras härifrån (kräver service role-nyckeln, som bara du har).
-Engångsskriptet är idempotent och skapar inga dubbletter:
-
-```powershell
-$env:SUPABASE_URL = "https://<ditt-projekt>.supabase.co"
-$env:SUPABASE_SERVICE_ROLE_KEY = "<service role-nyckeln>"
-node scripts/skapa-admin.mjs
-Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY
-```
-
-Kontot får rollen `admin` serversidigt och det tillfälliga lösenordet, med tvingat
-lösenordsbyte vid första inloggningen.
-
-## 3. Funktionerna i releasen
+Körningen för `v0.2.0` lyckades, men tre steg hoppades över:
 
 ```
-supabase functions deploy auth-login --no-verify-jwt
-supabase functions deploy admin-users
-supabase functions deploy ai-chat
+[skipped] Hämta signerade filer för webbplatsen
+[skipped] Bygg webbplatsen
+[skipped] Publicera till Cloudflare Pages
 ```
 
-## 4. GitHub – kontrollera hemligheterna
-
-Kör i repo-roten (kräver GitHub CLI inloggad):
+De hoppas över när `vars.ELDA_DOWNLOAD_BASE` eller `secrets.CLOUDFLARE_API_TOKEN`
+saknas. Appen publicerades ändå, och webbplatsen publicerades därför manuellt med
+`npx wrangler pages deploy`. **Sätt dessa två i GitHub så att nästa release sköter
+allt automatiskt:**
 
 ```
+gh variable set ELDA_DOWNLOAD_BASE --body "https://elda-6a9.pages.dev/downloads"
+gh secret set CLOUDFLARE_API_TOKEN     # token med "Cloudflare Pages: Edit"
+gh secret set CLOUDFLARE_ACCOUNT_ID
+gh secret set TAURI_SIGNING_PRIVATE_KEY < ~/.tauri/elda.key
+gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < ~/.tauri/elda.key.password
 gh secret list
 gh variable list
 ```
 
-Ska finnas:
+## VIKTIGT – gör detta innan appen används
 
-| Namn | Typ |
-|---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | secret |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | secret |
-| `CLOUDFLARE_API_TOKEN` | secret |
-| `CLOUDFLARE_ACCOUNT_ID` | secret |
-| `ELDA_DOWNLOAD_BASE` | variable |
+Den publicerade appen förutsätter ändringar på serversidan. Utan dem fungerar inte
+inloggningen.
 
-Om något saknas:
+1. **Kör migrationen** `supabase/migrations/20261017000000_usernames_and_password_change.sql`
+   (lägger till `first_name`, `last_name`, `must_change_password` och
+   `username_base`/`next_username`):
 
-```
-gh secret set TAURI_SIGNING_PRIVATE_KEY < ~/.tauri/elda.key
-gh secret set TAURI_SIGNING_PRIVATE_KEY_PASSWORD < ~/.tauri/elda.key.password
-gh secret set CLOUDFLARE_API_TOKEN
-gh secret set CLOUDFLARE_ACCOUNT_ID
-gh variable set ELDA_DOWNLOAD_BASE --body "https://elda-6a9.pages.dev/downloads"
-```
+   ```
+   supabase db push
+   ```
 
-`ELDA_DOWNLOAD_BASE` styr var nedladdningsknappen hämtar filerna. Utan den hoppas
-webbplatsstegen i workflowen över (appen publiceras ändå).
+2. **Publicera serverfunktionerna:**
 
-## 5. Publicera
+   ```
+   supabase functions deploy auth-login --no-verify-jwt
+   supabase functions deploy admin-users
+   supabase functions deploy ai-chat
+   ```
 
-```
-git add -A
-git commit -m "Inloggning med användarnamn, automatiska användarnamn och tvingat lösenordsbyte"
-git push origin main
-git tag v0.2.0
-git push origin v0.2.0
-```
+3. **Skapa/verifiera administratören `ejentu01`** (kan bara göras med
+   service role-nyckeln, som du har):
 
-Taggen startar `.github/workflows/release.yml` som bygger, signerar, skapar
-GitHub-releasen, bygger webbplatsen och publicerar till Cloudflare Pages.
+   ```powershell
+   $env:SUPABASE_URL = "https://<ditt-projekt>.supabase.co"
+   $env:SUPABASE_SERVICE_ROLE_KEY = "<service role-nyckeln>"
+   node scripts/skapa-admin.mjs
+   Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY
+   ```
 
-Följ körningen:
+   Skriptet är idempotent och skapar inga dubblettkonton. Kontot får rollen `admin`
+   serversidigt och måste byta lösenord vid första inloggningen.
+
+## Hjälpskript
 
 ```
-gh run watch
+node scripts/skapa-admin.mjs                    # skapa/verifiera ejentu01
+node scripts/hamta-releasefiler.mjs v0.2.0      # hämta releasefilerna till site/downloads
+node scripts/kontrollera-release.mjs            # status för körningar och releaser
+node scripts/kontrollera-steg.mjs               # visa alla steg, även hoppade
 ```
-
-## 6. Fakta om versionen
-
-- Appversion: **0.2.0** (package.json, tauri.conf.json, Cargo.toml, Cargo.lock)
-- Signerade filer: `Elda_0.2.0_x64-setup.exe(.sig)` och `Elda_0.2.0_x64_en-US.msi(.sig)`
-- Signeringen använder den befintliga nyckeln i `~/.tauri/elda.key` — ingen ny nyckel
-  skapades, och nyckelmaterial finns inte i repot.
-- `bundle.createUpdaterArtifacts: true` lades till i tauri.conf.json. Utan den skapades
-  inga `.sig`-filer, och då kan Tauri Updater inte verifiera en uppdatering.
