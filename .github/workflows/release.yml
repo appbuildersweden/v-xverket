@@ -14,8 +14,13 @@ name: Release
 #   CLOUDFLARE_API_TOKEN               – token med "Cloudflare Pages: Edit"
 #   CLOUDFLARE_ACCOUNT_ID              – kontots ID
 #
-# Variabel (Settings -> Secrets and variables -> Actions -> Variables):
+# Variabler (Settings -> Secrets and variables -> Actions -> Variables):
 #   ELDA_DOWNLOAD_BASE                 – t.ex. https://elda.pages.dev/downloads
+#   VITE_SUPABASE_URL                  – projektets adress
+#   VITE_SUPABASE_ANON_KEY             – publik anon-nyckel (ligger i klienten)
+#
+# VITE_SUPABASE_* behövs eftersom appen bakar in Supabase-adressen i bygget.
+# Utan dem startar appen men kan inte logga in, så bygget stoppas hellre nedan.
 #
 # Webbplatsstegen hoppas över tills ELDA_DOWNLOAD_BASE och CLOUDFLARE_API_TOKEN
 # är satta, så att appen kan publiceras innan hostingen är klar.
@@ -57,6 +62,19 @@ jobs:
       - name: Installera node-beroenden
         run: npm ci
 
+      - name: Kontrollera att Supabase-konfigurationen finns
+        shell: bash
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          # Appen bakar in adressen och anon-nyckeln vid bygget. Saknas de blir
+          # den publicerade appen omöjlig att logga in i — avbryt hellre.
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY måste vara satta som Actions-variabler."
+            exit 1
+          fi
+
       - name: Bygg och publicera Windows-paket
         # En manuell körning (workflow_dispatch) från en gren publicerar aldrig
         # en release – annars skapas ett tomt "releasemärke" med grenens namn.
@@ -66,6 +84,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Elda ${{ github.ref_name }}'
@@ -73,10 +93,12 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Inloggning och konton
+            Inloggning
+            - Appen byggs nu med rätt Supabase-adress och anon-nyckel, så inloggning fungerar i den installerade appen.
             - Inloggning sker med användarnamn och lösenord.
             - Nya konton får automatiskt ett användarnamn från förnamn och efternamn, till exempel ejentu01.
             - Nya konton har ett tillfälligt lösenord och måste skapa ett eget vid första inloggningen.
+            - Bygget avbryts om Supabase-konfigurationen saknas, så en oanvändbar app inte publiceras igen.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
