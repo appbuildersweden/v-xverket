@@ -103,6 +103,22 @@ jobs:
           prerelease: false
           args: --bundles nsis,msi
 
+      - name: Kontrollera att appbygget fick Supabase-konfigurationen
+        # Körs efter bygget, i samma jobb, och stoppar körningen om adressen
+        # inte hamnade i det byggda gränssnittet. Då upptäcks en trasig
+        # konfiguration innan någon hinner ladda ner en oanvändbar app.
+        shell: bash
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+        run: |
+          vard="${VITE_SUPABASE_URL#https://}"
+          vard="${vard%%/*}"
+          if ! grep -rqF "$vard" dist/assets; then
+            echo "::error::Supabase-adressen saknas i dist/assets – appen skulle inte kunna logga in."
+            exit 1
+          fi
+          echo "✓ Supabase-adressen finns i det byggda gränssnittet"
+
       - name: Hämta signerade filer för webbplatsen
         if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
         shell: bash

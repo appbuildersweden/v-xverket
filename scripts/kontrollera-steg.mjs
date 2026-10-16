@@ -1,8 +1,14 @@
 #!/usr/bin/env node
-/** Listar stegen för den senaste Release-körningen, inklusive hoppade steg. */
+/**
+ * Listar stegen för en Release-körning, inklusive hoppade steg.
+ * Användning:  node scripts/kontrollera-steg.mjs [tagg]
+ * Utan tagg visas den senaste körningen.
+ */
 import { execFileSync } from 'node:child_process';
 
 const REPO = 'appbuildersweden/v-xverket';
+const WANTED = process.argv[2] || '';
+
 function token() {
   if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
   try {
@@ -30,9 +36,11 @@ const headers = {
 const runs = await (
   await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=4`, { headers })
 ).json();
-const run = runs.workflow_runs.find((r) => r.head_branch === 'v0.2.0');
+const run = WANTED
+  ? runs.workflow_runs.find((r) => r.head_branch === WANTED)
+  : runs.workflow_runs[0];
 if (!run) {
-  console.log('Hittade ingen körning för v0.2.0.');
+  console.log(`Hittade ingen körning${WANTED ? ` för ${WANTED}` : ''}.`);
   process.exit(0);
 }
 console.log(`Körning ${run.id} (${run.head_branch}) – ${run.status}/${run.conclusion}`);
