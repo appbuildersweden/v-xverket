@@ -49,8 +49,24 @@ function letters(value: unknown): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+/**
+ * Skolans fastställda namn. Grundregeln är e + 3 bokstäver av förnamnet + 2 av
+ * efternamnet, men för dessa namn har skolan bestämt en annan förkortning och
+ * den ska alltid gälla. Nyckeln är normaliserade bokstäver (gemener, a-z).
+ * Löpnumret läggs på efteråt precis som vanligt.
+ */
+const NAME_OVERRIDES: Record<string, string> = {
+  'jens|turesson': 'ejentu',
+  'anna|andersson': 'eannaad',
+  'lisa|karlsson': 'elisaka',
+  'erik|nilsson': 'eerikni',
+};
+
 /** 'e' + 3 bokstäver av förnamnet + 2 av efternamnet (+ löpnummer senare). */
 function usernameBase(first: unknown, last: unknown): string {
+  const override = NAME_OVERRIDES[`${letters(first)}|${letters(last)}`];
+  if (override) return override;
+
   let f = letters(first);
   let l = letters(last);
   if (!f && !l) f = 'elev';

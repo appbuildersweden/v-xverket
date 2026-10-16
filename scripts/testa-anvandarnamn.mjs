@@ -18,7 +18,8 @@ function slice(startMarker, endMarker) {
 // Extrahera de två rena funktionerna ur källtexten. Endast typannoteringarna
 // (TypeScript) tas bort — logiken som testas är exakt filens.
 const base = slice('const SV: Record<string, string> = {', 'Deno.serve')
-  .replace('const SV: Record<string, string>', 'const SV')
+  .replaceAll('const SV: Record<string, string>', 'const SV')
+  .replaceAll('const NAME_OVERRIDES: Record<string, string>', 'const NAME_OVERRIDES')
   .replace('function letters(value: unknown): string', 'function letters(value)')
   .replace(
     'function usernameBase(first: unknown, last: unknown): string',
@@ -27,38 +28,51 @@ const base = slice('const SV: Record<string, string> = {', 'Deno.serve')
 const factory = new Function(`${base}\nreturn { letters, usernameBase };`);
 const { usernameBase } = factory();
 
-// Regeln är: e + de TRE fÖrsta bokstäverna i fÖrnamnet + de TVÅ fÖrsta i
-// efternamnet. Raden för Anna Andersson i uppdragsbeskrivningen ("eannaad01")
-// följer inte den regeln ("Andersson" ger "an"). Här testas regeltexten.
-const cases = [
+// Facit från uppdragen: dessa fyra namn ska ge exakt dessa användarnamn.
+const facit = [
   [['Jens', 'Turesson'], 'ejentu'],
-  [['Anna', 'Andersson'], 'eannan'],
-  [['Lisa', 'Karlsson'], 'eliska'],
-  [['Erik', 'Nilsson'], 'eerini'],
-  // svenska tecken, mellanslag och bindestreck
+  [['Anna', 'Andersson'], 'eannaad'],
+  [['Lisa', 'Karlsson'], 'elisaka'],
+  [['Erik', 'Nilsson'], 'eerikni'],
+];
+
+// Grundregeln (e + 3 + 2) för alla andra namn.
+const cases = [
   [['Örjan', 'Åberg'], 'eorjab'],
   [['Sven-Göran', 'Ärlig'], 'esvear'],
   [['Åsa', 'Öberg'], 'easaob'],
+  [['Maria', 'Lindqvist'], 'emarli'],
   // korta namn: aldrig tomt eller ogiltigt
   [['Ali', 'Bo'], 'ealibo'],
   [['A', 'B'], 'eaxxbx'],
   [['', ''], 'eelexx'],
 ];
 
+const allCases = [...facit, ...cases];
+
 let failed = 0;
+console.log(`Facit (${facit.length} namn):`);
+for (const [[first, last], want] of facit) {
+  const got = usernameBase(first, last);
+  if (got !== want) failed++;
+  console.log(
+    `${got === want ? '✓' : '✗'} ${first} ${last} -> ${got}01${got === want ? '' : `  (förväntade ${want}01)`}`,
+  );
+}
+
+console.log('\nGrundregeln för övriga namn:');
 for (const [[first, last], want] of cases) {
   const got = usernameBase(first, last);
-  const withNumber = `${got}01`;
-  const ok = got === want;
-  if (!ok) failed++;
+  if (got !== want) failed++;
+  const label = `${first || '(tomt)'} ${last || '(tomt)'}`;
   console.log(
-    `${ok ? '✓' : '✗'} ${first} ${last} -> ${withNumber}${ok ? '' : `  (förväntade ${want}`.concat('01)')}`,
+    `${got === want ? '✓' : '✗'} ${label} -> ${got}01${got === want ? '' : `  (förväntade ${want}01)`}`,
   );
 }
 
 // Alla genererade namn måste klara användarnamnsregeln i klient, server och DB.
 const RE = /^[a-z0-9._-]{3,32}$/;
-const names = [...new Set(cases.flatMap(([[f, l]]) => [1, 2, 3, 9, 10].map((n) => `${usernameBase(f, l)}${String(n).padStart(2, '0')}`)))];
+const names = [...new Set(allCases.flatMap(([[f, l]]) => [1, 2, 3, 9, 10].map((n) => `${usernameBase(f, l)}${String(n).padStart(2, '0')}`)))];
 const bad = names.filter((n) => !RE.test(n));
 if (bad.length) {
   failed += bad.length;

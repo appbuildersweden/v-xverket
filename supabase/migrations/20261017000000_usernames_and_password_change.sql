@@ -33,8 +33,25 @@ as $$
   );
 $$;
 
--- 3 bokstäver av förnamnet + 2 av efternamnet. Är en del kortare fylls den
--- ut med 'x' så att resultatet alltid blir giltigt (aldrig tomt eller krasch).
+-- Skolans fastställda namn. Grundregeln är e + 3 bokstäver av förnamnet + 2 av
+-- efternamnet, men för dessa namn gäller skolans egna förkortningar. Samma lista
+-- finns i admin-users-funktionen — ändra på båda ställena.
+create or replace function public.username_override(p_first text, p_last text)
+returns text
+language sql
+immutable
+as $$
+  select case public.username_letters(p_first) || '|' || public.username_letters(p_last)
+    when 'jens|turesson'  then 'ejentu'
+    when 'anna|andersson' then 'eannaad'
+    when 'lisa|karlsson'  then 'elisaka'
+    when 'erik|nilsson'   then 'eerikni'
+    else null
+  end;
+$$;
+
+-- Grundregeln: 3 bokstäver av förnamnet + 2 av efternamnet. Är en del kortare
+-- fylls den ut med 'x' så att resultatet alltid blir giltigt (aldrig tomt).
 create or replace function public.username_base(p_first text, p_last text)
 returns text
 language plpgsql
@@ -43,18 +60,24 @@ as $$
 declare
   f text;
   l text;
+  o text;
 begin
+  o := public.username_override(p_first, p_last);
+  if o is not null then
+    return o;
+  end if;
+
   f := public.username_letters(p_first);
   l := public.username_letters(p_last);
 
+  -- 'e' + 3 + 2 = 6 tecken, alltid inom användarnamnsregeln.
   if length(f) = 0 and length(l) = 0 then
-    f := 'elev';
+    return 'eelexx';
   end if;
 
   f := rpad(left(f, 3), 3, 'x');
   l := rpad(left(l, 2), 2, 'x');
 
-  -- 'e' + 3 + 2 = 6 tecken, alltid inom användarnamnsregeln.
   return 'e' || f || l;
 end;
 $$;
