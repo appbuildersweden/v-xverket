@@ -9,8 +9,8 @@ Allt flöde körs automatiskt när du pushar en tagg. Inga manuella byggsteg beh
 npm run tauri dev
 
 # 2. Öka versionsnumret i Tauri-konfigurationen
-#    src-tauri/tauri.conf.json  ->  "version": "0.2.0"
-#    (package.json och src-tauri/Cargo.toml följer automatiskt vid build)
+#    src-tauri/tauri.conf.json  ->  "version": "0.2.1"
+#    (package.json och src-tauri/Cargo.toml hålls i samma version för tydlighet)
 
 # 3. Committera och pusha
 git add -A
@@ -46,10 +46,28 @@ Satta på **Settings → Secrets and variables → Actions** i repo:t:
 | `CLOUDFLARE_ACCOUNT_ID` | secret | kontots ID |
 | `CLOUDFLARE_API_TOKEN` | secret | token med behörighet *Cloudflare Pages: Edit* |
 | `ELDA_DOWNLOAD_BASE` | variable | `https://elda-6a9.pages.dev/downloads` |
+| `VITE_SUPABASE_URL` | variable | projektets adress, `https://<projekt>.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | variable | projektets publika anon-nyckel (den ligger ändå i klienten) |
 
 Webbplatsstegen hoppas över så länge `ELDA_DOWNLOAD_BASE` eller
 `CLOUDFLARE_API_TOKEN` saknas – appen kan alltså publiceras innan
 hostingen är klar.
+
+## Supabase-adressen bakas in i appen
+
+Appen får sin Supabase-adress och anon-nyckel vid **bygget**. Därför:
+
+- `VITE_SUPABASE_URL` och `VITE_SUPABASE_ANON_KEY` måste finnas som
+  Actions-variabler. Saknas de avbryts körningen direkt, och efter bygget
+  kontrolleras dessutom att adressen verkligen hamnade i `dist/assets`.
+  Tidigare kunde en app utan fungerande inloggning publiceras av misstag.
+- Byter du Supabase-projekt, eller t.ex. domän för uppdateringar, måste en
+  **ny version byggas och publiceras** – gamla installerade appar pekar kvar
+  på den adress de byggdes med.
+- Den **hemliga** service role-nyckeln används bara av serverfunktionerna i
+  Supabase (och av [`scripts/skapa-admin.mjs`](scripts/skapa-admin.mjs) när
+  administratörskontot skapas). Den ska aldrig ligga i `.env` eller i
+  webbappen – endast i Supabase och i terminalen när skriptet körs.
 
 ## Signeringsnyckeln
 
@@ -99,3 +117,8 @@ Adressen är just nu `https://elda-6a9.pages.dev`. Vill du ha t.ex.
   `…/downloads/` måste vara exakt den som signerats; kör om releasflödet.
 - **Bygget hoppas över webbplatsstegen** – `ELDA_DOWNLOAD_BASE` eller
   `CLOUDFLARE_API_TOKEN` saknas.
+- **Appen startar men inloggningen misslyckas** – bygget fick ingen
+  Supabase-adress. Kontrollera att `VITE_SUPABASE_URL` och
+  `VITE_SUPABASE_ANON_KEY` finns som variabler och publicera en ny version.
+  En kontrollkörning av arbetsflödet (utan tagg) verifierar det i förväg:
+  *Actions → Release → Run workflow*.
