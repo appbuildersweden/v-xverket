@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
   // 1. Användarnamn → profil (username är unikt).
   const { data: profile, error: profileErr } = await admin
     .from('profiles')
-    .select('id, active')
+    .select('id, active, must_change_password')
     .eq('username', username)
     .maybeSingle();
   if (profileErr) {
@@ -137,6 +137,12 @@ Deno.serve(async (req) => {
   // Rollen hämtas från app_metadata — sätts endast av administratörs-
   // funktionen och kan inte ändras av klienten.
   const role = userData.user.app_metadata?.role ?? 'elev';
+  // Tvingat lösenordsbyte: nya konton får ett tillfälligt lösenord och måste
+  // välja ett eget innan appen släpper in dem i panelerna. Flaggan kommer från
+  // profiles (auktoritativ) och speglas i sessionssvaret.
+  const mustChangePassword =
+    profile.must_change_password === true ||
+    userData.user.app_metadata?.must_change_password === true;
 
   return json({
     access_token: session.access_token,
@@ -146,6 +152,7 @@ Deno.serve(async (req) => {
       id: userData.user.id,
       username,
       role,
+      mustChangePassword,
     },
   });
 });

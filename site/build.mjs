@@ -7,7 +7,7 @@
  *   någonsin i klienten).
  * - Kopierar statiska filer till dist/, som är det enda som publiceras.
  */
-import { copyFile, cp, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -176,15 +176,21 @@ async function main() {
   };
   await writeFile(join(DIST, 'releases.json'), JSON.stringify(payload, null, 2) + '\n');
 
+  // update.json skrivs bara när en signerad release faktiskt finns. En kvarbliven
+  // fil från en tidigare körning tas bort — annars skulle appen erbjuda en
+  // uppdatering till en version vars filer inte längre publiceras.
+  const manifest = join(DIST, 'update.json');
   try {
     const update = await buildUpdateManifest(payload.releases);
     if (update) {
-      await writeFile(join(DIST, 'update.json'), JSON.stringify(update, null, 2) + '\n');
+      await writeFile(manifest, JSON.stringify(update, null, 2) + '\n');
       console.log(`✓ update.json skriven för v${update.version}`);
     } else {
+      await rm(manifest, { force: true });
       console.warn('! ingen signerad release hittades – update.json hoppades över');
     }
   } catch (err) {
+    await rm(manifest, { force: true });
     console.warn(`! kunde inte skriva update.json: ${err.message}`);
   }
 
@@ -197,8 +203,12 @@ async function main() {
   // byggda artefakter (installern + signatur) – aldrig appens källkod.
   // Releaseflödet lägger filerna i site/downloads innan detta steg.
   const downloads = join(HERE, 'downloads');
+  const distDownloads = join(DIST, 'downloads');
+  // Töm målmappen först. Annars ligger föregående versions installationsfiler
+  // kvar i dist och publiceras tillsammans med den nya versionen.
+  await rm(distDownloads, { recursive: true, force: true });
   try {
-    await cp(downloads, join(DIST, 'downloads'), { recursive: true });
+    await cp(downloads, distDownloads, { recursive: true });
     const count = (await readdir(downloads)).length;
     console.log(`✓ downloads/ kopierad (${count} filer)`);
   } catch {

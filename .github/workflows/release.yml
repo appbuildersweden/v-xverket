@@ -69,7 +69,14 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Elda ${{ github.ref_name }}'
-          releaseBody: 'Se versionshistorik och installationsguide på nedladdningssidan.'
+          # Texten hamnar både i GitHub-releasen och i webbplatsens
+          # versionshistorik (site/build.mjs läser den). Håll den därför kort
+          # och beskriv vad som faktiskt ändrats.
+          releaseBody: |
+            Inloggning och konton
+            - Inloggning sker med användarnamn och lösenord.
+            - Nya konton får automatiskt ett användarnamn från förnamn och efternamn, till exempel ejentu01.
+            - Nya konton har ett tillfälligt lösenord och måste skapa ett eget vid första inloggningen.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
@@ -80,6 +87,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Rensa mappen först: annars ligger föregående versions filer kvar och
+          # publiceras tillsammans med den nya versionen.
+          rm -rf site/downloads
           mkdir -p site/downloads
           gh release download "${{ github.ref_name }}" \
             --dir site/downloads \

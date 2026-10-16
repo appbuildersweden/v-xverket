@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, User, Shield, AlertCircle, KeyRound } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
@@ -10,21 +10,61 @@ const roleLabels: Record<Role, string> = {
   admin: 'Administratör',
 };
 
+/** Tillfälligt lösenord som nya konton får. Måste bytas vid första inloggningen. */
+const TEMP_PASSWORD = 'student123';
+
+/**
+ * Skapa konto.
+ *
+ * Administratören anger förnamn och efternamn — användarnamnet genereras
+ * automatiskt enligt regeln e + 3 bokstäver av förnamnet + 2 av efternamnet +
+ * tvåsiffrigt löpnummer (t.ex. ejentu01). Numret väljs och reserveras
+ * serversidigt, så samtidiga skapanden kan aldrig ge dubbletter.
+ */
 export const AdminCreateUserPage: React.FC = () => {
-  const { createAccount } = useAuth();
+  const { createAccount, suggestUsername } = useAuth();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [usernameBusy, setUsernameBusy] = useState(false);
   const [role, setRole] = useState<Role>('elev');
+  const [password, setPassword] = useState(TEMP_PASSWORD);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ username: string; role: Role } | null>(null);
+
+  const seq = useRef(0);
+
+  // Föreslå ett ledigt användarnamn direkt när namnet ändras. Servern räknar ut
+  // förkortningen och nästa lediga löpnummer, så förslaget är alltid giltigt.
+  useEffect(() => {
+    const first = firstName.trim();
+    const last = lastName.trim();
+    if (!first && !last) {
+      setUsername('');
+      return;
+    }
+
+    const ticket = ++seq.current;
+    setUsernameBusy(true);
+
+    const timer = setTimeout(async () => {
+      const result = await suggestUsername(first, last);
+      // Ett äldre svar får aldrig skriva över ett nyare.
+      if (ticket !== seq.current) return;
+      setUsernameBusy(false);
+      if (result.ok) setUsername(result.username);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [firstName, lastName, suggestUsername]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
 
-    if (!username.trim()) {
-      setError('Ange ett användarnamn.');
+    if (!firstName.trim() || !lastName.trim()) {
+      setError('Ange både förnamn och efternamn.');
       return;
     }
     if (password.length < 8) {
@@ -35,7 +75,12 @@ export const AdminCreateUserPage: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const result = await createAccount({ username: username.trim(), password, role });
+    const result = await createAccount({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      role,
+      password,
+    });
 
     setLoading(false);
 
@@ -48,10 +93,13 @@ export const AdminCreateUserPage: React.FC = () => {
 
   const reset = () => {
     setSuccess(null);
+    setFirstName('');
+    setLastName('');
     setUsername('');
-    setPassword('');
+    setPassword(TEMP_PASSWORD);
     setRole('elev');
     setError(null);
+    seq.current += 1;
   };
 
   return (
@@ -60,7 +108,9 @@ export const AdminCreateUserPage: React.FC = () => {
         <div className="card-head">
           <div>
             <div className="card-title">Skapa nytt konto</div>
-            <div className="card-sub">Konton skapas och hanteras endast av administratörer</div>
+            <div className="card-sub">
+              Användarnamnet skapas automatiskt från förnamn och efternamn
+            </div>
           </div>
           {success && (
             <button className="btn btn-outline btn-sm" onClick={reset}>
@@ -99,8 +149,8 @@ export const AdminCreateUserPage: React.FC = () => {
             </div>
 
             <p className="admin-create-caveat">
-              Lösenordet sparas inte och kan inte visas igen. Dela det med användaren på
-              ett säkert sätt — användaren kan sedan be administratören att byta det.
+              Kontot har det tillfälliga lösenordet och användaren måste skapa ett eget
+              vid första inloggningen. Lösenordet kan inte visas igen.
             </p>
 
             <button
@@ -115,23 +165,58 @@ export const AdminCreateUserPage: React.FC = () => {
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="field">
-              <label htmlFor="admin-username">
+              <label htmlFor="admin-first-name">
                 <User size={14} />
-                Användarnamn
+                Förnamn
+              </label>
+              <input
+                id="admin-first-name"
+                className="input"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                disabled={loading}
+                placeholder="T.ex. Jens"
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="admin-last-name">
+                <User size={14} />
+                Efternamn
+              </label>
+              <input
+                id="admin-last-name"
+                className="input"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                disabled={loading}
+                placeholder="T.ex. Turesson"
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="admin-username">
+                <Shield size={14} />
+                Användarnamn (skapas automatiskt)
               </label>
               <input
                 id="admin-username"
                 className="input"
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                disabled={loading}
-                placeholder="T.ex. klass7a_elev1"
-                autoComplete="off"
+                readOnly
+                disabled
+                placeholder="Fyll i namn först"
+                aria-live="polite"
               />
               <p className="field-hint-reg">
-                3–32 tecken: små bokstäver, siffror, punkt, bindestreck eller understreck.
-                Måste vara unikt.
+                {usernameBusy
+                  ? 'Kontrollerar nästa lediga nummer…'
+                  : 'Regeln: e + 3 bokstäver av förnamnet + 2 av efternamnet + löpnummer, t.ex. ejentu01. Numret väljs av servern och är unikt.'}
               </p>
             </div>
 
@@ -143,16 +228,17 @@ export const AdminCreateUserPage: React.FC = () => {
               <input
                 id="admin-password"
                 className="input"
-                type="password"
+                type="text"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 placeholder="Minst 8 tecken"
-                autoComplete="new-password"
+                autoComplete="off"
               />
               <p className="field-hint-reg">
-                Ange ett startlösenord som användaren byter vid första inloggningen.
-                Lösenordet kan inte visas igen efter att kontot skapats.
+                Standard är det tillfälliga lösenordet <strong>{TEMP_PASSWORD}</strong>.
+                Användaren måste skapa ett eget lösenord vid första inloggningen och
+                kommer inte in i panelerna innan dess.
               </p>
             </div>
 
@@ -204,7 +290,9 @@ export const AdminCreateUserPage: React.FC = () => {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || !username.trim() || !password}
+              disabled={
+                loading || !firstName.trim() || !lastName.trim() || !password || !username
+              }
               style={{ width: '100%', marginTop: 8 }}
             >
               {loading ? (
@@ -217,8 +305,9 @@ export const AdminCreateUserPage: React.FC = () => {
             </button>
 
             <p className="admin-create-note">
-              Kontot skapas via en skyddad serverfunktion. Lösenordet hanteras av Supabase
-              Auth och sparas aldrig i klartext.
+              Kontot skapas via en skyddad serverfunktion. Användarnamnet kontrolleras och
+              reserveras på servern, och lösenordet hanteras av Supabase Auth — aldrig i
+              klartext.
             </p>
           </form>
         )}

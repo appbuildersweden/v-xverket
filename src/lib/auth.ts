@@ -7,6 +7,11 @@ export interface VäxverketUser {
   role: 'admin' | 'speciallärare' | 'elev';
   /** Om kontot är aktivt */
   active: boolean;
+  /**
+   * Sant för nya konton som fortfarande har det tillfälliga lösenordet.
+   * Sätts serversidigt och försvinner först när lösenordet har bytts.
+   */
+  mustChangePassword: boolean;
 }
 
 export interface AuthSession {
@@ -40,6 +45,10 @@ export type OperationResult =
   | { ok: true }
   | { ok: false; error: string };
 
+export type SuggestUsernameResult =
+  | { ok: true; username: string }
+  | { ok: false; error: string };
+
 /**
  * Autentiseringsbacken för Växverket.
  * Allt privilegierat arbete (kontoskapande, rolltilldelning, inaktivering)
@@ -58,12 +67,25 @@ export interface AuthServiceBackend {
   /** Hämta aktuell användare utan att kontrollera session. */
   getCurrentUser(): Promise<VäxverketUser | null>;
 
+  /**
+   * Föreslå ett ledigt användarnamn utifrån förnamn och efternamn.
+   * Beräknas och kontrolleras serversidigt (e + 3 + 2 + löpnummer).
+   */
+  suggestUsername(firstName: string, lastName: string): Promise<SuggestUsernameResult>;
+
   /** Skapa konto (endast administratörer via skyddad serverfunktion). */
   createAccount(data: {
-    username: string;
-    password: string;
+    firstName: string;
+    lastName: string;
     role: VäxverketUser['role'];
+    password?: string;
   }): Promise<CreateAccountResult>;
+
+  /**
+   * Markera det tvingade lösenordsbytet som klart. Anropas efter att Supabase
+   * Auth har sparat det nya lösenordet — flaggan nollas serversidigt.
+   */
+  completePasswordChange(): Promise<OperationResult>;
 
   /** Lista konton (endast administratörer via skyddad serverfunktion). */
   listAccounts(): Promise<AccountsResult>;
@@ -104,11 +126,18 @@ export function createAuthBackend(): AuthServiceBackend {
       async getCurrentUser(): Promise<VäxverketUser | null> {
         return null;
       },
+      async suggestUsername(): Promise<SuggestUsernameResult> {
+        return { ok: false, error: message };
+      },
       async createAccount(_data: {
-        username: string;
-        password: string;
+        firstName: string;
+        lastName: string;
         role: VäxverketUser['role'];
+        password?: string;
       }): Promise<CreateAccountResult> {
+        return { ok: false, error: message };
+      },
+      async completePasswordChange(): Promise<OperationResult> {
         return { ok: false, error: message };
       },
       async listAccounts(): Promise<AccountsResult> {

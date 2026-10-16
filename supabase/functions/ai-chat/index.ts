@@ -233,11 +233,19 @@ Deno.serve(async (req) => {
   });
   const { data: prof } = await admin
     .from('profiles')
-    .select('active')
+    .select('active, must_change_password')
     .eq('id', caller.user.id)
     .maybeSingle();
   if (prof && prof.active === false) {
     return json({ error: 'Kontot är inaktiverat.' }, 403);
+  }
+  // Tvingat lösenordsbyte genomdrivs även här på serversidan, så att steget
+  // inte kan hoppas över genom att anropa AI-tjänsten direkt.
+  if (prof?.must_change_password === true) {
+    return json(
+      { error: 'Du måste skapa ett nytt lösenord innan du kan använda AI-hjälpen.' },
+      403,
+    );
   }
 
   const role = caller.user.app_metadata?.role;

@@ -5,6 +5,7 @@ import { getDefaultPanelForRole, isAdmin } from './lib/auth-types';
 import { Sidebar, PanelType } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Login } from './pages/Login';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { Profil } from './pages/Profil';
 import { ElevPanel } from './pages/ElevPanel';
 import { SpeciallararPanel } from './pages/SpeciallararPanel';
@@ -147,6 +148,14 @@ function AppContent() {
   if (!session?.exists || !user) {
     // Ej inloggad: visa login
     return <Login />;
+  }
+
+  // Tvingat lösenordsbyte blockerar hela appen. Inget annat renderas — panelerna
+  // och sidomenyn finns inte ens i trädet, så steget kan inte kringgås genom att
+  // navigera till en annan sida. Servern nollar flaggan (och AI-tjänsten nekar
+  // dessutom anrop) först när lösenordet är bytt.
+  if (user.mustChangePassword) {
+    return <ChangePasswordPage />;
   }
 
   // AI-chattens sida (renderas av AiChatPage för respektive roll)

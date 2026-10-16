@@ -7,6 +7,8 @@ export interface VäxverketUser {
   role: 'admin' | 'speciallärare' | 'elev';
   /** Om kontot är aktivt */
   active: boolean;
+  /** Sant tills användaren har bytt sitt tillfälliga lösenord. */
+  mustChangePassword?: boolean;
 }
 
 export interface AuthSession {

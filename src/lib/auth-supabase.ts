@@ -12,6 +12,7 @@ import {
   CreateAccountResult,
   AccountsResult,
   OperationResult,
+  SuggestUsernameResult,
   AuthServiceBackend,
 } from './auth';
 
@@ -75,11 +76,14 @@ function mapUser(user: User | null): VäxverketUser | null {
       ? roleRaw
       : 'elev';
   const active = user.app_metadata?.active !== false;
+  // Flaggan sätts serversidigt. Finns den inte i metadata är kontot färdigt.
+  const mustChangePassword = user.app_metadata?.must_change_password === true;
   return {
     id: user.id,
     username: user.app_metadata?.username ?? user.email ?? user.id,
     role,
     active,
+    mustChangePassword,
   };
 }
 
@@ -179,8 +183,14 @@ export function createSupabaseAuthBackend(): AuthServiceBackend {
           return { ok: false, error: 'Inloggningen kunde inte slutföras.' };
         }
 
-        const user = mapUser(sess.session.user);
+        let user = mapUser(sess.session.user);
         if (!user) return { ok: false, error: 'Inloggningen kunde inte slutföras.' };
+        // Servern svarar auktoritativt om lösenordsbytet är kvar — metadata i
+        // sessionen kan släpa efter. Flaggan styr vilken sida som visas.
+        const mustChange = (data as { user?: { mustChangePassword?: boolean } } | null)
+          ?.user?.mustChangePassword;
+        if (mustChange === true) user = { ...user, mustChangePassword: true };
+        if (mustChange === false) user = { ...user, mustChangePassword: false };
         if (!user.active) {
           await sup.auth.signOut();
           return {
@@ -227,40 +237,88 @@ export function createSupabaseAuthBackend(): AuthServiceBackend {
       return mapUser(user);
     },
 
+    async suggestUsername(
+      firstName: string,
+      lastName: string,
+    ): Promise<SuggestUsernameResult> {
+      try {
+        const sup = getOrCreateSupabaseClient();
+        const { data, error } = await sup.functions.invoke('admin-users', {
+          body: { action: 'suggest-username', firstName, lastName },
+        });
+        if (error) {
+          const f = await mapFunctionsError(error);
+          return { ok: false, error: f.error };
+        }
+        const username = String(
+          (data as { username?: string } | null)?.username ?? '',
+        ).toLowerCase();
+        if (!username) return { ok: true, username: '' };
+        return { ok: true, username };
+      } catch (err) {
+        const f = await mapFunctionsError(err);
+        return { ok: false, error: f.error };
+      }
+    },
+
     async createAccount(data: {
-      username: string;
-      password: string;
+      firstName: string;
+      lastName: string;
       role: VäxverketUser['role'];
+      password?: string;
     }): Promise<CreateAccountResult> {
       try {
         const sup = getOrCreateSupabaseClient();
-        const username = data.username.trim().toLowerCase();
+        const firstName = data.firstName.trim();
+        const lastName = data.lastName.trim();
 
-        if (!USERNAME_RE.test(username)) {
-          return {
-            ok: false,
-            error:
-              'Användarnamnet är ogiltigt. Använd 3–32 tecken: små bokstäver, siffror, punkt, bindestreck eller understreck.',
-          };
+        if (!firstName && !lastName) {
+          return { ok: false, error: 'Ange förnamn och efternamn.' };
         }
-        if (!data.password || data.password.length < MIN_PASSWORD_LENGTH) {
+        if (data.password && data.password.length < MIN_PASSWORD_LENGTH) {
           return { ok: false, error: 'Lösenordet måste vara minst 8 tecken.' };
         }
         if (!ALLOWED_ROLES.includes(data.role)) {
           return { ok: false, error: 'Ogiltig roll.' };
         }
 
-        const { error } = await sup.functions.invoke('admin-users', {
+        // Användarnamnet genereras och reserveras serversidigt (e+3+2+löpnummer).
+        const { data: res, error } = await sup.functions.invoke('admin-users', {
           body: {
             action: 'create',
-            username,
-            password: data.password,
+            firstName,
+            lastName,
             role: data.role,
+            password: data.password,
           },
         });
-        if (error) return await mapFunctionsError(error);
+        if (error) {
+          const f = await mapFunctionsError(error);
+          return { ok: false, error: f.error };
+        }
+
+        const username = String(
+          (res as { username?: string } | null)?.username ?? '',
+        ).toLowerCase();
+        if (!username) {
+          return { ok: false, error: 'Kontot skapades men användarnamnet kunde inte läsas.' };
+        }
 
         return { ok: true, username, role: data.role };
+      } catch (err) {
+        const f = await mapFunctionsError(err);
+        return { ok: false, error: f.error };
+      }
+    },
+
+    async completePasswordChange(): Promise<OperationResult> {
+      try {
+        const sup = getOrCreateSupabaseClient();
+        const { error } = await sup.functions.invoke('admin-users', {
+          body: { action: 'password-changed' },
+        });
+        if (error) return await mapFunctionsError(error);
+        return { ok: true };
       } catch (err) {
         return await mapFunctionsError(err);
       }
@@ -325,7 +383,11 @@ export function createSupabaseAuthBackend(): AuthServiceBackend {
         if (!data.user) {
           return { ok: false, error: 'Lösenordet kunde inte uppdateras.' };
         }
-        return { ok: true, user: mapUser(data.user)! };
+        const mapped = mapUser(data.user);
+        if (!mapped) {
+          return { ok: false, error: 'Lösenordet kunde inte uppdateras.' };
+        }
+        return { ok: true, user: mapped };
       } catch {
         return { ok: false, error: 'Lösenordet kunde inte uppdateras.' };
       }

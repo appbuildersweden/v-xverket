@@ -13,6 +13,7 @@ import {
   CreateAccountResult,
   AccountsResult,
   OperationResult,
+  SuggestUsernameResult,
 } from './auth';
 import { createAuthBackend } from './auth';
 import { getOrCreateSupabaseClient } from './auth-supabase';
@@ -28,11 +29,14 @@ export interface AuthContextValue {
   login: (username: string, password: string) => Promise<LoginResult>;
   /** Logga ut och rensa sessionen */
   logout: () => Promise<void>;
+  /** Föreslå ledigt användarnamn utifrån namn (endast administratörer) */
+  suggestUsername: (firstName: string, lastName: string) => Promise<SuggestUsernameResult>;
   /** Skapa konto (endast administratörer) */
   createAccount: (data: {
-    username: string;
-    password: string;
+    firstName: string;
+    lastName: string;
     role: VäxverketUser['role'];
+    password?: string;
   }) => Promise<CreateAccountResult>;
   /** Lista konton (endast administratörer) */
   listAccounts: () => Promise<AccountsResult>;
@@ -133,11 +137,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const suggestUsername = useCallback(
+    async (firstName: string, lastName: string): Promise<SuggestUsernameResult> => {
+      return createAuthBackend().suggestUsername(firstName, lastName);
+    },
+    [],
+  );
+
   const createAccount = useCallback(
     async (data: {
-      username: string;
-      password: string;
+      firstName: string;
+      lastName: string;
       role: VäxverketUser['role'];
+      password?: string;
     }): Promise<CreateAccountResult> => {
       return createAuthBackend().createAccount(data);
     },
@@ -155,9 +167,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [],
   );
 
+  // Lösenordsbyte i två steg:
+  //   1. Supabase Auth sparar det nya lösenordet (krypterat/saltat).
+  //   2. Servern nollar must_change_password så att spärren släpper.
+  // Först därefter uppdateras sessionen — annars skulle appen tro att bytet
+  // är kvar och visa lösenordssidan igen.
   const changePassword = useCallback(
     async (newPassword: string): Promise<LoginResult> => {
-      return createAuthBackend().changePassword('', newPassword);
+      const backend = createAuthBackend();
+      const result = await backend.changePassword('', newPassword);
+      if (!result.ok) return result;
+
+      const cleared = await backend.completePasswordChange();
+      if (!cleared.ok) return { ok: false, error: cleared.error };
+
+      try {
+        const sup = getOrCreateSupabaseClient();
+        await sup.auth.refreshSession();
+      } catch {
+        // Sessionen förnyas automatiskt av supabase-js ändå.
+      }
+
+      try {
+        const s = await backend.getSession();
+        setSession(s);
+      } catch {
+        setSession({
+          exists: true,
+          user: { ...result.user, mustChangePassword: false },
+        });
+      }
+
+      return { ok: true, user: { ...result.user, mustChangePassword: false } };
     },
     [],
   );
@@ -169,12 +210,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user: session?.user ?? null,
       login,
       logout,
+      suggestUsername,
       createAccount,
       listAccounts,
       setAccountActive,
       changePassword,
     }),
-    [loading, session, login, logout, createAccount, listAccounts, setAccountActive, changePassword],
+    [
+      loading,
+      session,
+      login,
+      logout,
+      suggestUsername,
+      createAccount,
+      listAccounts,
+      setAccountActive,
+      changePassword,
+    ],
   );
 
   if (loading) {
