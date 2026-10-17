@@ -1,13 +1,13 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Elda",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "identifier": "com.vaxverket.app",
   "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "frontendDist": "../src-new/dist",
+    "devUrl": "http://localhost:5174",
+    "beforeDevCommand": "npm --prefix src-new run dev",
+    "beforeBuildCommand": "npm --prefix src-new run build"
   },
   "app": {
     "windows": [

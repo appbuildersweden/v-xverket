@@ -5,6 +5,7 @@ import { Router, useNavigate } from './router';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { PageHeader } from './components/PageHeader';
+import { UpdateBanner } from './components/UpdateBanner';
 import { Login } from './pages/Login';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { Profil } from './pages/Profil';
@@ -233,6 +234,9 @@ function AppContent() {
           {renderContent()}
         </div>
       </div>
+      {/* Kontrollerar nya versioner vid start och var sjätte timme. Rutan finns
+          bara i den installerade appen; i webbläsaren gör den ingenting. */}
+      <UpdateBanner />
     </div>
   );
 }

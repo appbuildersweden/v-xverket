@@ -14,6 +14,7 @@ import {
   User,
 } from '@supabase/supabase-js';
 import {
+  AccountType,
   AccountsResult,
   AuthAccount,
   AuthServiceBackend,
@@ -588,6 +589,19 @@ export function createSupabaseAuthBackend(): AuthServiceBackend {
         const sup = getOrCreateSupabaseClient();
         const { error } = await sup.functions.invoke('admin-users', {
           body: { action: 'set-role', userId, role },
+        });
+        if (error) return await mapFunctionsError(error);
+        return { ok: true };
+      } catch (err) {
+        return await mapFunctionsError(err);
+      }
+    },
+
+    async setAccountType(userId: string, accountType: AccountType): Promise<OperationResult> {
+      try {
+        const sup = getOrCreateSupabaseClient();
+        const { error } = await sup.functions.invoke('admin-users', {
+          body: { action: 'set-account-type', userId, accountType },
         });
         if (error) return await mapFunctionsError(error);
         return { ok: true };

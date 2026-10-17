@@ -217,6 +217,12 @@ export interface AuthServiceBackend {
   setAccountRole(userId: string, role: Role): Promise<OperationResult>;
 
   /**
+   * Ändra kontotyp för ett elevkonto: skolelev eller privat elev. Privat elev
+   * får ingen klassåtkomst och kräver därför att eleven inte är klassmedlem.
+   */
+  setAccountType(userId: string, accountType: AccountType): Promise<OperationResult>;
+
+  /**
    * Skapa ett nytt tillfälligt lösenord. Det returneras en gång och kräver byte
    * vid nästa inloggning.
    */

@@ -47,6 +47,7 @@ interface Options {
   accounts?: AccountsResult;
   createResult?: CreateAccountResult;
   resetResult?: ResetPasswordResult;
+  typeResult?: { ok: true } | { ok: false; error: string };
 }
 
 type MockBackend = AuthServiceBackend & {
@@ -55,6 +56,7 @@ type MockBackend = AuthServiceBackend & {
   setAccountActive: ReturnType<typeof vi.fn>;
   updateAccountProfile: ReturnType<typeof vi.fn>;
   setAccountRole: ReturnType<typeof vi.fn>;
+  setAccountType: ReturnType<typeof vi.fn>;
   resetAccountPassword: ReturnType<typeof vi.fn>;
 };
 
@@ -75,6 +77,9 @@ function makeBackend(options: Options = {}): MockBackend {
     setAccountActive: vi.fn(async () => ({ ok: true as const })),
     updateAccountProfile: vi.fn(async () => ({ ok: true as const })),
     setAccountRole: vi.fn(async () => ({ ok: true as const })),
+    setAccountType: vi.fn(
+      async () => options.typeResult ?? { ok: true as const },
+    ),
     resetAccountPassword: vi.fn(
       async () =>
         options.resetResult ?? {
@@ -354,6 +359,45 @@ describe('roller och behörigheter', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Byt roll$/i }));
 
     await waitFor(() => expect(backend.setAccountRole).toHaveBeenCalledWith('2', 'lärare'));
+  });
+
+  it('gör ett elevkonto till privat elev via den skyddade åtgärden', async () => {
+    const backend = makeBackend();
+    await renderAdmin('roller');
+    await screen.findByRole('table');
+
+    fireEvent.change(await screen.findByLabelText('Välj elevkonto'), {
+      target: { value: '2' },
+    });
+    fireEvent.change(screen.getByLabelText('Välj kontotyp'), {
+      target: { value: 'privat' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^Spara kontotyp$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Spara kontotyp$/i }));
+
+    await waitFor(() => expect(backend.setAccountType).toHaveBeenCalledWith('2', 'privat'));
+  });
+
+  it('visar serverns vägande när eleven är klassmedlem', async () => {
+    const backend = makeBackend({
+      typeResult: {
+        ok: false,
+        error: 'Eleven är med i en klass. Ta bort eleven från klassen först, annars finns klassåtkomsten kvar.',
+      },
+    });
+    await renderAdmin('roller');
+    await screen.findByRole('table');
+
+    fireEvent.change(await screen.findByLabelText('Välj elevkonto'), {
+      target: { value: '2' },
+    });
+    fireEvent.change(screen.getByLabelText('Välj kontotyp'), { target: { value: 'privat' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Spara kontotyp$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Spara kontotyp$/i }));
+
+    const error = await screen.findByTestId('account-type-error');
+    expect(error.textContent).toMatch(/med i en klass/);
+    expect(backend.setAccountType).toHaveBeenCalled();
   });
 });
 

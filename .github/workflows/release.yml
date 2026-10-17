@@ -63,7 +63,12 @@ jobs:
           workspaces: src-tauri
 
       - name: Installera node-beroenden
-        run: npm ci
+        # Appen som paketeras är den nya appen i src-new (den har
+        # privatelevpanelen). Båda beroendeträden installeras: rotappen behövs
+        # för Tauri-CLI:t, src-new för själva gränssnittet.
+        run: |
+          npm ci
+          npm ci --prefix src-new
 
       - name: Kontrollera att Supabase-konfigurationen finns
         shell: bash
@@ -113,7 +118,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
+        run: npm --prefix src-new run build
 
       - name: Kontrollera att appbygget fick Supabase-konfigurationen
         # Körs efter bygget, i samma jobb, och stoppar körningen om adressen
@@ -125,8 +130,8 @@ jobs:
         run: |
           vard="${VITE_SUPABASE_URL#https://}"
           vard="${vard%%/*}"
-          if ! grep -rqF "$vard" dist/assets; then
-            echo "::error::Supabase-adressen saknas i dist/assets – appen skulle inte kunna logga in."
+          if ! grep -rqF "$vard" src-new/dist/assets; then
+            echo "::error::Supabase-adressen saknas i src-new/dist/assets – appen skulle inte kunna logga in."
             exit 1
           fi
           echo "✓ Supabase-adressen finns i det byggda gränssnittet"

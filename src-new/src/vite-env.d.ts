@@ -8,3 +8,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Uppdateringens adress, inläst från src-tauri/tauri.conf.json vid bygget. */
+declare const __ELDA_UPDATE_ENDPOINT__: string;

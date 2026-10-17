@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  AccountType,
   AccountsResult,
   AuthSession,
   CreateAccountResult,
@@ -70,6 +71,8 @@ export interface AuthContextValue {
   ) => Promise<OperationResult>;
   /** Byt roll på ett konto (endast administratörer, aldrig sitt eget) */
   setAccountRole: (userId: string, role: Role) => Promise<OperationResult>;
+  /** Ändra kontotyp för ett elevkonto (endast administratörer) */
+  setAccountType: (userId: string, accountType: AccountType) => Promise<OperationResult>;
   /** Nytt tillfälligt lösenord, visas en gång (endast administratörer) */
   resetAccountPassword: (userId: string) => Promise<ResetPasswordResult>;
   /** Byt lösenord för den inloggade användaren */
@@ -245,6 +248,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [],
   );
 
+  const setAccountType = useCallback(
+    async (userId: string, accountType: AccountType): Promise<OperationResult> => {
+      return createAuthBackend().setAccountType(userId, accountType);
+    },
+    [],
+  );
+
   const resetAccountPassword = useCallback(
     async (userId: string): Promise<ResetPasswordResult> => {
       return createAuthBackend().resetAccountPassword(userId);
@@ -306,6 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setAccountActive,
       updateAccountProfile,
       setAccountRole,
+      setAccountType,
       resetAccountPassword,
       changePassword,
     }),
@@ -321,6 +332,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setAccountActive,
       updateAccountProfile,
       setAccountRole,
+      setAccountType,
       resetAccountPassword,
       changePassword,
     ],

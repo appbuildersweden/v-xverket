@@ -672,6 +672,75 @@ Deno.serve(async (req) => {
   // ------------------------------------------------------------
   // Begränsa / häv begränsning (t.ex. efter granskning av en ansökan)
   // ------------------------------------------------------------
+  // ------------------------------------------------------------
+  // Kontotyp för elever: skolelev eller privat elev
+  // ------------------------------------------------------------
+  if (body.action === 'set-account-type') {
+    const userId = body.userId ?? '';
+    const accountType = body.accountType === 'privat' ? 'privat' : 'skola';
+    if (!UUID_RE.test(userId)) return json({ error: 'Ogiltigt användar-ID.' }, 400);
+
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('id, username, role, account_type')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!profile) return json({ error: 'Kontot hittades inte.' }, 404);
+    if (profile.role !== 'elev') {
+      return json({ error: 'Kontotypen gäller bara elevkonton.' }, 400);
+    }
+
+    // Ett privat konto får inte vara med i en klass: medlemskapet ger
+    // klasslista, klasschatt och kamrater. Kontrollera före ändringen så att
+    // ingen data tas bort i tysthet.
+    if (accountType === 'privat') {
+      const { count } = await admin
+        .from('class_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      if ((count ?? 0) > 0) {
+        return json(
+          {
+            error:
+              'Eleven är med i en klass. Ta bort eleven från klassen först, annars finns klassåtkomsten kvar.',
+          },
+          409,
+        );
+      }
+    }
+
+    const { error: updateErr } = await admin
+      .from('profiles')
+      .update({ account_type: accountType })
+      .eq('id', userId);
+    if (updateErr) return json({ error: 'Kunde inte spara kontotypen.' }, 500);
+
+    // Sessionen läser kontotypen från profilen vid inloggning, men metadata
+    // hålls i synk så att inget gammalt värde ligger kvar i ett token.
+    try {
+      const { data: userData } = await admin.auth.admin.getUserById(userId);
+      await admin.auth.admin.updateUserById(userId, {
+        app_metadata: {
+          ...(userData?.user?.app_metadata ?? {}),
+          username: profile.username,
+          role: profile.role,
+          account_type: accountType,
+        },
+      });
+    } catch {
+      /* profilen styr behörigheten — fortsätt ändå */
+    }
+
+    await admin.rpc('log_audit', {
+      p_action: 'account.account_type_changed',
+      p_subject_type: 'user',
+      p_subject_id: userId,
+      p_details: { from: profile.account_type ?? 'skola', to: accountType },
+    });
+
+    return json({ ok: true, accountType });
+  }
+
   if (body.action === 'set-limited') {
     const userId = body.userId ?? '';
     const limited = body.limited === true;

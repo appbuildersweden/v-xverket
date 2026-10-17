@@ -3,6 +3,7 @@ import { AlertCircle, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '../../lib/AuthContext';
 import {
   ASSIGNABLE_ROLES,
+  AccountType,
   AuthAccount,
   ROLE_PERMISSIONS,
   Role,
@@ -50,7 +51,7 @@ const ROLE_DESCRIPTIONS: Readonly<Record<Role, string>> = {
  * administratören och loggar ändringen.
  */
 export const AdminRolesPage: React.FC<{ onNavigate?: (pageId: string) => void }> = () => {
-  const { user, listAccounts, setAccountRole } = useAuth();
+  const { user, listAccounts, setAccountRole, setAccountType } = useAuth();
   const [accounts, setAccounts] = useState<AuthAccount[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,11 @@ export const AdminRolesPage: React.FC<{ onNavigate?: (pageId: string) => void }>
   const [targetId, setTargetId] = useState('');
   const [newRole, setNewRole] = useState<Role>('elev');
   const [busy, setBusy] = useState(false);
+  const [typeTargetId, setTypeTargetId] = useState('');
+  const [newType, setNewType] = useState<AccountType>('skola');
+  const [typeBusy, setTypeBusy] = useState(false);
+  const [typeError, setTypeError] = useState<string | null>(null);
+  const [typeNote, setTypeNote] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,6 +110,34 @@ export const AdminRolesPage: React.FC<{ onNavigate?: (pageId: string) => void }>
       `${target.username} är nu ${roleLabel(newRole).toLowerCase()}. Ändringen finns i granskningsloggen.`,
     );
     setTargetId('');
+    await load();
+  };
+
+  const students = useMemo(() => (accounts ?? []).filter((a) => a.role === 'elev'), [accounts]);
+  const typeTarget = students.find((a) => a.id === typeTargetId) ?? null;
+
+  const changeAccountType = async () => {
+    if (!typeTarget) {
+      setTypeError('Välj ett elevkonto först.');
+      return;
+    }
+    if ((typeTarget.accountType ?? 'skola') === newType) {
+      setTypeError('Kontot har redan den kontotypen.');
+      return;
+    }
+    setTypeBusy(true);
+    setTypeError(null);
+    setTypeNote(null);
+    const result = await setAccountType(typeTarget.id, newType);
+    setTypeBusy(false);
+    if (!result.ok) {
+      setTypeError(result.error);
+      return;
+    }
+    setTypeNote(
+      `${typeTarget.username} är nu ${newType === 'privat' ? 'privat elev' : 'skolelev'}. Ändringen finns i granskningsloggen.`,
+    );
+    setTypeTargetId('');
     await load();
   };
 
@@ -266,6 +300,88 @@ export const AdminRolesPage: React.FC<{ onNavigate?: (pageId: string) => void }>
                 }
                 busy={busy}
                 onConfirm={() => void changeRole()}
+                className="btn btn-primary"
+              />
+            </div>
+          </>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Kontotyp för elev"
+        subtitle="Skolelev har klass; privat elev har en egen panel utan klass, chatt eller kamrater"
+      >
+        <p className="card-sub">
+          En privat elev pluggar på egen hand: egen planering, egna uppgifter,
+          dokument, flashcards och framsteg. Klassen, klasschatten och
+          lärarschemat är stängda både i menyn och i backend. Ett konto som
+          redan är klassmedlem måste tas ur klassen först.
+        </p>
+
+        {typeError && (
+          <p className="field-hint field-hint-error" role="alert" data-testid="account-type-error">
+            {typeError}
+          </p>
+        )}
+        {typeNote && <p className="field-hint" role="status">{typeNote}</p>}
+
+        {students.length === 0 ? (
+          <EmptyState
+            title="Inga elevkonton"
+            description="Det finns inga elevkonton att ändra kontotyp på."
+          />
+        ) : (
+          <>
+            <div className="field-row">
+              <label className="field">
+                <span>Elevkonto</span>
+                <select
+                  className="input"
+                  aria-label="Välj elevkonto"
+                  value={typeTargetId}
+                  disabled={typeBusy}
+                  onChange={(e) => {
+                    setTypeTargetId(e.target.value);
+                    const next = students.find((a) => a.id === e.target.value);
+                    if (next) setNewType(next.accountType === 'privat' ? 'privat' : 'skola');
+                  }}
+                >
+                  <option value="">Välj elevkonto</option>
+                  {students.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.username}
+                      {displayName(account) ? ` — ${displayName(account)}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Kontotyp</span>
+                <select
+                  className="input"
+                  aria-label="Välj kontotyp"
+                  value={newType}
+                  disabled={typeBusy}
+                  onChange={(e) => setNewType(e.target.value as AccountType)}
+                >
+                  <option value="skola">Skolelev</option>
+                  <option value="privat">Privat elev</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <ConfirmButton
+                label="Spara kontotyp"
+                confirmLabel="Spara kontotyp"
+                question={
+                  typeTarget
+                    ? `Gör ${typeTarget.username} till ${newType === 'privat' ? 'privat elev' : 'skolelev'}?`
+                    : 'Spara kontotyp?'
+                }
+                busy={typeBusy}
+                onConfirm={() => void changeAccountType()}
                 className="btn btn-primary"
               />
             </div>

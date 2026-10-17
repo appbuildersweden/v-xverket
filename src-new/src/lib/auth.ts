@@ -1,4 +1,5 @@
 import {
+  AccountType,
   AccountsResult,
   AuthAccount,
   AuthServiceBackend,
@@ -91,6 +92,12 @@ export function createAuthBackend(): AuthServiceBackend {
         return { ok: false, error: message };
       },
       async setAccountRole(_userId: string, _role: Role): Promise<OperationResult> {
+        return { ok: false, error: message };
+      },
+      async setAccountType(
+        _userId: string,
+        _accountType: AccountType,
+      ): Promise<OperationResult> {
         return { ok: false, error: message };
       },
       async resetAccountPassword(
