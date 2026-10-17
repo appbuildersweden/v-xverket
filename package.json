@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm --prefix src-new run build && node scripts/kopiera-webbappen.mjs",
     "preview": "vite preview",
     "tauri": "tauri"
   },

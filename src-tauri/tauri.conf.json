@@ -4,10 +4,10 @@
   "version": "0.2.4",
   "identifier": "com.vaxverket.app",
   "build": {
-    "frontendDist": "../src-new/dist",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:5174",
     "beforeDevCommand": "npm --prefix src-new run dev",
-    "beforeBuildCommand": "npm --prefix src-new run build"
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "windows": [

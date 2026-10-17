@@ -119,7 +119,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-        run: npm --prefix src-new run build
+        run: npm run build
 
       - name: Kontrollera att appbygget fick Supabase-konfigurationen
         # Körs efter bygget, i samma jobb, och stoppar körningen om adressen
@@ -131,8 +131,8 @@ jobs:
         run: |
           vard="${VITE_SUPABASE_URL#https://}"
           vard="${vard%%/*}"
-          if ! grep -rqF "$vard" src-new/dist/assets; then
-            echo "::error::Supabase-adressen saknas i src-new/dist/assets – appen skulle inte kunna logga in."
+          if ! grep -rqF "$vard" dist/assets; then
+            echo "::error::Supabase-adressen saknas i dist/assets – appen skulle inte kunna logga in."
             exit 1
           fi
           echo "✓ Supabase-adressen finns i det byggda gränssnittet"
