@@ -2,6 +2,20 @@
 
 Kort ögonblicksbild för den nya appen (`src-new/`). Uppdaterad 2026-10-17.
 
+## Den nya appen är nu den som installeras (0.2.4)
+
+- `src-tauri/tauri.conf.json` pekar på `../dist`, och rotens `npm run build`
+  bygger `src-new` och kopierar hit resultatet (`scripts/kopiera-webbappen.mjs`).
+  Den installerade appen innehåller alltså privatelevpanelen.
+- Uppdateringsrutan finns även i den nya appen (`src-new/src/lib/update.ts`,
+  `src-new/src/components/UpdateBanner.tsx`).
+- Admin kan sätta kontotyp (`skola`/`privat`) på ett elevkonto via
+  `admin-users` (`set-account-type`) och rutan *Kontotyp för elev* under
+  *Roller*. Ett konto som är klassmedlem nekas (409) tills det lämnat klassen.
+- Privat elev är fortfarande `role = 'elev'` + `account_type = 'privat'`:
+  rollen styr panel och RLS, kontotypen styr klasspärren. Båda sätts på
+  servern.
+
 ## Privatelevpanelen (2026-10-17)
 
 En elev med ett privat konto har nu en egen panel (`#/privat/...`) utan klass,
