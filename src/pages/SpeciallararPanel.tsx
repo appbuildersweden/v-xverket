@@ -17,6 +17,8 @@ import type { UnlockCelebration } from '../lib/rewards';
 
 interface PageProps {
   pageId: string;
+  /** Panelen är gemensam för lärare och speciallärare — hemsidan anpassas. */
+  role?: 'lärare' | 'speciallärare';
 }
 
 // ----------------------------------------------------------------
@@ -43,7 +45,8 @@ function useCelebration(): [UnlockCelebration | null, (u: UnlockCelebration[]) =
   return [current, show, () => setCurrent(null)];
 }
 
-export const SpeciallararPanel: React.FC<PageProps> = ({ pageId }) => {
+export const SpeciallararPanel: React.FC<PageProps> = ({ pageId, role = 'speciallärare' }) => {
+  const isTeacher = role === 'lärare';
   // Delad belöningsruta för upplåsningar som sker i planeringspanelen.
   const [celebrationReward, showCelebration, closeCelebration] = useCelebration();
   const celebration = {
@@ -57,8 +60,12 @@ export const SpeciallararPanel: React.FC<PageProps> = ({ pageId }) => {
       return (
         <div>
           <div className="banner">
-            <h2>Specialpedagogiskt arbete</h2>
-            <p>Följ upp elevers framsteg, ge stöd och samarbeta med lärare och vårdnadshavare.</p>
+            <h2>{isTeacher ? 'Din undervisning' : 'Specialpedagogiskt arbete'}</h2>
+            <p>
+              {isTeacher
+                ? 'Planera, dela material och följ upp dina klasser. Menyn visar de funktioner du valde vid registreringen — du kan ändra dem under Profil.'
+                : 'Följ upp elevers framsteg, ge stöd och samarbeta med lärare och vårdnadshavare.'}
+            </p>
           </div>
 
           <div className="grid-3">

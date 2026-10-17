@@ -7,28 +7,25 @@
  *   någonsin i klienten).
  * - Kopierar statiska filer till dist/, som är det enda som publiceras.
  */
-import { copyFile, cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  buildUpdateManifest,
+  findUpdaterArtifact,
+} from './update-manifest.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = join(HERE, 'dist');
 const REPO = process.env.ELDA_REPO || 'appbuildersweden/v-xverket';
 const API = `https://api.github.com/repos/${REPO}/releases?per_page=30`;
 
-/**
- * Automatiska uppdateringar räknas som aktiva först när Tauri Updater faktiskt
- * är konfigurerad i appen – då slipper sidan beskriva en funktion som inte finns.
- */
-async function updaterEnabled() {
-  try {
-    const raw = await readFile(join(HERE, '..', 'src-tauri', 'tauri.conf.json'), 'utf8');
-    const cfg = JSON.parse(raw);
-    const updater = cfg?.plugins?.updater;
-    return Boolean(updater && Array.isArray(updater.endpoints) && updater.endpoints.length);
-  } catch {
-    return false;
-  }
+/** Appens version står i Tauri-konfigurationen och är den som byggs in. */
+async function appVersion() {
+  const raw = await readFile(join(HERE, '..', 'src-tauri', 'tauri.conf.json'), 'utf8');
+  const version = JSON.parse(raw)?.version;
+  if (!version) throw new Error('Version saknas i src-tauri/tauri.conf.json');
+  return version;
 }
 
 /** Delar upp release-anteckningar i rubrik + punktlistor. */
@@ -70,7 +67,6 @@ async function fetchReleases() {
     throw new Error(`GitHub svarade ${res.status} vid hämtning av releaser`);
   }
   const rows = await res.json();
-  const downloadBase = process.env.ELDA_DOWNLOAD_BASE || '';
 
   return rows.map((r) => {
     const { summary, sections } = parseNotes(r.body);
@@ -83,70 +79,116 @@ async function fetchReleases() {
       draft: Boolean(r.draft),
       summary,
       sections,
+      // Endast metadata om filerna publiceras. Själva nedladdningen går genom
+      // den skyddade funktionen, så ingen publik filadress hamnar i sidan.
       assets: (r.assets || [])
-        .filter((a) => !a.name.endsWith('.json')) // updater-metadata, inte nedladdning
+        .filter((a) => !a.name.endsWith('.json'))
         .map((a) => ({
           name: a.name,
           size: a.size,
           os: a.name.includes('x64') || a.name.includes('setup') ? 'Windows' : '',
-          // ELDA_DOWNLOAD_BASE låter dig publicera filerna öppet till exempelvis
-          // Cloudflare i stället för det privata repot.
-          url: downloadBase
-            ? `${downloadBase.replace(/\/$/, '')}/${encodeURIComponent(a.name)}`
-            : a.browser_download_url,
         })),
     };
   });
 }
 
-/** Väljer ut installern till en release (exe före msi). */
-function pickInstallerAsset(assets) {
-  return (
-    assets.find((a) => /setup|installer/i.test(a.name) && /\.exe$/i.test(a.name)) ||
-    assets.find((a) => /\.exe$/i.test(a.name)) ||
-    assets.find((a) => /\.msi$/i.test(a.name)) ||
-    null
-  );
+/**
+ * Den publika Supabase-konfigurationen för registreringssidan.
+ *
+ * Anon-nyckeln är publik och ligger redan i den byggda appen — den ger ingen
+ * behörighet i sig (RLS och serverfunktionerna avgör). Service role-nyckeln
+ * får aldrig hamna här, och inga värden skrivs ut i loggen.
+ *
+ * Värdena tas från byggmiljön (samma Actions-variabler som appbygget använder)
+ * eller från repots .env, så att inga nycklar behöver kopieras till en ny fil.
+ */
+async function supabaseConfig() {
+  const url = (process.env.VITE_SUPABASE_URL || '').trim();
+  const key = (process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  if (url && key) return { supabaseUrl: url, supabaseAnonKey: key };
+
+  let raw = '';
+  try {
+    raw = await readFile(join(HERE, '..', '.env'), 'utf8');
+  } catch {
+    return { supabaseUrl: url, supabaseAnonKey: key };
+  }
+
+  const pick = (name) => {
+    const line = raw
+      .split(/\r?\n/)
+      .find((row) => row.trim().startsWith(`${name}=`));
+    if (!line) return '';
+    return line
+      .slice(line.indexOf('=') + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+  };
+
+  return {
+    supabaseUrl: url || pick('VITE_SUPABASE_URL'),
+    supabaseAnonKey: key || pick('VITE_SUPABASE_ANON_KEY'),
+  };
 }
 
 /**
- * Skriver updater-manifest i det format som Tauri Updater förväntar sig.
+ * Publicera det signerade uppdateringspaketet och skriv update.json.
  *
- * Signaturen är innehållet i .sig-filen som publiceras tillsammans med
- * installern. Saknas signaturen publiceras inget manifest alls – appen
- * avvisar ändå en uppdatering som inte går att verifiera mot den inbäddade
- * publika nyckeln.
+ * Tauri hämtar manifestet från en fast adress (se plugins.updater.endpoints i
+ * tauri.conf.json) och laddar sedan ner filen från den adress manifestet
+ * anger. Därför måste både manifestet och filen vara publika – annars kan den
+ * installerade appen aldrig upptäcka en ny version. Signaturen i manifestet
+ * är samma .sig som releasen skapade, så innehållet kan inte bytas ut.
  */
-async function buildUpdateManifest(releases) {
-  const stable = releases.find((r) => !r.prerelease && !r.draft);
-  if (!stable) return null;
+async function writeUpdaterArtifacts(version, releases) {
+  const downloads = join(HERE, 'downloads');
+  const updatesDir = join(DIST, 'updates');
+  await rm(updatesDir, { recursive: true, force: true });
 
-  const exe = pickInstallerAsset(stable.assets || []);
-  const sig = (stable.assets || []).find(
-    (a) => exe && a.name === `${exe.name}.sig`,
-  );
-  if (!exe?.url || !sig?.url) return null;
-
-  // Signaturen läses lokalt om filen redan finns (releaseflödet lägger den i
-  // site/downloads), annars hämtas den från utgivningsadressen.
-  let signature = '';
+  let names = [];
   try {
-    signature = (await readFile(join(HERE, 'downloads', sig.name), 'utf8')).trim();
+    names = await readdir(downloads);
   } catch {
-    const res = await fetch(sig.url);
-    if (!res.ok) throw new Error(`signaturen kunde inte hämtas (${res.status})`);
-    signature = (await res.text()).trim();
+    names = [];
   }
-  if (!signature) throw new Error("signaturen var tom");
 
-  return {
-    version: String(stable.tag || stable.name).replace(/^v/i, ''),
-    notes: stable.summary || stable.name,
-    pub_date: stable.publishedAt,
-    platforms: {
-      "windows-x86_64": { signature, url: exe.url },
-    },
-  };
+  const artifact = findUpdaterArtifact(names, version);
+  if (!artifact) {
+    console.warn(
+      `! hittade inget uppdateringspaket för ${version} i site/downloads – update.json publiceras inte`,
+    );
+    return false;
+  }
+  if (!artifact.hasSignature) {
+    throw new Error(`Signatur saknas för ${artifact.file} – vägrar publicera osignerad uppdatering.`);
+  }
+
+  const source = join(downloads, artifact.file);
+  const bytes = (await stat(source)).size;
+  const signature = await readFile(join(downloads, artifact.signatureFile), 'utf8');
+  const release = releases.find(
+    (r) => r.tag === `v${version}` || r.tag === version,
+  );
+
+  const manifest = buildUpdateManifest({
+    version,
+    notes:
+      process.env.ELDA_UPDATE_NOTES ||
+      release?.summary ||
+      `Elda ${version}`,
+    signature,
+    fileName: artifact.file,
+    baseUrl: process.env.ELDA_UPDATER_BASE,
+    pubDate: release?.publishedAt,
+  });
+
+  await mkdir(updatesDir, { recursive: true });
+  await copyFile(source, join(updatesDir, artifact.file));
+  await writeFile(join(DIST, 'update.json'), JSON.stringify(manifest, null, 2) + '\n');
+  console.log(
+    `✓ update.json för ${version} – ${artifact.file} (${bytes} B) och signatur publiceras`,
+  );
+  return true;
 }
 
 async function main() {
@@ -167,53 +209,66 @@ async function main() {
     releases = [];
   }
 
+  // Uppdateringsmanifestet måste alltid finnas på den adress appen frågar
+  // efter. Det byggs från samma signerade fil som releasen publicerade, så
+  // version, adress och signatur hör ihop. Saknas filerna (t.ex. vid ett
+  // lokalt sidbygge) publiceras inget manifest – men ett gammalt manifest får
+  // aldrig ligga kvar och peka på en fil som inte finns.
+  await rm(join(DIST, 'update.json'), { force: true });
+  const updaterPublished = await writeUpdaterArtifacts(
+    await appVersion(),
+    releases.filter((r) => !r.draft),
+  );
+
   const payload = {
     repo: `https://github.com/${REPO}`,
     source: `https://github.com/${REPO}/releases`,
     fetchedAt,
-    updater: await updaterEnabled(),
-    releases: releases.filter((r) => !r.draft),
+    // Automatiska uppdateringar kräver att update.json och det signerade
+    // uppdateringspaketet är publika. Signaturen verifieras av Tauri med den
+    // publika nyckeln i appen; själva nedladdningsknappen på sidan går
+    // fortfarande genom den inloggade nedladdningsfunktionen.
+    updater: updaterPublished,
+    releases,
   };
   await writeFile(join(DIST, 'releases.json'), JSON.stringify(payload, null, 2) + '\n');
 
-  // update.json skrivs bara när en signerad release faktiskt finns. En kvarbliven
-  // fil från en tidigare körning tas bort — annars skulle appen erbjuda en
-  // uppdatering till en version vars filer inte längre publiceras.
-  const manifest = join(DIST, 'update.json');
-  try {
-    const update = await buildUpdateManifest(payload.releases);
-    if (update) {
-      await writeFile(manifest, JSON.stringify(update, null, 2) + '\n');
-      console.log(`✓ update.json skriven för v${update.version}`);
-    } else {
-      await rm(manifest, { force: true });
-      console.warn('! ingen signerad release hittades – update.json hoppades över');
-    }
-  } catch (err) {
-    await rm(manifest, { force: true });
-    console.warn(`! kunde inte skriva update.json: ${err.message}`);
-  }
-
-  for (const file of ['index.html', 'styles.css', 'app.js']) {
+  for (const file of [
+    'index.html',
+    'styles.css',
+    'app.js',
+    // Gamla direktlänkar till installationsfiler ska aldrig servera en fil.
+    '_redirects',
+    // Registreringssidan (boten) — hemsidans enda publika väg till ett konto.
+    'registrera.html',
+    'registrera.css',
+    'registrera.js',
+    'bot.js',
+  ]) {
     await copyFile(join(HERE, file), join(DIST, file));
   }
   await cp(join(HERE, 'assets'), join(DIST, 'assets'), { recursive: true });
 
-  // Nedladdningsfiler publiceras tillsammans med sidan. Det är endast
-  // byggda artefakter (installern + signatur) – aldrig appens källkod.
-  // Releaseflödet lägger filerna i site/downloads innan detta steg.
-  const downloads = join(HERE, 'downloads');
-  const distDownloads = join(DIST, 'downloads');
-  // Töm målmappen först. Annars ligger föregående versions installationsfiler
-  // kvar i dist och publiceras tillsammans med den nya versionen.
-  await rm(distDownloads, { recursive: true, force: true });
-  try {
-    await cp(downloads, distDownloads, { recursive: true });
-    const count = (await readdir(downloads)).length;
-    console.log(`✓ downloads/ kopierad (${count} filer)`);
-  } catch {
-    // Ingen mapp ännu – sidan visar då ärligt "inte tillgänglig".
+  // Registreringssidan behöver veta var servern finns. Saknas konfigurationen
+  // publiceras sidan ändå — nedladdningen och uppdateringarna ska aldrig
+  // blockeras av registreringen — men registreringssidan visar då ett tydligt
+  // besked i stället för att låtsas att den fungerar.
+  const configFile = join(DIST, 'config.json');
+  const config = await supabaseConfig();
+  if (config.supabaseUrl && config.supabaseAnonKey) {
+    await writeFile(configFile, JSON.stringify(config, null, 2) + '\n');
+    console.log('✓ config.json skriven – registreringen kan nå servern');
+  } else {
+    await rm(configFile, { force: true });
+    console.warn(
+      '! VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY saknas – registreringssidan publiceras utan serveradress och visar "inte tillgänglig".',
+    );
   }
+
+  // Installationsfilerna publiceras aldrig med sidan. De ligger i den privata
+  // Storage-bucketen och nås bara via den skyddade nedladdningsfunktionen.
+  // En gammal kopia i dist/ skulle vara en publik genväg förbi skyddet.
+  await rm(join(DIST, 'downloads'), { recursive: true, force: true });
 
   console.log(`✓ byggd till dist/ (updater=${payload.updater})`);
 }

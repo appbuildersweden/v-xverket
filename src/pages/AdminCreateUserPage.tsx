@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, User, Shield, AlertCircle, KeyRound } from 'lucide-react';
+import { Check, User, Shield, AlertCircle } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
-type Role = 'elev' | 'speciallärare' | 'admin';
+type Role = 'elev' | 'lärare' | 'speciallärare' | 'admin';
 
 const roleLabels: Record<Role, string> = {
   elev: 'Elev',
+  lärare: 'Lärare',
   speciallärare: 'Speciallärare',
   admin: 'Administratör',
 };
@@ -16,10 +17,13 @@ const TEMP_PASSWORD = 'student123';
 /**
  * Skapa konto.
  *
- * Administratören anger förnamn och efternamn — användarnamnet genereras
+ * Administratären anger förnamn och efternamn — användarnamnet genereras
  * automatiskt enligt regeln e + 3 bokstäver av förnamnet + 2 av efternamnet +
  * tvåsiffrigt löpnummer (t.ex. ejentu01). Numret väljs och reserveras
  * serversidigt, så samtidiga skapanden kan aldrig ge dubbletter.
+ *
+ * Nya konton får automatiskt det tillfälliga lösenordet student123 och måste
+ * byta det vid första inloggningen.
  */
 export const AdminCreateUserPage: React.FC = () => {
   const { createAccount, suggestUsername } = useAuth();
@@ -28,7 +32,6 @@ export const AdminCreateUserPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [usernameBusy, setUsernameBusy] = useState(false);
   const [role, setRole] = useState<Role>('elev');
-  const [password, setPassword] = useState(TEMP_PASSWORD);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ username: string; role: Role } | null>(null);
@@ -67,19 +70,21 @@ export const AdminCreateUserPage: React.FC = () => {
       setError('Ange både förnamn och efternamn.');
       return;
     }
-    if (password.length < 8) {
-      setError('Lösenordet måste vara minst 8 tecken.');
+    if (!username) {
+      setError('Användarnamnet är inte klart att användas ännu. Vänta en stund och försök igen.');
       return;
     }
 
     setLoading(true);
     setError(null);
 
+    // Startlösenordet student123 skickas alltid — det är det enda tillfälliga
+    // lösenordet och det måste bytas vid första inloggningen.
     const result = await createAccount({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       role,
-      password,
+      password: TEMP_PASSWORD,
     });
 
     setLoading(false);
@@ -96,7 +101,6 @@ export const AdminCreateUserPage: React.FC = () => {
     setFirstName('');
     setLastName('');
     setUsername('');
-    setPassword(TEMP_PASSWORD);
     setRole('elev');
     setError(null);
     seq.current += 1;
@@ -134,7 +138,7 @@ export const AdminCreateUserPage: React.FC = () => {
             <h3>Kontot skapat</h3>
             <p>
               Kontot för <strong>{success.username}</strong> ({roleLabels[success.role]})
-              är skapat. Användaren loggar in med användarnamn och lösenord.
+              är skapat.
             </p>
 
             <div className="admin-create-info">
@@ -146,18 +150,41 @@ export const AdminCreateUserPage: React.FC = () => {
                 <span className="admin-create-info-label">Roll</span>
                 <span className="admin-create-info-value">{roleLabels[success.role]}</span>
               </div>
+              <div className="admin-create-info-row">
+                <span className="admin-create-info-label">Tillfälligt lösenord</span>
+                <span className="admin-create-info-value">{TEMP_PASSWORD}</span>
+              </div>
             </div>
 
             <p className="admin-create-caveat">
-              Kontot har det tillfälliga lösenordet och användaren måste skapa ett eget
-              vid första inloggningen. Lösenordet kan inte visas igen.
+              Det tillfälliga lösenordet är <strong>{TEMP_PASSWORD}</strong>. Användaren loggar in
+              med användarnamn och detta lösenord, och måste sedan skapa ett eget lösenord vid
+              första inloggningen innan panelerna öppnas. Lösenordet kan inte visas igen efter
+              att sidan uppdateras.
             </p>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => navigator.clipboard?.writeText(success.username).catch(() => {})}
+              >
+                Kopiera användarnamn
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => navigator.clipboard?.writeText(TEMP_PASSWORD).catch(() => {})}
+              >
+                Kopiera lösenord
+              </button>
+            </div>
 
             <button
               type="button"
               className="btn btn-outline"
               onClick={reset}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 12 }}
             >
               Skapa ett nytt konto
             </button>
@@ -220,29 +247,13 @@ export const AdminCreateUserPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="field">
-              <label htmlFor="admin-password">
-                <KeyRound size={14} />
-                Tillfälligt lösenord
-              </label>
-              <input
-                id="admin-password"
-                className="input"
-                type="text"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                placeholder="Minst 8 tecken"
-                autoComplete="off"
-              />
-              <p className="field-hint-reg">
-                Standard är det tillfälliga lösenordet <strong>{TEMP_PASSWORD}</strong>.
-                Användaren måste skapa ett eget lösenord vid första inloggningen och
-                kommer inte in i panelerna innan dess.
-              </p>
+            <div className="field-hint-reg" style={{ marginTop: 4, padding: '8px 10px', background: 'var(--hover)', borderRadius: 8 }}>
+              Nya konton får automatiskt det tillfälliga lösenordet <strong>{TEMP_PASSWORD}</strong>.
+              Lösenordet visas inte här, men det visas efter att kontot skapats så att du kan
+              ge det till användaren. Användaren måste byta det vid första inloggningen.
             </div>
 
-            <div className="field">
+            <div className="field" style={{ marginTop: 14 }}>
               <label className="field-label-top">Tilldela roll</label>
               <div className="role-chooser">
                 <label className={`role-option ${role === 'elev' ? 'sel' : ''}`}>
@@ -256,6 +267,18 @@ export const AdminCreateUserPage: React.FC = () => {
                   />
                   <User size={15} />
                   <span>Elev</span>
+                </label>
+                <label className={`role-option ${role === 'lärare' ? 'sel' : ''}`}>
+                  <input
+                    type="radio"
+                    name="admin-role"
+                    value="lärare"
+                    checked={role === 'lärare'}
+                    onChange={() => setRole('lärare')}
+                    disabled={loading}
+                  />
+                  <User size={15} />
+                  <span>Lärare</span>
                 </label>
                 <label className={`role-option ${role === 'speciallärare' ? 'sel' : ''}`}>
                   <input
@@ -291,7 +314,7 @@ export const AdminCreateUserPage: React.FC = () => {
               type="submit"
               className="btn btn-primary"
               disabled={
-                loading || !firstName.trim() || !lastName.trim() || !password || !username
+                loading || !firstName.trim() || !lastName.trim() || !username
               }
               style={{ width: '100%', marginTop: 8 }}
             >

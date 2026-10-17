@@ -1,7 +1,7 @@
 {
   "name": "vaxverket",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.0",
     "appwrite": "^29.0.0",
     "docx": "^9.11.0",
     "lucide-react": "^1.57.0",

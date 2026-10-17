@@ -3,12 +3,16 @@ export interface VäxverketUser {
   id: string;
   /** Användarnamn */
   username: string;
-  /** Roll: 'admin' | 'speciallärare' | 'elev' */
-  role: 'admin' | 'speciallärare' | 'elev';
+  /** Roll: 'admin' | 'lärare' | 'speciallärare' | 'elev' */
+  role: 'admin' | 'lärare' | 'speciallärare' | 'elev';
   /** Om kontot är aktivt */
   active: boolean;
   /** Sant tills användaren har bytt sitt tillfälliga lösenord. */
   mustChangePassword?: boolean;
+  /** Lärarnas funktionsval — styr vilka menyval som visas. */
+  features?: string[];
+  /** Sant när kontot väntar på granskning. */
+  limited?: boolean;
 }
 
 export interface AuthSession {
@@ -66,6 +70,10 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, { allowedPanels: readonly P
   admin: {
     allowedPanels: ['elev', 'speciallarar', 'admin'] as const,
     defaultPanel: 'admin',
+  },
+  lärare: {
+    allowedPanels: ['speciallarar'] as const,
+    defaultPanel: 'speciallarar',
   },
   speciallärare: {
     allowedPanels: ['speciallarar'] as const,

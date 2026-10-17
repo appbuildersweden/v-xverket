@@ -42,24 +42,79 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Översätter OpenRouter-status till ett tydligt, användbart felmeddelande. */
-function statusMessage(status: number): string {
+/**
+ * Ett fel som användaren kan förstå och agera på.
+ *
+ * Skillnaden mellan "tjänsten har mycket att göra" och "gratiskvoten är slut"
+ * spelar roll: det första går över av sig självt, det andra gör att appen
+ * fortsätter att misslyckas tills kvoten fylls på. Därför får svaret både en
+ * läsbar text och en maskinläsbar kod, så att gränssnittet kan säga som det är
+ * i stället för ett allmänt fel. Koden avslöjar inga nycklar eller kontouppgifter.
+ */
+type AiErrorCode =
+  | 'ai-kvot-slut'
+  | 'ai-krediter-saknas'
+  | 'ai-modell-saknas'
+  | 'ai-otillganglig'
+  | 'ai-avvisad'
+  | 'ai-svar-saknas';
+
+interface AiError {
+  code: AiErrorCode;
+  message: string;
+  /** HTTP-status till klienten. */
+  status: number;
+}
+
+function aiError(status: number): AiError {
   if (status === 401 || status === 403) {
-    return 'AI-tjänsten avvisade anropet. Kontakta administratören.';
+    return {
+      code: 'ai-avvisad',
+      message: 'AI-tjänsten avvisade anropet. Kontakta administratören.',
+      status: 502,
+    };
   }
   if (status === 402) {
-    return 'AI-tjänsten saknar krediter. Kontakta administratören.';
+    return {
+      code: 'ai-krediter-saknas',
+      message:
+        'AI-hjälpen fungerar inte just nu: AI-tjänsten saknar krediter. Kontakta administratören i stället för att försöka igen.',
+      status: 503,
+    };
   }
   if (status === 404) {
-    return 'AI-modellen är inte tillgänglig just nu. Försök igen om en stund.';
+    return {
+      code: 'ai-modell-saknas',
+      message:
+        'AI-modellen är inte tillgänglig just nu. Det påverkar alla inloggade, så försök gärna igen senare.',
+      status: 503,
+    };
   }
   if (status === 429) {
-    return 'AI-tjänsten har mycket att göra just nu. Försök igen om en stund.';
+    return {
+      code: 'ai-kvot-slut',
+      message:
+        'AI-hjälpen kan inte svara just nu: gratiskvoten för AI-tjänsten är slut. Det går över när kvoten fylls på — du behöver inte skriva om din fråga, utan kan försöka igen senare.',
+      status: 503,
+    };
   }
   if (status >= 500 || status === 0) {
-    return 'AI-tjänsten är tillfälligt inte tillgänglig. Försök igen om en stund.';
+    return {
+      code: 'ai-otillganglig',
+      message: 'AI-tjänsten är tillfälligt inte tillgänglig. Försök igen om en stund.',
+      status: 502,
+    };
   }
-  return 'AI-tjänsten kunde inte svara. Försök igen.';
+  return {
+    code: 'ai-svar-saknas',
+    message: 'AI-tjänsten kunde inte svara. Försök igen.',
+    status: 502,
+  };
+}
+
+/** Skickar ett AI-fel till klienten med både text och kod. */
+function aiErrorResponse(error: AiError): Response {
+  return json({ error: error.message, code: error.code }, error.status);
 }
 
 // Storleksgränser — skyddar mot onödigt stora förfrågningar.
@@ -116,8 +171,26 @@ Arbetssätt:
 - Hjälp med provträning, repetition och övningsfrågor: ställ gärna egna
   övningsfrågor och rätta eleven konstruktivt.
 - Behåll samtalets sammanhang så att eleven enkelt kan ställa följdfrågor.
+- Om eleven ber om ett dokument — till exempel en sammanfattning, ett
+  övningsblad eller en egen studieplan — skapar du innehållet enligt
+  dokumentschemat nedan. Skriv dokument som hjälper eleven att lära sig.
 
 Skriv inte längre svar än vad frågan kräver.
+`,
+  lärare: `
+Du är AI-assistenten för en lärare i svensk skola.
+Du hjälper med det pedagogiska arbetet i klassrummet.
+
+Du hjälper till med:
+- Lektionsplanering, upplägg och tidsdisposition.
+- Uppgifter, arbetsblad och övningar med facit där det passar.
+- Anpassning av material efter elevers olika kunskapsnivåer.
+- Bedömningsstöd och förslag på återkoppling till elever.
+- Sammanfattning och omarbetning av material som läraren själv tar fram.
+- Föräldrainformation och korta texter till klassen.
+
+När du skapar dokument: leverera INNEHÅLLET som giltig JSON enligt schema nedan.
+Använd realistiska, praktiska förslag för svensk skola.
 `,
   speciallärare: `
 Du är AI-assistenten för en svensk speciallärare.
@@ -152,7 +225,19 @@ När du skapar dokument: leverera INNEHÅLLET som giltig JSON enligt schema neda
 `,
 };
 
-const DOC_SCHEMA = `
+// Dokumentformaten appen kan skapa. Klienten skickar docKind; saknas den
+// används Word (samma beteende som den äldre klienten som bara skickade wantDoc).
+const DOC_KINDS = ['word', 'excel', 'powerpoint'] as const;
+type DocKind = (typeof DOC_KINDS)[number];
+
+function normalizeDocKind(value: unknown): DocKind {
+  return typeof value === 'string' && (DOC_KINDS as readonly string[]).includes(value)
+    ? (value as DocKind)
+    : 'word';
+}
+
+const DOC_SCHEMAS: Record<DocKind, string> = {
+  word: `
 När användaren ber dig skapa ett Word-dokument svarar du INTE med fritext utan
 endast med ett giltigt JSON-objekt (utan kodblock, utan annan text) i detta schema:
 
@@ -172,18 +257,78 @@ Regler:
 - Använd 2–6 sektioner. Lämna arrayer tomma om de inte behövs.
 - Skriv allt innehåll på svenska.
 - Texten ska vara färdig att använda, inte platshållare.
-`;
+`,
+  excel: `
+När användaren ber dig skapa en Excel-arbetsbok svarar du INTE med fritext utan
+endast med ett giltigt JSON-objekt (utan kodblock, utan annan text) i detta schema:
+
+{
+  "title": "Arbetsbokens namn",
+  "sheets": [
+    {
+      "name": "Bladets namn (max 31 tecken)",
+      "columns": ["Kolumnrubrik 1", "Kolumnrubrik 2"],
+      "rows": [["Text", 12], ["Text", 34]]
+    }
+  ]
+}
+
+Regler:
+- Använd 1–5 blad. Varje blad har 1–20 kolumner och högst 200 rader.
+- Varje rad måste ha exakt lika många värden som "columns".
+- Tal skrivs som JSON-nummer (12), inte som text ("12").
+- Kolumnrubriker och innehåll skrivs på svenska och ska vara färdiga att använda.
+`,
+  powerpoint: `
+När användaren ber dig skapa en PowerPoint-presentation svarar du INTE med
+fritext utan endast med ett giltigt JSON-objekt (utan kodblock, utan annan text)
+i detta schema:
+
+{
+  "title": "Presentationens titel",
+  "subtitle": "Underrubrik på titelbladet (valfritt)",
+  "slides": [
+    {
+      "title": "Rubrik på bilden",
+      "bullets": ["Punkt 1", "Punkt 2"],
+      "notes": "Anteckning till talaren (valfritt)"
+    }
+  ]
+}
+
+Regler:
+- Använd 3–12 bilder. Högst 8 punkter per bild och högst 200 tecken per punkt.
+- Skriv korta punkter, inte hela stycken.
+- Skriv allt innehåll på svenska och gör det färdigt att använda direkt.
+`,
+};
 
 // Skickas som sista användarmeddelandet när ett dokument bestäms. Modellen
 // måste hållas till JSON-schemat — annan kan den återge konversationstext
-// som JSON utan sections, och dokumentet blir ogiltigt.
-const DOC_REMINDER = [
-  'Skapa dokumentet nu.',
-  'Svara ENDAST med ett JSON-objekt utan kodblock och utan annan text.',
-  'Objektet måste ha exakt nycklarna "title" (string), "subtitle" (string) och "sections" (array).',
-  '"sections" är obligatorisk och ska innehålla 2–6 objekt med "heading", "paragraphs" och "bullets".',
-  'Skriv allt innehåll på svenska och gör det färdigt att använda direkt.',
-].join('\n');
+// som JSON utan obligatoriska delar, och dokumentet blir ogiltigt.
+const DOC_REMINDERS: Record<DocKind, string> = {
+  word: [
+    'Skapa dokumentet nu.',
+    'Svara ENDAST med ett JSON-objekt utan kodblock och utan annan text.',
+    'Objektet måste ha exakt nycklarna "title" (string), "subtitle" (string) och "sections" (array).',
+    '"sections" är obligatorisk och ska innehålla 2–6 objekt med "heading", "paragraphs" och "bullets".',
+    'Skriv allt innehåll på svenska och gör det färdigt att använda direkt.',
+  ].join('\n'),
+  excel: [
+    'Skapa arbetsboken nu.',
+    'Svara ENDAST med ett JSON-objekt utan kodblock och utan annan text.',
+    'Objektet måste ha exakt nycklarna "title" (string) och "sheets" (array).',
+    '"sheets" ska innehålla 1–5 objekt med "name", "columns" och "rows"; varje rad har lika många värden som "columns".',
+    'Skriv allt innehåll på svenska och gör det färdigt att använda direkt.',
+  ].join('\n'),
+  powerpoint: [
+    'Skapa presentationen nu.',
+    'Svara ENDAST med ett JSON-objekt utan kodblock och utan annan text.',
+    'Objektet måste ha exakt nycklarna "title" (string), "subtitle" (string) och "slides" (array).',
+    '"slides" ska innehålla 3–12 objekt med "title", "bullets" och "notes".',
+    'Skriv allt innehåll på svenska och gör det färdigt att använda direkt.',
+  ].join('\n'),
+};
 
 // ----------------------------------------------------------------
 // Huvudfunktion
@@ -248,8 +393,13 @@ Deno.serve(async (req) => {
     );
   }
 
+  // Bara appens personal- och elevroller får använda AI:n. Läraren har samma
+  // assistent som specialläraren (menyn erbjuder den), och adminrollen får
+  // aldrig något annat än den administrativa assistenten — ingen roll kan
+  // skickas in från klienten.
   const role = caller.user.app_metadata?.role;
-  if (role !== 'elev' && role !== 'speciallärare' && role !== 'admin') {
+  const allowed = ['elev', 'lärare', 'speciallärare', 'admin'];
+  if (typeof role !== 'string' || !allowed.includes(role)) {
     return json({ error: 'Din roll får inte använda AI-funktionen.' }, 403);
   }
 
@@ -275,6 +425,7 @@ Deno.serve(async (req) => {
   let body: {
     messages?: Array<{ role?: string; content?: string }>;
     wantDoc?: boolean;
+    docKind?: string;
   };
   try {
     body = await req.json();
@@ -283,7 +434,10 @@ Deno.serve(async (req) => {
   }
 
   const raw = Array.isArray(body.messages) ? body.messages : [];
-  const wantDoc = body.wantDoc === true;
+  // wantDoc finns kvar för den äldre klienten. docKind talar om vilket format
+  // användaren valde; den räknas också som en dokumentbegäran.
+  const docKind = normalizeDocKind(body.docKind);
+  const wantDoc = body.wantDoc === true || body.docKind !== undefined;
 
   const messages = raw
     .filter((m) => m && typeof m.content === 'string')
@@ -299,10 +453,12 @@ Deno.serve(async (req) => {
   }
 
   if (wantDoc) {
-    messages.push({ role: 'user', content: DOC_REMINDER });
+    messages.push({ role: 'user', content: DOC_REMINDERS[docKind] });
   }
 
-  const system = `${COMMON}\n\n${ROLE_PROMPTS[role]}${wantDoc ? `\n\n${DOC_SCHEMA}` : ''}`;
+  const system = `${COMMON}\n\n${ROLE_PROMPTS[role]}${
+    wantDoc ? `\n\n${DOC_SCHEMAS[docKind]}` : ''
+  }`;
 
   // Ordning: den valda modellen först, därefter fria reservmodeller.
   const candidates = [...new Set([MODEL, ...FREE_MODELS])].slice(0, 4);
@@ -333,7 +489,7 @@ Deno.serve(async (req) => {
         const data = await res.json();
         const content: string = data?.choices?.[0]?.message?.content ?? '';
         if (content.trim()) {
-          return json({ content, model });
+          return json(wantDoc ? { content, model, docKind } : { content, model });
         }
         lastStatus = 502;
       } else {
@@ -344,7 +500,7 @@ Deno.serve(async (req) => {
         // Okänt modell-ID svaras med 400 av OpenRouter — det måste alltid
         // falla tillbaka till nästa fria modell, annars dör anropet.
         if (res.status === 401 || res.status === 403) {
-          return json({ error: statusMessage(res.status) }, 502);
+          return aiErrorResponse(aiError(res.status));
         }
       }
 
@@ -352,7 +508,7 @@ Deno.serve(async (req) => {
       if (i < candidates.length - 1) await sleep(250);
     }
 
-    return json({ error: statusMessage(lastStatus) }, 502);
+    return aiErrorResponse(aiError(lastStatus));
   } catch (err) {
     console.error('AI-anrop misslyckades', err);
     return json(

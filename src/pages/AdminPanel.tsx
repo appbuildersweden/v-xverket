@@ -21,6 +21,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 import type { AuthAccount } from '../lib/auth';
+import { AdminOverviewPage } from './admin/AdminOverviewPage';
+import { AdminAccountsPage } from './admin/AdminAccountsPage';
+import { AdminCreateAccountPage } from './admin/AdminCreateAccountPage';
+import { AdminComingSoonPage } from './admin/AdminComingSoonPage';
+import { AdminUpdatesPage } from './admin/AdminUpdatesPage';
 
 interface PageProps {
   pageId: string;
@@ -29,6 +34,7 @@ interface PageProps {
 
 const roleLabels: Record<AuthAccount['role'], string> = {
   elev: 'Elev',
+  lärare: 'Lärare',
   speciallärare: 'Speciallärare',
   admin: 'Administratör',
 };
@@ -379,6 +385,59 @@ const AdminAiSettingsPanel: React.FC = () => (
 // ----------------------------------------------------------------
 
 export const AdminPanel: React.FC<PageProps> = ({ pageId, onNavigate }) => {
+  const navigate = onNavigate ?? (() => {});
+
+  // ----------------------------------------------------------------
+  // Nya adminpanelen (steg 1): översikt, konton och kontoskapande.
+  // Övriga menyval visar ett tydligt "byggs senare"-läge i stället för
+  // påhittad data. De gamla sidorna finns kvar för djupa länkar.
+  // ----------------------------------------------------------------
+  if (pageId === 'start') {
+    return <AdminOverviewPage onNavigate={navigate} />;
+  }
+  if (pageId === 'anvandare') {
+    return <AdminAccountsPage onNavigate={navigate} />;
+  }
+  if (pageId === 'create-user') {
+    return <AdminCreateAccountPage onNavigate={navigate} />;
+  }
+  if (pageId === 'nyheter') {
+    return (
+      <AdminComingSoonPage
+        title="Nyheter och uppdateringar"
+        description="Här ska administratören kunna publicera nyheter och versionsinformation till appen."
+        onNavigate={navigate}
+      />
+    );
+  }
+  if (pageId === 'meddelanden') {
+    return (
+      <AdminComingSoonPage
+        title="Meddelanden"
+        description="Här ska administratören kunna skicka och följa upp meddelanden till elever och personal."
+        onNavigate={navigate}
+      />
+    );
+  }
+  if (pageId === 'lararkontakter') {
+    return (
+      <AdminComingSoonPage
+        title="Lärarkontakter"
+        description="Här ska administratören kunna hantera kontaktuppgifter och kopplingar till lärare."
+        onNavigate={navigate}
+      />
+    );
+  }
+  if (pageId === 'installningar') {
+    return (
+      <AdminComingSoonPage
+        title="Inställningar"
+        description="Här ska administratören kunna hantera panelens och appens globala inställningar."
+        onNavigate={navigate}
+      />
+    );
+  }
+
   switch (pageId) {
     case 'start':
       return (
@@ -861,25 +920,9 @@ export const AdminPanel: React.FC<PageProps> = ({ pageId, onNavigate }) => {
       );
 
     case 'uppdateringar':
-      return (
-        <div className="card">
-          <div className="card-title">Uppdateringar</div>
-          <div className="card-sub">Exempeldata</div>
-          {[
-            { t: 'v4.2.1 — AI-stöd för speciallärare', s: 'Igår', tag: 'Ny' },
-            { t: 'v4.2.0 — Förbättrad sökfunktion', s: '3 dagar sedan', tag: '' },
-          ].map((x) => (
-            <div className="list-item" key={x.t}>
-              <div className="stat-icon" style={{ width: 34, height: 34 }}><GitBranch size={15} /></div>
-              <div className="list-item-content">
-                <div className="list-item-title">{x.t}</div>
-                <div className="list-item-sub">{x.s}</div>
-              </div>
-              {x.tag && <span className="badge badge-solid">{x.tag}</span>}
-            </div>
-          ))}
-        </div>
-      );
+      // Verklig status från uppdateringsflödet (installerad version, publicerad
+      // version, signerat paket och eventuell uppdatering) — ingen exempeldata.
+      return <AdminUpdatesPage />;
 
     default:
       return (

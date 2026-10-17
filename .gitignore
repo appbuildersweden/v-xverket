@@ -40,3 +40,7 @@ node_modules
 
 # Publicerade installationsfiler (byggda artefakter, aldrig i källkod)
 site/downloads/
+
+# Lokala testartefakter för hemsidan
+site/config-test.json
+site/test-run

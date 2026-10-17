@@ -6,6 +6,7 @@
   "description": "Nedladdningssida för Elda – hostas på Cloudflare Pages.",
   "scripts": {
     "build": "node build.mjs",
+    "test": "node --test tests/*.test.mjs",
     "deploy": "node build.mjs && wrangler pages deploy dist --project-name elda",
     "dev": "node build.mjs"
   },

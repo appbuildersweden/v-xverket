@@ -317,6 +317,21 @@ html[data-theme="mork"] .i-moon { display: none; }
   border-radius: var(--radius-sm); padding: 12px 16px; flex: 1 1 320px;
 }
 
+/* Inloggning i nedladdningsrutan – samma konton som i appen. */
+.dl-login {
+  display: grid; gap: 8px; margin-top: 4px; text-align: left;
+  flex: 1 1 320px;
+}
+.dl-login .download-note { margin: 0 0 4px; }
+.dl-label { font-size: 0.82rem; font-weight: 600; color: var(--text-2); }
+.dl-input {
+  width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.dl-input:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.dl-login .btn { justify-self: start; }
+
 .steps, .update-steps {
   list-style: none; margin: 46px 0 0; padding: 0;
   display: grid; gap: 16px;

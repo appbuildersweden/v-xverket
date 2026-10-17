@@ -9,6 +9,9 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+/** Uppdateringens endpoint, inläst från tauri.conf.json i vite.config.ts. */
+declare const __ELDA_UPDATE_ENDPOINT__: string;
+
 // ============================================================
 // Tillfälliga deklarationer för att eliminera byggfel
 // under utveckling av auth-lagret. Dessa tas bort när

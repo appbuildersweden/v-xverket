@@ -43,8 +43,11 @@ jobs:
     runs-on: windows-latest
     env:
       # secrets-contexten får inte användas direkt i ett step-if, därför
-      # räknas villkoret ut en gång här.
-      PUBLISH_SITE: ${{ vars.ELDA_DOWNLOAD_BASE != '' && secrets.CLOUDFLARE_API_TOKEN != '' }}
+      # räknas villkoret ut en gång här. Webbplatsen och uppdateringsmanifestet
+      # publiceras när Cloudflare-token finns – det är manifestet som gör att
+      # installerade appar hittar nya versioner, så det får inte hänga på
+      # nedladdningsadressen.
+      PUBLISH_SITE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -93,12 +96,11 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Inloggning
-            - Appen byggs nu med rätt Supabase-adress och anon-nyckel, så inloggning fungerar i den installerade appen.
-            - Inloggning sker med användarnamn och lösenord.
-            - Nya konton får automatiskt ett användarnamn från förnamn och efternamn, till exempel ejentu01.
-            - Nya konton har ett tillfälligt lösenord och måste skapa ett eget vid första inloggningen.
-            - Bygget avbryts om Supabase-konfigurationen saknas, så en oanvändbar app inte publiceras igen.
+            AI-hjälpen och registreringen
+            - AI-hjälpen säger nu rakt ut när tjänstens gratiskvot är slut eller krediter saknas, i stället för ett allmänt "försök igen".
+            - Registreringen förklarar att ansökan går till manuell granskning när AI-bedömningen inte kan göras, och att den inte är avslagen.
+            - Texterna kommer från servern, så de gäller även äldre installerade versioner.
+            - Inga ändringar i appens gränssnitt jämfört med 0.2.2; den här versionen publiceras också för att automatiska uppdateringar ska ha en ny version att hämta och verifiera.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
@@ -150,6 +152,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ELDA_DOWNLOAD_BASE: ${{ vars.ELDA_DOWNLOAD_BASE }}
+          # Basadress för update.json. Tom variabel faller tillbaka på appens
+          # befintliga endpoint (elda-6a9.pages.dev).
+          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
+          # Registreringsboten på hemsidan är enda publika vägen till ett konto.
+          # Samma publika variabler som appbygget använder, så att bygget kan
+          # skriva dist/config.json. Utan dem publiceras sidan utan serveradress
+          # och registreringssidan visar "inte tillgänglig".
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: |
           npm install
           npm run build
@@ -161,3 +172,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler pages deploy dist --project-name elda --branch main
+
+      - name: Kontrollera publicerat uppdateringsmanifest
+        # Fångar det som annars bara märks i en installerad app: 404, fel
+        # version, fel signatur eller en adress som serverar HTML.
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
+        env:
+          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
+        run: node scripts/kontrollera-uppdatering.mjs

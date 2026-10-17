@@ -27,13 +27,14 @@ GitHub Actions kör sedan [`.github/workflows/release.yml`](.github/workflows/re
 1. Bygger Windows-paketen (NSIS `.exe` och `.msi`) på `windows-latest`.
 2. Signerar dem med updater-nyckeln (`TAURI_SIGNING_PRIVATE_KEY`).
 3. Skapar GitHub Releasen **Elda v0.2.0** med de fyra filerna.
-4. Hämtar filerna, bygger hemsidan med riktiga releaseuppgifter
-   (versionsnummer, datum, storlekar, ändringsanteckningar) och skriver
-   `update.json` som appens updater läser.
-5. Publicerar hemsidan och installationsfilerna till Cloudflare Pages.
+4. Hämtar filerna och bygger hemsidan med riktiga releaseuppgifter
+   (versionsnummer, datum, storlekar, ändringsanteckningar).
+5. Publicerar **endast hemsidan** till Cloudflare Pages.
 
-Den installerade appen upptäcker sedan uppdateringen vid nästa start och
-installerar den efter att signaturen har verifierats.
+Installationsfilerna publiceras aldrig längre med sidan: de läggs i den
+privata Storage-bucketen `elda-installers` och delas ut som korta signerade
+länkar av serverfunktionen `download`, efter att kontot har kontrollerats.
+Se avsnittet *Skyddad nedladdning* nedan.
 
 ## Hemligheter och variabler
 
@@ -45,13 +46,21 @@ Satta på **Settings → Secrets and variables → Actions** i repo:t:
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | secret | lösenordet till nyckelfilen |
 | `CLOUDFLARE_ACCOUNT_ID` | secret | kontots ID |
 | `CLOUDFLARE_API_TOKEN` | secret | token med behörighet *Cloudflare Pages: Edit* |
-| `ELDA_DOWNLOAD_BASE` | variable | `https://elda-6a9.pages.dev/downloads` |
 | `VITE_SUPABASE_URL` | variable | projektets adress, `https://<projekt>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | variable | projektets publika anon-nyckel (den ligger ändå i klienten) |
 
-Webbplatsstegen hoppas över så länge `ELDA_DOWNLOAD_BASE` eller
-`CLOUDFLARE_API_TOKEN` saknas – appen kan alltså publiceras innan
-hostingen är klar.
+`ELDA_DOWNLOAD_BASE` används inte längre — det fanns bara för att peka på en
+publik `downloads/`-mapp. Webbplatsstegen hoppas över så länge
+`CLOUDFLARE_API_TOKEN` saknas.
+
+`VITE_SUPABASE_URL` och `VITE_SUPABASE_ANON_KEY` behövs också för
+webbplatsen: registreringsboten på `/registrera.html` är den enda publika vägen
+till ett konto, och bygget skriver den publika adressen och anon-nyckeln till
+`site/dist/config.json`. Saknas de publiceras sidan ändå (nedladdning och
+uppdateringar ska aldrig blockeras), men registreringssidan visar då
+"inte tillgänglig" i stället för att låtsas fungera. Anon-nyckeln är publik och
+ligger redan i den byggda appen — service role-nyckeln får aldrig hamna där.
+
 
 ## Supabase-adressen bakas in i appen
 
@@ -86,11 +95,51 @@ version – men se till att alla användare installerar om den manuellt.
 
 - Repo:t är **privat**. Källkoden publiceras aldrig som del av hemsidan;
   bara `site/dist` (byggda artefakter) går upp till Cloudflare.
-- Installationsfilerna ligger publikt på `…/downloads/` eftersom en privat
-  GitHub Release inte går att länka till anonymt.
+- Installationsfilerna ligger i en **privat** Storage-bucket. Ingen publik
+  filadress finns: gamla `…/downloads/…`-länkar omdirigeras av
+  [`site/_redirects`](site/_redirects) till nedladdningssektionen.
+- Nedladdning kräver en giltig session och ett **godkänt** konto. Begränsade,
+  inaktiva och borttagna konton får ingen länk.
 - `permissions: contents: write` är enda behörigheten i arbetsflödet.
 - Uppdateringar verifieras mot den inbäddade publika nyckeln innan
   något installeras. En hackad `update.json` räcker alltså inte.
+- Det signerade uppdateringspaketet under `/updates/` är publik läsbart
+  (kravet från Tauri) medan installationsknappen på sidan kräver inloggning.
+
+## Skyddad nedladdning
+
+Nedladdningsfunktionen `download` läser den privata bucketen `elda-installers`
+och väljer den högsta versionen av `Elda_<version>_x64-setup.exe` (eller
+`..._en-US.msi`). Publicera en ny installer så här:
+
+```bash
+npx supabase storage cp --experimental --linked \
+  --content-type application/octet-stream \
+  site/downloads/Elda_0.2.1_x64-setup.exe \
+  ss:///elda-installers/Elda_0.2.1_x64-setup.exe
+```
+
+Sidan hämtar versionsnummer och storlek från funktionens publika `info`-läge,
+så inget behöver ändras i `releases.json` för att knappen ska visa rätt version.
+
+### Automatiska uppdateringar
+
+Den installerade appen kontrollerar `https://elda-6a9.pages.dev/update.json`
+vid start och därefter var sjätte timme. `site/build.mjs` skriver manifestet
+från det signerade paketet i `site/downloads` och publicerar även själva
+filen under `/updates/`. Båda måste vara publika: Tauri kan inte logga in för
+att hämta en uppdatering. Skyddet ligger i signaturen — paketet verifieras mot
+nyckeln i `tauri.conf.json` innan något installeras, och en utbytt fil avvisas.
+Den vanliga nedladdningsknappen på sidan går fortfarande genom den inloggade
+funktionen och den privata bucketen.
+
+Saknas ett signerat paket i `site/downloads` publiceras inget manifest alls
+(och ett gammalt manifest tas bort), så en app kan aldrig erbjudas en fil som
+inte finns. Efter publicering kan flödet kontrolleras med:
+
+```bash
+node scripts/kontrollera-uppdatering.mjs
+```
 
 ## Egen domän
 
@@ -108,15 +157,14 @@ Adressen är just nu `https://elda-6a9.pages.dev`. Vill du ha t.ex.
 
 ## Felsökning
 
-- **Nedladdningsknappen är grå på hemsidan** – ingen stabil release
-  publicerad ännu, eller så har `releases.json` inte kunnat hämtas.
-- **Appen hittar ingen uppdatering** – kontrollera att
-  `https://elda-6a9.pages.dev/update.json` svarar och att `version` är
-  högre än den installerade.
-- **"Update error" i appen** – signaturen stämmer inte. Filen på
-  `…/downloads/` måste vara exakt den som signerats; kör om releasflödet.
-- **Bygget hoppas över webbplatsstegen** – `ELDA_DOWNLOAD_BASE` eller
-  `CLOUDFLARE_API_TOKEN` saknas.
+- **Nedladdningsknappen är grå på hemsidan** – ingen fil finns i
+  `elda-installers`, eller så kunde `info`-läget inte läsas.
+- **"Kontot väntar på godkännande"** – kontot är `limited` (t.ex. ett
+  lärarkonto som väntar på granskning). En administratör måste godkänna det
+  innan nedladdningslänkar utfärdas.
+- **Direktlänken ger ingen fil** – det är meningen. `/downloads/*` omdirigeras
+  till nedladdningssektionen; filerna finns bara i den privata bucketen.
+- **Bygget hoppas över webbplatsstegen** – `CLOUDFLARE_API_TOKEN` saknas.
 - **Appen startar men inloggningen misslyckas** – bygget fick ingen
   Supabase-adress. Kontrollera att `VITE_SUPABASE_URL` och
   `VITE_SUPABASE_ANON_KEY` finns som variabler och publicera en ny version.

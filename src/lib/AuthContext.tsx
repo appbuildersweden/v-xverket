@@ -14,6 +14,9 @@ import {
   AccountsResult,
   OperationResult,
   SuggestUsernameResult,
+  AdminOverviewResult,
+  RegistrationApplicationsResult,
+  RegistrationDecision,
 } from './auth';
 import { createAuthBackend } from './auth';
 import { getOrCreateSupabaseClient } from './auth-supabase';
@@ -42,8 +45,37 @@ export interface AuthContextValue {
   listAccounts: () => Promise<AccountsResult>;
   /** Aktivera/inaktivera konto (endast administratörer) */
   setAccountActive: (userId: string, active: boolean) => Promise<OperationResult>;
+  /** Uppdatera förnamn och efternamn (endast administratörer) */
+  updateAccountProfile: (
+    userId: string,
+    firstName: string,
+    lastName: string,
+  ) => Promise<OperationResult>;
+  /** Byt roll (endast administratörer, aldrig sitt eget konto) */
+  setAccountRole: (
+    userId: string,
+    role: VäxverketUser['role'],
+  ) => Promise<OperationResult>;
+  /** Begränsa eller häv begränsning av ett konto */
+  setAccountLimited: (userId: string, limited: boolean) => Promise<OperationResult>;
+  /** Radera konto (endast administratörer) */
+  deleteAccount: (userId: string) => Promise<OperationResult>;
+  /** Verkliga räkningar till översikten */
+  getAdminOverview: () => Promise<AdminOverviewResult>;
+  /** Registreringsansökningar för granskning */
+  listRegistrationApplications: () => Promise<RegistrationApplicationsResult>;
+  /** Godkänn, begränsa eller avslå en ansökan */
+  decideRegistrationApplication: (
+    applicationId: string,
+    decision: RegistrationDecision,
+    note?: string,
+  ) => Promise<OperationResult>;
   /** Byt lösenord för den inloggade användaren (via autentiseringssystemet) */
   changePassword: (newPassword: string) => Promise<LoginResult>;
+  /** Ändra lärarens funktionsval (servern kontrollerar rollen) */
+  updateFeatures: (
+    features: string[],
+  ) => Promise<{ ok: true; features: string[] } | { ok: false; error: string }>;
 }
 
 const AuthCtx = createContext<AuthContextValue | null>(null);
@@ -167,6 +199,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [],
   );
 
+  const updateAccountProfile = useCallback(
+    async (
+      userId: string,
+      firstName: string,
+      lastName: string,
+    ): Promise<OperationResult> => {
+      return createAuthBackend().updateAccountProfile(userId, firstName, lastName);
+    },
+    [],
+  );
+
+  const setAccountRole = useCallback(
+    async (
+      userId: string,
+      role: VäxverketUser['role'],
+    ): Promise<OperationResult> => {
+      return createAuthBackend().setAccountRole(userId, role);
+    },
+    [],
+  );
+
+  const setAccountLimited = useCallback(
+    async (userId: string, limited: boolean): Promise<OperationResult> => {
+      return createAuthBackend().setAccountLimited(userId, limited);
+    },
+    [],
+  );
+
+  const deleteAccount = useCallback(
+    async (userId: string): Promise<OperationResult> => {
+      return createAuthBackend().deleteAccount(userId);
+    },
+    [],
+  );
+
+  const getAdminOverview = useCallback(async (): Promise<AdminOverviewResult> => {
+    return createAuthBackend().getAdminOverview();
+  }, []);
+
+  const listRegistrationApplications =
+    useCallback(async (): Promise<RegistrationApplicationsResult> => {
+      return createAuthBackend().listRegistrationApplications();
+    }, []);
+
+  const decideRegistrationApplication = useCallback(
+    async (
+      applicationId: string,
+      decision: RegistrationDecision,
+      note?: string,
+    ): Promise<OperationResult> => {
+      return createAuthBackend().decideRegistrationApplication(
+        applicationId,
+        decision,
+        note,
+      );
+    },
+    [],
+  );
+
   // Lösenordsbyte i två steg:
   //   1. Supabase Auth sparar det nya lösenordet (krypterat/saltat).
   //   2. Servern nollar must_change_password så att spärren släpper.
@@ -203,6 +294,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [],
   );
 
+  const updateFeatures = useCallback(
+    async (
+      features: string[],
+    ): Promise<{ ok: true; features: string[] } | { ok: false; error: string }> => {
+      const result = await createAuthBackend().updateFeatures(features);
+      if (!result.ok) return result;
+      setSession((prev) =>
+        prev?.user ? { ...prev, user: { ...prev.user, features: result.features } } : prev,
+      );
+      return result;
+    },
+    [],
+  );
+
   const value: AuthContextValue = useMemo(
     () => ({
       loading,
@@ -214,7 +319,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createAccount,
       listAccounts,
       setAccountActive,
+      updateAccountProfile,
+      setAccountRole,
+      setAccountLimited,
+      deleteAccount,
+      getAdminOverview,
+      listRegistrationApplications,
+      decideRegistrationApplication,
       changePassword,
+      updateFeatures,
     }),
     [
       loading,
@@ -225,7 +338,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createAccount,
       listAccounts,
       setAccountActive,
+      updateAccountProfile,
+      setAccountRole,
+      setAccountLimited,
+      deleteAccount,
+      getAdminOverview,
+      listRegistrationApplications,
+      decideRegistrationApplication,
       changePassword,
+      updateFeatures,
     ],
   );
 

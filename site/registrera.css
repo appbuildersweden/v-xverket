@@ -1,0 +1,249 @@
+/* =========================================================================
+   Elda – registreringssidan
+   Bygger vidare på designsystemet i styles.css: svart, vitt och gråtoner.
+   Endast det som är specifikt för registreringen ligger här.
+   ========================================================================= */
+
+/* Sidan ligger under den fasta menyn — samma höjd som styles.css räknar med. */
+.reg-main { padding: calc(var(--nav-h) + 34px) 0 40px; }
+
+.reg-wrap {
+  display: grid;
+  gap: 22px;
+  max-width: 780px;
+}
+
+.reg-intro { display: grid; gap: 12px; }
+
+.reg-eyebrow {
+  margin: 0;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.reg-intro h1 { font-size: clamp(1.9rem, 4.4vw, 2.7rem); }
+
+.reg-lead {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 1.02rem;
+  max-width: 62ch;
+}
+
+.reg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 26px;
+}
+
+.reg-explainer { padding: 22px 26px; }
+
+.reg-explainer h2 { font-size: 1.05rem; margin-bottom: 12px; }
+
+.reg-block { display: grid; gap: 14px; }
+
+.reg-block > h2 { font-size: 1.22rem; }
+
+.reg-note-text {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+
+.reg-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------- Kontotyp */
+
+.kind-picker { display: grid; gap: 10px; }
+
+.kind-option {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 15px 17px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease),
+    transform 0.18s var(--ease);
+}
+
+.kind-option:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--text-3);
+  transform: translateY(-1px);
+}
+
+.kind-option:disabled { opacity: 0.6; cursor: default; }
+
+.kind-option-label { font-weight: 620; font-size: 1rem; }
+
+.kind-option-hint { color: var(--text-2); font-size: 0.9rem; }
+
+.reg-wide { width: 100%; }
+
+/* Sammanfattning före inskickandet. */
+.reg-summary {
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  padding: 14px 16px; background: var(--surface-2);
+}
+.reg-summary-list {
+  display: grid; grid-template-columns: minmax(120px, 34%) 1fr;
+  gap: 6px 14px; margin: 0 0 10px; font-size: 0.93rem;
+}
+.reg-summary-list dt { color: var(--text-3); margin: 0; }
+.reg-summary-list dd { margin: 0; color: var(--text); word-break: break-word; }
+
+.reg-resume {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  color: var(--text-2);
+  font-size: 0.92rem;
+}
+
+.reg-resume summary { cursor: pointer; }
+
+.reg-inline-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.reg-status {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-alt);
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+/* -------------------------------------------------------------- Frågor */
+
+.reg-fallback {
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 0.9rem;
+}
+
+.reg-log {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.reg-line {
+  margin: 0;
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  max-width: 92%;
+}
+
+.reg-line-bot {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.reg-line-user {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  justify-self: end;
+}
+
+.reg-line-system {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  color: var(--text-2);
+  font-size: 0.88rem;
+}
+
+.reg-form { display: grid; gap: 14px; }
+
+.reg-field { display: grid; gap: 6px; }
+
+.reg-label { font-size: 0.9rem; font-weight: 600; }
+
+.reg-hint { margin: 0; color: var(--text-3); font-size: 0.84rem; }
+
+.reg-hint-error { color: var(--text); font-weight: 600; }
+
+.reg-input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.96rem;
+}
+
+.reg-input:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+textarea.reg-input { resize: vertical; min-height: 96px; }
+
+.reg-choices { display: grid; gap: 8px; }
+
+.reg-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.94rem;
+  color: var(--text-2);
+}
+
+.reg-check input { margin-top: 3px; }
+
+.reg-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.reg-error {
+  padding: 11px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.92rem;
+}
+
+.reg-result-line { margin: 0; font-weight: 620; }
+
+/* Besked som handlar om tjänstens läge (t.ex. slut på AI-kvot), inte om fel
+   den sökande har gjort. Därför dämpad yta i stället för felruta. */
+.reg-note-warning {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--border-strong);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 640px) {
+  .reg-card { padding: 20px; }
+  .reg-main { padding-top: calc(var(--nav-h) + 22px); }
+}

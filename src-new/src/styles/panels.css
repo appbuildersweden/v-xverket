@@ -1,0 +1,814 @@
+/* =================================================================
+   Steg 4 – vyer för elev- och speciallärarpanelerna.
+   Samma svart/vitt/grått-uttryck som resten av Elda, och allt fungerar i
+   både ljust och mörkt läge. Filen importeras efter globals.css.
+   ================================================================= */
+
+/* ---------- Etiketter ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.pill-ok {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-fg);
+}
+
+.pill-info {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--fg);
+}
+
+.pill-warn {
+  background: transparent;
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+.pill-muted {
+  background: transparent;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.small {
+  font-size: 12px;
+}
+
+/* ---------- Förlopp och XP ---------- */
+.progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.progress-block .progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.xp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.xp-card-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.xp-card .lbl {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.xp-card .val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.xp-total {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ---------- Rader med knappar och snabbval ---------- */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.quick-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quick-row .quick-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--fg);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.quick-row .quick-link:hover {
+  background: var(--hover);
+}
+
+.confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+/* ---------- Dialog ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.modal-body {
+  display: block;
+}
+
+/* ---------- Formulärtillägg ---------- */
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.field-hint-error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .field-hint-error {
+  color: #fca5a5;
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.fieldset legend {
+  padding: 0 6px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.option-row {
+  display: block;
+}
+
+.quiz-option input[type='text'] {
+  flex: 1;
+}
+
+.btn-danger {
+  border: 1px solid #b91c1c;
+  background: transparent;
+  color: var(--fg);
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+/* ---------- Chips ---------- */
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--fg);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--hover);
+}
+
+.chip-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-fg);
+}
+
+/* ---------- Meddelanden ---------- */
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-head-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.chat-head-sub {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.chat-panel .chat-messages {
+  min-height: 180px;
+  max-height: 420px;
+}
+
+.chat-line {
+  display: flex;
+}
+
+.chat-line-own {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.chat-line-own .chat-bubble {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-fg);
+}
+
+.chat-sender {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.chat-stamp {
+  font-weight: 400;
+}
+
+.chat-text {
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-empty {
+  padding: 4px 14px;
+}
+
+.chat-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.ai-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-chat {
+  display: flex;
+  flex-direction: column;
+  height: min(62vh, 560px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* ---------- Dokument av samtalet ---------- */
+.ai-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.ai-doc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ai-doc-file {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.ai-doc-file .field-hint {
+  margin-top: 6px;
+}
+
+/* ---------- Flashcards ---------- */
+.flashcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  padding: 28px 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  text-align: center;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.flashcard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.flashcard-side {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+
+.flashcard-text {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.flashcard-flipped {
+  background: var(--surface-2);
+}
+
+.flashcard-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* ---------- Provträning ---------- */
+.quiz-question h3 {
+  margin: 6px 0 14px;
+  font-size: 16px;
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.quiz-option:hover {
+  background: var(--hover);
+}
+
+.quiz-option-selected {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+
+/* ---------- Belöningar ---------- */
+.reward-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.reward-tile-illu {
+  font-size: 26px;
+}
+
+.reward-tile-name {
+  margin: 6px 0 2px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.reward-tile-req {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.reward-tile-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.next-goal {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.next-goal-body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reward-celebration {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* ---------- Uppgifter ---------- */
+.instructions {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.instructions-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.submission-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.submission-note {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* ---------- Små skärmar ---------- */
+@media (max-width: 700px) {
+  .reward-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+
+  .next-goal {
+    flex-direction: column;
+  }
+
+  .chat-bubble {
+    max-width: 92%;
+  }
+
+  .ai-chat {
+    height: 70vh;
+  }
+
+  .row-actions {
+    align-items: stretch;
+  }
+}
+
+/* Menyfilter: navigeringen filtreras medan man skriver i toppraden. */
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.nav-empty {
+  margin: 12px 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- Trädgården */
+.garden-scene {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.garden-sky {
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.garden-ground {
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.garden-seed {
+  fill: var(--muted);
+}
+
+.garden-trunk {
+  fill: var(--fg);
+  opacity: 0.75;
+}
+
+.garden-crown {
+  fill: var(--fg);
+  opacity: 0.14;
+  transition: opacity 200ms ease;
+}
+
+[data-theme='dark'] .garden-crown {
+  opacity: 0.22;
+}
+
+.garden-symbol {
+  font-size: 22px;
+  text-anchor: middle;
+}
+
+.garden-symbol-locked {
+  fill: var(--muted);
+  font-size: 16px;
+}
+
+.garden-facts {
+  flex: 1 1 200px;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.garden-facts dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.garden-facts dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.garden-plots {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.garden-plot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  text-align: center;
+}
+
+.garden-plot.unlocked {
+  border-color: var(--fg);
+}
+
+.garden-plot-illu {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.garden-plot-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.garden-plot-req {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- Kalendern */
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.calendar-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.calendar-weekday {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.calendar-day:hover {
+  border-color: var(--border);
+}
+
+.calendar-day-outside {
+  opacity: 0.4;
+}
+
+.calendar-day-today {
+  border-color: var(--fg);
+  font-weight: 700;
+}
+
+.calendar-day-selected {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.calendar-day-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.calendar-day-selected .calendar-day-count {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.calendar-day-empty-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* Uppföljning med återkoppling till eleven. */
+.follow-up-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}

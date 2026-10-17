@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Elda",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "identifier": "com.vaxverket.app",
   "build": {
     "frontendDist": "../dist",
@@ -40,6 +40,7 @@
   },
   "plugins": {
     "updater": {
+      "active": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY3RUJCMEM4MDMzQ0U5NzQKUldSMDZUd0R5TERyWnp2a3dyNE9FMStmcUtvaDdsVWc5RGFueEg5NVI3ZzlDbVdZd2xXTVdxL20K",
       "endpoints": [
         "https://elda-6a9.pages.dev/update.json"

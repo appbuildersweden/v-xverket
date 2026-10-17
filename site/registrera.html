@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skapa konto i Elda – registrering</title>
+<meta name="description" content="Registrera dig för Elda: svara på botens frågor steg för steg och välj ditt eget lösenord. Rollen sätts alltid av servern.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/png" href="./assets/elda-icon.png">
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./registrera.css">
+<script>
+  // Tema väljs före målning så att sidan inte fläckar.
+  (function () {
+    try {
+      var s = localStorage.getItem('elda-theme');
+      var t = s === 'ljus' || s === 'mork' ? s
+        : (matchMedia('(prefers-color-scheme: dark)').matches ? 'mork' : 'ljus');
+      document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Hoppa till innehållet</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="./">
+      <img src="./assets/elda-icon.png" alt="" width="28" height="28">
+      <span>Elda</span>
+    </a>
+
+    <nav class="nav-links" id="navlinks" aria-label="Huvudmeny">
+      <a href="./#funktioner">Funktioner</a>
+      <a href="./#nedladdning">Nedladdning</a>
+      <a href="./#versionshistorik">Versionshistorik</a>
+      <a href="./#faq">Vanliga frågor</a>
+      <a class="btn btn-primary btn-sm nav-cta" href="./#nedladdning">Ladda ner Elda</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Växla mellan ljust och mörkt läge">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path class="i-sun" d="M12 4v2m0 12v2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>
+          <circle class="i-moon" cx="12" cy="12" r="4"/>
+        </svg>
+      </button>
+      <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-expanded="false" aria-controls="navlinks" aria-label="Öppna meny">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="reg-main">
+  <div class="wrap reg-wrap">
+
+    <section class="reg-intro">
+      <p class="reg-eyebrow">Registrering</p>
+      <h1>Skapa ditt Elda-konto</h1>
+      <p class="reg-lead">
+        Registreringsboten ställer frågorna stegvis. Servern kontrollerar varje svar,
+        fattar beslutet och skapar kontot — därför kan ingen hoppa över ett steg eller
+        välja sin egen roll. När kontot finns loggar du in i appen med användarnamnet
+        och lösenordet du väljer här.
+      </p>
+    </section>
+
+    <!-- Konfigurationen saknas: tydligt besked i stället för en trasig bot. -->
+    <section class="reg-card" id="reg-config-error" hidden>
+      <h2>Registreringen är inte tillgänglig just nu</h2>
+      <p class="reg-note-text">
+        Sidan kan inte nå Eldas server för tillfället. Försök igen om en stund. Har du
+        frågor om ett konto, kontakta skolan eller administratören.
+      </p>
+    </section>
+
+    <section class="reg-card" id="reg-card" hidden>
+
+      <!-- ------------------------------------------------ Steg 1: kontotyp -->
+      <div class="reg-block" id="step-kind">
+        <h2>Hur vill du använda Elda?</h2>
+        <p class="reg-note-text">
+          Elda samlar skolarbetet på ett ställe: planering och att-göra-listor, uppgifter
+          med deadlines och återkoppling, ämnen, flashcards och provträning, egna
+          dokument, AI-studiehjälp samt belöningar och nivåer för det du har gjort. En
+          lärare kan dessutom skapa klasser med en klasskod, och eleven som använder
+          koden skickar en ansökan som läraren godkänner.
+        </p>
+
+        <div class="kind-picker" id="kind-picker"></div>
+
+        <div class="reg-error" id="kind-error" role="alert" hidden></div>
+
+        <button type="button" class="btn btn-ghost reg-wide" id="resume-btn" hidden>
+          Fortsätt påbörjad ansökan
+        </button>
+
+        <details class="reg-resume">
+          <summary>Har du redan en spårningskod?</summary>
+          <form id="status-form" class="reg-inline-form">
+            <label class="reg-label" for="status-code">Spårningskod</label>
+            <input class="reg-input" id="status-code" name="code" autocomplete="off"
+                   spellcheck="false" placeholder="T.ex. ELDA-4F2K9Q">
+            <button type="submit" class="btn btn-ghost">Visa status</button>
+          </form>
+          <div class="reg-status" id="status-out" hidden></div>
+        </details>
+      </div>
+
+      <!-- --------------------------------------------- Steg 2: frågorna -->
+      <div class="reg-block" id="step-bot" hidden>
+        <h2 id="bot-heading">Registrering</h2>
+
+        <div class="reg-fallback" id="bot-fallback" hidden>
+          AI-assistenten är inte tillgänglig just nu, så du får frågorna som ett vanligt
+          formulär. Allt fungerar ändå.
+        </div>
+
+        <div class="reg-log" id="bot-log" role="log" aria-live="polite"></div>
+
+        <div class="reg-error" id="bot-error" role="alert" hidden></div>
+
+        <form id="bot-form" class="reg-form">
+          <div class="reg-field" id="bot-field"></div>
+          <div class="reg-actions">
+            <button type="submit" class="btn btn-primary" id="bot-send">Skicka svar</button>
+            <button type="button" class="btn btn-ghost" id="all-mode-btn">
+              Fyll i allt som ett formulär
+            </button>
+          </div>
+        </form>
+
+        <form id="all-form" class="reg-form" hidden>
+          <div id="all-fields"></div>
+          <div class="reg-actions">
+            <button type="submit" class="btn btn-primary">Skicka in svaren</button>
+            <button type="button" class="btn btn-ghost" id="one-mode-btn">Tillbaka till frågorna</button>
+          </div>
+        </form>
+
+        <!-- ------------------------------------- Steg 3: lösenord och villkor -->
+        <form id="password-form" class="reg-form" hidden>
+          <p class="reg-note-text">
+            Kontrollera uppgifterna nedan. Stämmer allt väljer du ett lösenord — sedan
+            skapas kontot. Användarnamnet skapas av servern och visas när kontot är klart.
+          </p>
+          <div class="reg-summary" id="reg-summary" hidden></div>
+          <div class="reg-field">
+            <label class="reg-label" for="reg-password">Välj lösenord</label>
+            <input class="reg-input" id="reg-password" type="password" autocomplete="new-password">
+            <p class="reg-hint">Minst 8 tecken. Lösenordet sparas krypterat hos Supabase.</p>
+          </div>
+          <div class="reg-field">
+            <label class="reg-label" for="reg-password-2">Upprepa lösenordet</label>
+            <input class="reg-input" id="reg-password-2" type="password" autocomplete="new-password">
+          </div>
+          <label class="reg-check">
+            <input type="checkbox" id="reg-terms">
+            <span>
+              Jag godkänner Eldas användarvillkor och att uppgifterna sparas för att kunna
+              hantera mitt konto.
+            </span>
+          </label>
+          <div class="reg-actions">
+            <button type="submit" class="btn btn-primary" id="reg-submit">Skicka in ansökan</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ---------------------------------------------- Steg 4: resultatet -->
+      <div class="reg-block" id="step-result" hidden>
+        <h2 id="result-heading">Ansökan är skickad</h2>
+        <div id="result-body"></div>
+        <div class="reg-actions">
+          <a class="btn btn-primary" href="./#nedladdning">Ladda ner Elda</a>
+          <button type="button" class="btn btn-ghost" id="result-restart">Registrera ett konto till</button>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="reg-card reg-explainer">
+      <h2>Vad boten gör — och inte gör</h2>
+      <ul class="reg-list">
+        <li>Rollen bestäms av servern utifrån din kontotyp. Ingen kan välja sig till
+          administratör här, och administratörsrollen skapas aldrig genom registreringen.</li>
+        <li>Ett lärarkonto får alltid vänta på en administratörs granskning innan
+          klassverktygen öppnas. Boten kan inte verifiera en yrkesidentitet eller en
+          skolas tillhörighet — och påstår därför inte att den gjort det.</li>
+        <li>En elev som använder en klasskod skickar en förfrågan. Klassens innehåll
+          öppnas först när läraren har godkänt den.</li>
+        <li>Frågorna kommer från serverns fältlista och besvaras utan AI-anrop, så
+          boten svarar direkt. AI används en gång, när ansökan skickas in, för att flagga
+          varningssignaler. Beslutet fattas alltid av serverns regler, och en
+          administratör kan granska i efterhand.</li>
+      </ul>
+    </section>
+
+    <section class="reg-card" id="delete-card">
+      <details class="reg-resume">
+        <summary>Ta bort ditt konto</summary>
+        <p class="reg-note-text">
+          Ange spårningskoden från registreringen och kontots lösenord. Koden pekar ut
+          kontot, men bara den som kan lösenordet kan ta bort det. Kontot, profilen och
+          uppgifterna tas bort — åtgärden kan inte ångras.
+        </p>
+        <form id="delete-form" class="reg-form">
+          <div class="reg-field">
+            <label class="reg-label" for="delete-code">Spårningskod</label>
+            <input class="reg-input" id="delete-code" autocomplete="off" spellcheck="false"
+                   placeholder="Koden du fick när kontot skapades">
+          </div>
+          <div class="reg-field">
+            <label class="reg-label" for="delete-password">Kontots lösenord</label>
+            <input class="reg-input" id="delete-password" type="password"
+                   autocomplete="current-password">
+          </div>
+          <label class="reg-check">
+            <input type="checkbox" id="delete-confirm">
+            <span>
+              Jag förstår att kontot och dess uppgifter tas bort och att det inte kan
+              ångras.
+            </span>
+          </label>
+          <div class="reg-actions">
+            <button type="submit" class="btn btn-ghost" id="delete-submit">Ta bort kontot</button>
+          </div>
+          <div class="reg-error" id="delete-error" role="alert" hidden></div>
+          <div class="reg-status" id="delete-out" hidden></div>
+        </form>
+      </details>
+    </section>
+
+    <section class="reg-card reg-explainer">
+      <h2>Dina uppgifter</h2>
+      <p class="reg-note-text">
+        Uppgifterna du skriver skickas krypterat till Eldas server och används för att
+        skapa och administrera ditt konto. Lösenordet sparas aldrig i klartext — det
+        hanteras av Supabase Auth. Den här sidan använder inga spårningskakor; bara din
+        påbörjade ansökan sparas lokalt i din webbläsare så att du kan fortsätta där du
+        slutade.
+      </p>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="./">
+        <img src="./assets/elda-icon.png" alt="" width="26" height="26">
+        <span>Elda</span>
+      </a>
+      <p>En Windows-app för planering, lärande och dokument – med automatiska uppdateringar när nya versioner publiceras.</p>
+    </div>
+    <nav class="footer-col" aria-label="Sidfot">
+      <h2>Produkten</h2>
+      <a href="./#funktioner">Funktioner</a>
+      <a href="./#nedladdning">Nedladdning</a>
+      <a href="./#versionshistorik">Versionshistorik</a>
+      <a href="./#faq">Vanliga frågor</a>
+    </nav>
+    <div class="footer-col">
+      <h2>Konto</h2>
+      <p class="footer-note">
+        Registreringen sker här på webbplatsen. I appen loggar du in med användarnamnet
+        och lösenordet du väljer.
+      </p>
+    </div>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>© <span id="year">2026</span> appbuildersweden. Alla rättigheter förbehållna.</p>
+  </div>
+</footer>
+
+<script type="module" src="./registrera.js"></script>
+</body>
+</html>

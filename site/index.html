@@ -35,6 +35,7 @@
       <a href="#nedladdning">Nedladdning</a>
       <a href="#versionshistorik">Versionshistorik</a>
       <a href="#faq">Vanliga frågor</a>
+      <a href="./registrera.html">Skapa konto</a>
       <a class="btn btn-primary btn-sm nav-cta" href="#nedladdning">Ladda ner Elda</a>
     </nav>
 
@@ -187,6 +188,22 @@
             Nedladdningen är inte tillgänglig ännu. Den dyker upp här så snart en
             stabil version har publicerats.
           </p>
+
+          <!-- Nedladdningen kräver ett godkänt konto. Formuläret loggar in mot
+               samma serverfunktion som appen använder — inget andra konto. -->
+          <form class="dl-login" id="dl-login" hidden>
+            <p class="download-note" id="dl-login-hint">
+              Logga in med kontot du skapade i registreringen. Har du inget konto?
+              <a class="text-link" href="./registrera.html">Registrera dig här</a>.
+            </p>
+            <label class="dl-label" for="dl-user">Användarnamn</label>
+            <input class="dl-input" id="dl-user" autocomplete="username" spellcheck="false">
+            <label class="dl-label" for="dl-pass">Lösenord</label>
+            <input class="dl-input" id="dl-pass" type="password" autocomplete="current-password">
+            <button type="submit" class="btn btn-primary" id="dl-login-btn">Logga in och ladda ner</button>
+          </form>
+
+          <p class="download-note" id="dl-status" hidden></p>
         </div>
       </div>
 
@@ -260,6 +277,10 @@
 
       <div class="faq reveal">
         <details>
+          <summary>Hur skapar jag ett konto?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Konton skapas här på webbplatsen med <a href="./registrera.html">registreringsboten</a>. Boten ställer frågorna steg för steg, och servern kontrollerar varje svar och skapar kontot. I appen loggar du sedan in med användarnamnet och lösenordet du valde — där finns ingen registrering.</p></div>
+        </details>
+        <details>
           <summary>Hur laddar jag ner Elda?<span class="chev" aria-hidden="true"></span></summary>
           <div class="faq-body"><p>Gå till nedladdningssektionen och tryck på knappen <strong>Ladda ner Elda för Windows</strong>. Om ingen stabil version har publicerats ännu visas det tydligt på sidan och knappen är inte aktiv.</p></div>
         </details>
@@ -299,6 +320,7 @@
     </div>
     <nav class="footer-col" aria-label="Sidfot">
       <h2>Produkten</h2>
+      <a href="./registrera.html">Skapa konto</a>
       <a href="#nedladdning">Nedladdning</a>
       <a href="#versionshistorik">Versionshistorik</a>
       <a href="#faq">Vanliga frågor</a>

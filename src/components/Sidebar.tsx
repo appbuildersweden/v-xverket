@@ -16,19 +16,13 @@ import {
   Circle,
   Sparkles,
   ClipboardList,
-  Shield,
-  Bell,
-  GitBranch,
   ChevronRight,
   UserPlus,
-  GraduationCap,
   Layers,
   Settings,
-  ScrollText,
   History,
+  Contact,
 } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
-
 export type PanelType = 'elev' | 'speciallarar' | 'admin';
 
 interface NavItemDef {
@@ -49,8 +43,12 @@ interface SidebarProps {
   panel: PanelType;
   activePage: string;
   onNavigate: (pageId: string) => void;
-  onSwitchPanel: (panel: PanelType) => void;
   onOpenProfile: () => void;
+  /**
+   * Lärarnas funktionsval från servern. Styr vilka menyval som visas; undefined
+   * betyder "visa hela panelen" (t.ex. för en administratör).
+   */
+  features?: string[];
 }
 
 // ----------------------------------------------------------------
@@ -163,107 +161,112 @@ const SPECIALLARAR_CATEGORIES: NavCategoryDef[] = [
 
 const ADMIN_CATEGORIES: NavCategoryDef[] = [
   {
-    id: 'adm-hem',
-    label: 'Startsida',
+    id: 'adm-oversikt',
+    label: 'Översikt',
     icon: <Home size={15} />,
-    items: [{ id: 'start', label: 'Administrativ översikt', icon: <Home size={17} /> }],
+    items: [{ id: 'start', label: 'Översikt', icon: <Home size={17} /> }],
   },
   {
-    id: 'adm-anvandare',
-    label: 'Användare',
+    id: 'adm-konton',
+    label: 'Användare och konton',
     icon: <Users size={15} />,
     items: [
-      { id: 'anv-elever', label: 'Elever', icon: <Users size={17} /> },
-      { id: 'anv-personal', label: 'Personal', icon: <Users size={17} /> },
-      { id: 'anv-speciallarare', label: 'Speciallärare', icon: <Users size={17} /> },
-      { id: 'anvandare', label: 'Konton', icon: <UserPlus size={17} /> },
-      { id: 'create-user', label: 'Skapa konto', icon: <UserPlus size={17} /> },
+      { id: 'anvandare', label: 'Användare och konton', icon: <Users size={17} /> },
     ],
   },
   {
-    id: 'adm-roller',
-    label: 'Roller & behörigheter',
-    icon: <Shield size={15} />,
-    items: [{ id: 'roller', label: 'Roller och behörigheter', icon: <Shield size={17} /> }],
+    id: 'adm-skapa-konto',
+    label: 'Skapa konto',
+    icon: <UserPlus size={15} />,
+    items: [{ id: 'create-user', label: 'Skapa konto', icon: <UserPlus size={17} /> }],
   },
   {
-    id: 'adm-skola',
-    label: 'Skolhantering',
-    icon: <GraduationCap size={15} />,
+    id: 'adm-nyheter',
+    label: 'Nyheter och uppdateringar',
+    icon: <History size={15} />,
     items: [
-      { id: 'klasser', label: 'Klasser', icon: <GraduationCap size={17} /> },
-      { id: 'elevgrupper', label: 'Elevgrupper', icon: <Layers size={17} /> },
-      { id: 'amnen', label: 'Ämnen', icon: <BookOpen size={17} /> },
-      { id: 'scheman', label: 'Scheman', icon: <Calendar size={17} /> },
-      { id: 'kopplingar', label: 'Elever & personal', icon: <GitBranch size={17} /> },
-      { id: 'kontaktlistor', label: 'Kontaktlistor', icon: <Users size={17} /> },
+      {
+        id: 'nyheter',
+        label: 'Nyheter och uppdateringar',
+        icon: <History size={17} />,
+      },
+      {
+        id: 'uppdateringar',
+        label: 'Uppdateringar',
+        icon: <History size={17} />,
+      },
     ],
   },
   {
-    id: 'adm-uppgifter',
-    label: 'Uppgifter & undervisning',
-    icon: <ClipboardList size={15} />,
-    items: [
-      { id: 'uppgifter', label: 'Uppgifter', icon: <ClipboardList size={17} /> },
-      { id: 'material', label: 'Undervisningsmaterial', icon: <BookOpen size={17} /> },
-      { id: 'elev-dokument', label: 'Elev-dokument', icon: <FileText size={17} /> },
-      { id: 'larare-dokument', label: 'Lärare-dokument', icon: <FileText size={17} /> },
-    ],
-  },
-  {
-    id: 'adm-kommunikation',
-    label: 'Kommunikation',
-    icon: <MessageCircle size={15} />,
+    id: 'adm-meddelanden',
+    label: 'Meddelanden',
+    icon: <MessageSquare size={15} />,
     items: [
       { id: 'meddelanden', label: 'Meddelanden', icon: <MessageSquare size={17} /> },
-      { id: 'forum', label: 'Forum', icon: <MessageCircle size={17} /> },
-      { id: 'nyheter', label: 'Nyheter', icon: <GitBranch size={17} /> },
     ],
   },
   {
-    id: 'adm-ai',
-    label: 'AI',
-    icon: <Brain size={15} />,
+    id: 'adm-lararkontakter',
+    label: 'Lärarkontakter',
+    icon: <Contact size={15} />,
     items: [
-      { id: 'ai-chat', label: 'AI-chat', icon: <Brain size={17} /> },
-      { id: 'ai-installningar', label: 'AI-inställningar', icon: <Settings size={17} /> },
+      { id: 'lararkontakter', label: 'Lärarkontakter', icon: <Contact size={17} /> },
     ],
   },
   {
-    id: 'adm-system',
-    label: 'System',
-    icon: <Bell size={15} />,
+    id: 'adm-installningar',
+    label: 'Inställningar',
+    icon: <Settings size={15} />,
     items: [
-      { id: 'installningar', label: 'Appinställningar', icon: <Settings size={17} /> },
-      { id: 'loggar', label: 'Loggar', icon: <ScrollText size={17} /> },
-      { id: 'uppdateringar', label: 'Uppdateringar', icon: <History size={17} /> },
+      { id: 'installningar', label: 'Inställningar', icon: <Settings size={17} /> },
     ],
   },
 ];
 
-function categoriesForPanel(panel: PanelType): NavCategoryDef[] {
-  if (panel === 'elev') return ELEV_CATEGORIES;
-  if (panel === 'speciallarar') return SPECIALLARAR_CATEGORIES;
-  return ADMIN_CATEGORIES;
-}
-
-const panelLabels: Record<PanelType, string> = {
-  elev: 'Elev',
-  speciallarar: 'Speciallärare',
-  admin: 'Admin',
+// Funktionsval → menyval. Strängarna är desamma som servern och databasen
+// använder (supabase/functions/_shared/features.ts). Äldre etiketter finns kvar
+// så att ett konto som sparades före namnbytet inte tappar sina val.
+const FEATURE_ITEMS: Record<string, string[]> = {
+  'Klass och elevöversikt': ['elever', 'meddelande-elever'],
+  'Klass och klasschatt': ['elever', 'meddelande-elever'],
+  'Uppgifter och uppföljning': ['uppföljning'],
+  'Uppgifter och återkoppling': ['uppföljning'],
+  'Undervisningsmaterial': ['material'],
+  'Planering och att göra': ['planering'],
+  'Provträning och flashcards': ['uppföljning'],
+  'Belöningar och nivåer': ['belonningar'],
+  'AI-stöd i undervisningen': ['ai-assistent'],
 };
+
+/** Vyer som alltid finns i personalpanelen, oavsett funktionsval. */
+const ALWAYS_VISIBLE = new Set(['hem', 'global-chatt', 'private-chattar']);
+
+function categoriesForPanel(panel: PanelType, features?: string[]): NavCategoryDef[] {
+  if (panel === 'elev') return ELEV_CATEGORIES;
+  if (panel === 'admin') return ADMIN_CATEGORIES;
+
+  if (!features) return SPECIALLARAR_CATEGORIES;
+
+  const allowed = new Set(ALWAYS_VISIBLE);
+  for (const feature of features) {
+    for (const item of FEATURE_ITEMS[feature] ?? []) allowed.add(item);
+  }
+
+  return SPECIALLARAR_CATEGORIES.map((category) => ({
+    ...category,
+    items: category.items.filter((item) => allowed.has(item.id)),
+  })).filter((category) => category.items.length > 0);
+}
 
 export const Sidebar: React.FC<SidebarProps> = ({
   panel,
   activePage,
   onNavigate,
-  onSwitchPanel,
   onOpenProfile,
+  features,
 }) => {
-  const { user } = useAuth();
-  const categories = categoriesForPanel(panel);
+  const categories = categoriesForPanel(panel, features);
   const [openIds, setOpenIds] = useState<string[]>([]);
-  const isAdminUser = user?.role === 'admin';
 
   // Öppna alltid den kategori som innehåller den aktiva undersidan.
   useEffect(() => {
@@ -285,24 +288,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span>Elda</span>
       </div>
 
-      {/* Panelväljare — endast administratörer får växla mellan paneler */}
-      {isAdminUser && (
-        <div style={{ display: 'flex', gap: 4, padding: '0 6px 10px' }}>
-          {(['elev', 'speciallarar', 'admin'] as PanelType[]).map((p) => (
+      <nav className="side-nav" aria-label="Huvudmeny">
+        {panel === 'admin' &&
+          categories.flatMap((cat) => cat.items).map((item) => (
             <button
-              key={p}
-              className={`btn btn-sm ${panel === p ? 'btn-primary' : 'btn-outline'}`}
-              style={{ flex: 1, padding: '5px 4px', fontSize: 11 }}
-              onClick={() => onSwitchPanel(p)}
+              type="button"
+              key={item.id}
+              className={`nav-item admin-nav-item${
+                activePage === item.id ? ' active' : ''
+              }`}
+              onClick={() => onNavigate(item.id)}
+              aria-current={activePage === item.id ? 'page' : undefined}
+              aria-label={item.label}
+              title={item.label}
             >
-              {panelLabels[p]}
+              {item.icon}
+              <span>{item.label}</span>
             </button>
           ))}
-        </div>
-      )}
 
-      <nav className="side-nav" aria-label="Huvudmeny">
-        {categories.map((cat) => {
+        {panel !== 'admin' && categories.map((cat) => {
           const isOpen = openIds.includes(cat.id);
           const containsActive = cat.items.some((i) => i.id === activePage);
           return (
