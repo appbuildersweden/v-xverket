@@ -1,0 +1,1617 @@
+/* =================================================================
+   Privatelevpanelen – eget utseende.
+
+   Allt här är begränsat till [data-panel='privat'] på app-skalet. Den
+   befintliga elevpanelen (och övriga paneler) behåller sitt utseende, medan
+   privateleven får tätare typografi, mjukare ytor, tydligare rader och ett
+   lugnare mörkt läge.
+
+   Färgerna kommer från Eldas befintliga temavariabler (globals.css) plus några
+   egna --pv-* som vänder med temat. Inga hårdkodade färger används, så både
+   ljust och mörkt läge håller kontrasten.
+   ================================================================= */
+
+/* ---------------------------------------------------------------- 1. Tokens */
+[data-panel='privat'] {
+  --pv-radius: 14px;
+  --pv-radius-sm: 10px;
+  --pv-radius-xs: 8px;
+  --pv-ring: rgba(17, 17, 17, 0.12);
+  --pv-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --pv-shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
+  /* Sidans duk ligger en aning under korten, så att korten syns utan att allt
+     blir separata rutor. */
+  --pv-page: #f5f6f7;
+  --pv-surface: #ffffff;
+  --pv-surface-2: #f5f6f7;
+  --pv-surface-3: #eceef0;
+  --pv-line: #e7e9ec;
+  --pv-ink: #101113;
+  --pv-ink-2: #454a52;
+  /* Mörk nog att klara 4,5:1 även mot den grå ytan --pv-surface-2. */
+  --pv-ink-3: #666b72;
+  --pv-accent: #111111;
+  --pv-accent-fg: #ffffff;
+}
+
+[data-theme='dark'] [data-panel='privat'] {
+  --pv-ring: rgba(255, 255, 255, 0.18);
+  --pv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --pv-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  /* Mörkt läge: kortet ligger över duken, inte under den. */
+  --pv-page: #0e0f12;
+  --pv-surface: #17191e;
+  --pv-surface-2: #1e2127;
+  --pv-surface-3: #262a31;
+  --pv-line: #2b2f36;
+  --pv-ink: #f5f6f7;
+  --pv-ink-2: #c8ccd3;
+  --pv-ink-3: #969ba4;
+  --pv-accent: #ffffff;
+  --pv-accent-fg: #111111;
+}
+
+/* ------------------------------------------------------- 2. Sidans ramverk */
+[data-panel='privat'] .main-col {
+  padding: 0 28px 48px;
+  background: var(--pv-page);
+}
+
+[data-panel='privat'] .panel-page,
+[data-panel='privat'] .profil-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-top: 24px;
+}
+
+/* Sidomenyn behåller ytan, men innehållet får en ljusare duk i mörkt läge. */
+[data-panel='privat'] .sidebar {
+  background: var(--pv-surface);
+  border-right-color: var(--pv-line);
+}
+
+/* ---------------------------------------------------------------- 3. Kort */
+[data-panel='privat'] .card {
+  background: var(--pv-surface);
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius);
+  padding: 20px 22px;
+  box-shadow: var(--pv-shadow-sm);
+}
+
+[data-panel='privat'] .card-head {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .card-title {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .card-sub {
+  margin-top: 5px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .card-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------- 4. Knappar */
+[data-panel='privat'] .btn {
+  padding: 9px 15px;
+  border-radius: var(--pv-radius-sm);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.2;
+  gap: 7px;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease,
+    color 130ms ease,
+    transform 130ms ease;
+}
+
+[data-panel='privat'] .btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+[data-panel='privat'] .btn-primary {
+  background: var(--pv-accent);
+  color: var(--pv-accent-fg);
+  border-color: var(--pv-accent);
+}
+
+[data-panel='privat'] .btn-primary:hover:not(:disabled) {
+  opacity: 1;
+  filter: brightness(1.08);
+}
+
+[data-theme='dark'] [data-panel='privat'] .btn-primary:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+[data-panel='privat'] .btn-outline {
+  background: var(--pv-surface);
+  border-color: var(--pv-line);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .btn-outline:hover:not(:disabled) {
+  background: var(--pv-surface-2);
+  border-color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .btn-ghost:hover:not(:disabled) {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .btn-sm {
+  padding: 6px 11px;
+  font-size: 12px;
+}
+
+[data-panel='privat'] .icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--pv-radius-xs);
+  border-color: transparent;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .icon-btn:hover:not(:disabled) {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] button:disabled,
+[data-panel='privat'] .chip:disabled {
+  opacity: 0.45;
+}
+
+[data-panel='privat'] :focus-visible {
+  outline: 2px solid var(--pv-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------ 5. Fält och formulär */
+[data-panel='privat'] .input {
+  padding: 10px 13px;
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+  color: var(--pv-ink);
+  font-size: 13.5px;
+}
+
+[data-panel='privat'] .input:hover:not(:disabled) {
+  border-color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .input:focus {
+  border-color: var(--pv-accent);
+  box-shadow: 0 0 0 3px var(--pv-ring);
+}
+
+[data-panel='privat'] .field {
+  margin-bottom: 15px;
+}
+
+[data-panel='privat'] .field label,
+[data-panel='privat'] .field-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .field-hint,
+[data-panel='privat'] .field-hint-reg {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .field-hint-error {
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .textarea {
+  min-height: 96px;
+  line-height: 1.6;
+}
+
+[data-panel='privat'] .check-inline {
+  padding: 10px 12px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+  font-size: 13px;
+}
+
+[data-panel='privat'] .fieldset {
+  border-color: var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+}
+
+/* --------------------------------------------------- 6. Etiketter och chips */
+[data-panel='privat'] .pill {
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  border-radius: 999px;
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .pill-ok {
+  background: var(--pv-accent);
+  border-color: var(--pv-accent);
+  color: var(--pv-accent-fg);
+}
+
+[data-panel='privat'] .pill-info {
+  background: var(--pv-surface);
+  border-color: var(--pv-ink-3);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pill-warn {
+  background: transparent;
+  border-color: var(--pv-ink);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pill-muted {
+  background: transparent;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+  font-size: 11px;
+}
+
+[data-panel='privat'] .chip {
+  padding: 7px 13px;
+  border-radius: 999px;
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+  color: var(--pv-ink-2);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+[data-panel='privat'] .chip:hover:not(:disabled) {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .chip-active {
+  background: var(--pv-accent);
+  border-color: var(--pv-accent);
+  color: var(--pv-accent-fg);
+}
+
+/* ------------------------------------------------------------ 7. Listrader */
+[data-panel='privat'] .list {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-panel='privat'] .list-item {
+  gap: 14px;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--pv-line);
+  border-radius: 0;
+}
+
+[data-panel='privat'] .list-item:last-child {
+  border-bottom: none;
+}
+
+[data-panel='privat'] .list-item:not(.list-item-static):hover {
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .list-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .list-item-sub {
+  margin-top: 3px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .list-item > svg {
+  color: var(--pv-ink-3);
+  flex-shrink: 0;
+}
+
+/* -------------------------------------------------- 8. Nyckeltal och rutnät */
+[data-panel='privat'] .grid-4,
+[data-panel='privat'] .grid-3,
+[data-panel='privat'] .grid-2 {
+  gap: 10px;
+}
+
+[data-panel='privat'] .grid-4 {
+  margin-bottom: 4px;
+}
+
+[data-panel='privat'] .stat-card {
+  padding: 12px 14px;
+  text-align: left;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .stat-card .lbl {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .stat-card .val {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .stat-card .det {
+  font-size: 12px;
+  color: var(--pv-ink-3);
+}
+
+/* ------------------------------------------------------------ 9. Förlopp */
+[data-panel='privat'] .progress-block {
+  gap: 7px;
+  margin: 14px 0 4px;
+}
+
+[data-panel='privat'] .progress-block .progress-row {
+  font-size: 12px;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .progress {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--pv-surface-3);
+}
+
+[data-panel='privat'] .progress-fill {
+  background: var(--pv-accent);
+  border-radius: 999px;
+}
+
+[data-panel='privat'] .row-actions {
+  gap: 9px;
+  margin-top: 14px;
+}
+
+/* ------------------------------------------- 10. Lägen, notiser och rubriker */
+[data-panel='privat'] .state-note {
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+[data-panel='privat'] .state-note-error {
+  border-color: var(--pv-line);
+  border-left: 3px solid var(--pv-accent);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .security-note {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .empty-state {
+  padding: 34px 20px;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .empty-state-icon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+  border: 1px dashed var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .empty-state-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .empty-state-desc {
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .spinner-dark {
+  border-color: var(--pv-ink-3);
+  border-top-color: transparent;
+}
+
+/* -------------------------------------------------- 11. Verktygsrad och sök */
+[data-panel='privat'] .toolbar {
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+[data-panel='privat'] .search-field {
+  border-color: var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .search-field:focus-within {
+  border-color: var(--pv-accent);
+  box-shadow: 0 0 0 3px var(--pv-ring);
+}
+
+[data-panel='privat'] .search-field .input {
+  background: transparent;
+}
+
+[data-panel='privat'] .field-inline > span {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--pv-ink-3);
+}
+
+/* ---------------------------------------------------------- 12. Kalendern */
+[data-panel='privat'] .calendar-head {
+  margin-bottom: 14px;
+}
+
+[data-panel='privat'] .calendar-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .calendar-grid {
+  gap: 5px;
+}
+
+[data-panel='privat'] .calendar-weekday {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .calendar-day {
+  min-height: 52px;
+  border: 1px solid transparent;
+  border-radius: var(--pv-radius-xs);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+  font-size: 13px;
+  font-weight: 550;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+[data-panel='privat'] .calendar-day:hover {
+  border-color: var(--pv-ink-3);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .calendar-day-outside {
+  opacity: 0.45;
+}
+
+[data-panel='privat'] .calendar-day-today {
+  border-color: var(--pv-ink);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .calendar-day-selected {
+  background: var(--pv-accent);
+  border-color: var(--pv-accent);
+  color: var(--pv-accent-fg);
+}
+
+[data-panel='privat'] .calendar-day-count {
+  min-width: 17px;
+  height: 15px;
+  border-radius: 999px;
+  background: var(--pv-ink);
+  color: var(--pv-surface);
+  font-size: 10px;
+}
+
+[data-panel='privat'] .calendar-day-selected .calendar-day-count {
+  background: var(--pv-accent-fg);
+  color: var(--pv-accent);
+}
+
+/* -------------------------------------------------------- 13. Flashcards */
+[data-panel='privat'] .flashcard {
+  min-height: 200px;
+  padding: 30px 24px;
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+  box-shadow: var(--pv-shadow-sm);
+}
+
+[data-panel='privat'] .flashcard:hover {
+  border-color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .flashcard-flipped {
+  background: var(--pv-surface-3);
+}
+
+[data-panel='privat'] .flashcard-side {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .flashcard-text {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .flashcard-hint {
+  font-size: 11.5px;
+  color: var(--pv-ink-3);
+}
+
+/* ------------------------------------------------------- 14. Provträning */
+[data-panel='privat'] .quiz-question h3 {
+  margin: 10px 0 16px;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .quiz-options {
+  gap: 9px;
+}
+
+[data-panel='privat'] .quiz-option {
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+  font-size: 13.5px;
+  color: var(--pv-ink);
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
+}
+
+[data-panel='privat'] .quiz-option:hover {
+  background: var(--pv-surface-2);
+  border-color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .quiz-option-selected {
+  border-color: var(--pv-accent);
+  background: var(--pv-surface-3);
+  box-shadow: inset 0 0 0 1px var(--pv-accent);
+}
+
+[data-panel='privat'] .quiz-option-selected span {
+  font-weight: 600;
+}
+
+/* --------------------------------------------------- 15. Uppgiftsdetaljer */
+[data-panel='privat'] .instructions {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .instructions-text {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .submission-box {
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .submission-box .btn {
+  align-self: flex-start;
+}
+
+/* ------------------------------------------------------ 16. AI och chatt */
+[data-panel='privat'] .ai-chat {
+  height: min(64vh, 580px);
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .chat-messages {
+  gap: 14px;
+  padding: 20px;
+}
+
+[data-panel='privat'] .chat-intro {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 1px dashed var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface);
+  text-align: left;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .chat-intro h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .chat-intro p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+[data-panel='privat'] .chat-msg {
+  max-width: 78%;
+  padding: 11px 14px;
+  border-radius: var(--pv-radius-sm);
+  font-size: 13.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+[data-panel='privat'] .chat-msg-user {
+  border-bottom-right-radius: 4px;
+  background: var(--pv-accent);
+  color: var(--pv-accent-fg);
+}
+
+[data-panel='privat'] .chat-msg-ai {
+  border: 1px solid var(--pv-line);
+  border-bottom-left-radius: 4px;
+  background: var(--pv-surface);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .chat-msg-ai .chat-error {
+  color: var(--pv-ink);
+  background: var(--pv-surface-2);
+  border: 1px solid var(--pv-line);
+  border-left: 3px solid var(--pv-accent);
+  border-radius: var(--pv-radius-xs);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+[data-panel='privat'] .chat-msg-ai .chat-error.chat-error-service {
+  background: var(--pv-surface-3);
+  border-color: var(--pv-line);
+}
+
+[data-panel='privat'] .chat-typing {
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .chat-composer {
+  gap: 10px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--pv-line);
+  background: var(--pv-surface);
+}
+
+[data-panel='privat'] .chat-composer-inner {
+  align-items: flex-end;
+  gap: 10px;
+}
+
+[data-panel='privat'] .chat-textarea {
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: none;
+}
+
+[data-panel='privat'] .chat-textarea:focus {
+  border-color: var(--pv-accent);
+  box-shadow: 0 0 0 3px var(--pv-ring);
+}
+
+[data-panel='privat'] .chat-send {
+  padding: 11px 18px;
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-accent);
+  color: var(--pv-accent-fg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+[data-panel='privat'] .chat-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+[data-theme='dark'] [data-panel='privat'] .chat-send:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+[data-panel='privat'] .ai-doc {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .ai-doc-head {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .ai-doc-file {
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+}
+
+/* ------------------------------------------------------------ 17. Dialog */
+[data-panel='privat'] .modal-backdrop {
+  background: rgba(9, 10, 12, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+[data-panel='privat'] .modal {
+  max-width: 600px;
+  padding: 22px 24px 26px;
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+  box-shadow: var(--pv-shadow);
+}
+
+[data-panel='privat'] .modal-head {
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--pv-line);
+}
+
+/* --------------------------------------------------------- 18. Belöningar */
+[data-panel='privat'] .reward-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+[data-panel='privat'] .reward-tile {
+  border-radius: var(--pv-radius-sm);
+  border-color: var(--pv-line);
+  background: var(--pv-surface-2);
+  padding: 16px 14px;
+}
+
+[data-panel='privat'] .reward-tile:hover {
+  box-shadow: var(--pv-shadow);
+}
+
+[data-panel='privat'] .reward-tile.unlocked {
+  border-color: var(--pv-accent);
+  background: var(--pv-surface);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .reward-tile.unlocked::after {
+  content: '';
+}
+
+[data-panel='privat'] .reward-tile-name {
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .reward-tile-req,
+[data-panel='privat'] .reward-tile-desc,
+[data-panel='privat'] .page-sub {
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .xp-card {
+  border-color: var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .next-goal {
+  gap: 18px;
+}
+
+/* --------------------------------------------------------- 19. Översikten */
+[data-panel='privat'] .pv-hero {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 26px 26px 24px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius);
+  background: var(--pv-surface);
+  box-shadow: var(--pv-shadow-sm);
+}
+
+[data-panel='privat'] .pv-hero-main {
+  flex: 1 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+[data-panel='privat'] .pv-eyebrow {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-hero-title {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pv-hero-lead {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .pv-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+[data-panel='privat'] .pv-hero-side {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-left: 24px;
+  border-left: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .pv-ring {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  flex-shrink: 0;
+}
+
+[data-panel='privat'] .pv-ring svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+[data-panel='privat'] .pv-ring-track {
+  fill: none;
+  stroke: var(--pv-surface-3);
+  stroke-width: 8;
+}
+
+[data-panel='privat'] .pv-ring-fill {
+  fill: none;
+  stroke: var(--pv-accent);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 400ms ease;
+}
+
+[data-panel='privat'] .pv-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+[data-panel='privat'] .pv-ring-value {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pv-ring-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 132px;
+}
+
+[data-panel='privat'] .pv-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-panel='privat'] .pv-fact-value {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pv-fact-label {
+  font-size: 11.5px;
+  color: var(--pv-ink-3);
+}
+
+/* Två kolumner på översikten: dagens arbete bredvid det som kommer. */
+[data-panel='privat'] .pv-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+[data-panel='privat'] .pv-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+[data-panel='privat'] .pv-agenda-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .pv-agenda-item:last-child {
+  border-bottom: none;
+}
+
+[data-panel='privat'] .pv-agenda-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .pv-agenda-body {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-panel='privat'] .pv-agenda-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--pv-ink);
+  overflow-wrap: anywhere;
+}
+
+[data-panel='privat'] .pv-agenda-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+}
+
+[data-panel='privat'] .pv-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+  text-align: center;
+}
+
+[data-panel='privat'] .pv-week-day.is-today {
+  border-color: var(--pv-ink);
+  background: var(--pv-surface);
+}
+
+[data-panel='privat'] .pv-week-weekday {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-week-number {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pv-week-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+[data-panel='privat'] .pv-week-count.has-items {
+  background: var(--pv-accent);
+  color: var(--pv-accent-fg);
+}
+
+[data-panel='privat'] .pv-week-count.is-empty {
+  border: 1px dashed var(--pv-line);
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-ai {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+[data-panel='privat'] .pv-ai-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: var(--pv-radius-sm);
+  border: 1px solid var(--pv-line);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .pv-ai-body {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-panel='privat'] .pv-ai-text {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .pv-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 9px;
+}
+
+[data-panel='privat'] .pv-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+  font-size: 13px;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 130ms ease,
+    border-color 130ms ease;
+}
+
+[data-panel='privat'] .pv-link:hover {
+  background: var(--pv-surface);
+  border-color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .pv-link svg {
+  color: var(--pv-ink-3);
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------- 20. Meny och sidhuvud */
+[data-panel='privat'] .sidebar {
+  padding: 18px 12px 16px;
+  gap: 14px;
+}
+
+[data-panel='privat'] .brand {
+  gap: 11px;
+  margin-bottom: 6px;
+  padding: 4px 6px 14px;
+  border-bottom: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .brand img {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+[data-panel='privat'] .brand-name {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+[data-panel='privat'] .brand-panel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .side-nav {
+  gap: 3px;
+  padding-right: 2px;
+}
+
+[data-panel='privat'] .nav-group {
+  margin-bottom: 2px;
+}
+
+[data-panel='privat'] .nav-cat {
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--pv-radius-xs);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--pv-ink-3);
+  background: transparent;
+}
+
+[data-panel='privat'] .nav-cat:hover {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .nav-cat.active {
+  background: transparent;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .nav-cat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+}
+
+[data-panel='privat'] .nav-cat-chevron {
+  width: 13px;
+  height: 13px;
+  color: var(--pv-ink-3);
+  transition: transform 160ms ease;
+}
+
+[data-panel='privat'] .nav-cat-chevron.open {
+  transform: rotate(90deg);
+}
+
+[data-panel='privat'] .nav-sub {
+  margin: 2px 0 6px;
+  border-radius: var(--pv-radius-xs);
+  background: transparent;
+}
+
+[data-panel='privat'] .nav-sub-inner {
+  gap: 2px;
+  padding-left: 10px;
+  border-left: 1px solid var(--pv-line);
+  margin-left: 12px;
+}
+
+[data-panel='privat'] .nav-sub-item {
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--pv-radius-xs);
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .nav-sub-item:hover {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .nav-sub-item.active {
+  background: var(--pv-surface-3);
+  color: var(--pv-ink);
+  font-weight: 650;
+}
+
+[data-panel='privat'] .nav-sub-item svg {
+  color: var(--pv-ink-3);
+  flex-shrink: 0;
+}
+
+[data-panel='privat'] .nav-sub-item.active svg {
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .nav-empty {
+  margin: 10px 8px;
+  font-size: 12.5px;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .side-footer {
+  padding-top: 12px;
+  border-top: 1px solid var(--pv-line);
+}
+
+[data-panel='privat'] .side-footer .nav-item {
+  gap: 10px;
+  padding: 10px 11px;
+  border-radius: var(--pv-radius-xs);
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .side-footer .nav-item:hover {
+  background: var(--pv-surface-2);
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .side-footer .nav-item.active {
+  background: var(--pv-surface-3);
+  color: var(--pv-ink);
+  font-weight: 650;
+}
+
+/* Toppraden ligger kvar överst när innehållet scrollar. */
+[data-panel='privat'] .main-col {
+  position: relative;
+}
+
+[data-panel='privat'] .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  gap: 14px;
+  margin: 0 -28px 22px;
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--pv-line);
+  background: var(--pv-surface);
+}
+
+[data-panel='privat'] .search-box {
+  width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--pv-line);
+  border-radius: var(--pv-radius-sm);
+  background: var(--pv-surface-2);
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .search-box:focus-within {
+  border-color: var(--pv-accent);
+  box-shadow: 0 0 0 3px var(--pv-ring);
+}
+
+[data-panel='privat'] .search-box input {
+  height: 34px;
+  font-size: 13px;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .search-box input::placeholder {
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .page-head {
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+[data-panel='privat'] .page-head h1 {
+  margin-top: 6px;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--pv-ink);
+}
+
+[data-panel='privat'] .breadcrumb {
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--pv-ink-3);
+}
+
+[data-panel='privat'] .breadcrumb .crumb-root {
+  color: var(--pv-ink-2);
+}
+
+[data-panel='privat'] .breadcrumb svg {
+  color: var(--pv-ink-3);
+  opacity: 0.7;
+}
+
+[data-panel='privat'] .menu {
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+  box-shadow: var(--pv-shadow);
+}
+
+[data-panel='privat'] .menu-item:hover {
+  background: var(--pv-surface-2);
+}
+
+[data-panel='privat'] .avatar-circle {
+  background: var(--pv-surface-3);
+  color: var(--pv-ink);
+  font-weight: 650;
+}
+
+[data-panel='privat'] .update-banner {
+  border-radius: var(--pv-radius);
+  border-color: var(--pv-line);
+  background: var(--pv-surface);
+}
+
+/* ------------------------------------------------------------ 21. Rullning */
+[data-panel='privat'] .side-nav,
+[data-panel='privat'] .chat-messages,
+[data-panel='privat'] .table-wrap,
+[data-panel='privat'] .modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pv-ink-3) transparent;
+}
+
+[data-panel='privat'] .side-nav::-webkit-scrollbar,
+[data-panel='privat'] .chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-panel='privat'] .side-nav::-webkit-scrollbar-thumb,
+[data-panel='privat'] .chat-messages::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: var(--pv-line);
+}
+
+/* ---------------------------------------------------------- 22. Responsivt */
+@media (max-width: 1080px) {
+  [data-panel='privat'] .pv-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* När ringen inte längre står bredvid texten får nyckeltalen plats i en rad
+     i stället för en hög kolumn — hero-kortet blir betydligt kortare. */
+  [data-panel='privat'] .pv-hero-side {
+    flex-wrap: wrap;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid var(--pv-line);
+    padding-top: 18px;
+    width: 100%;
+  }
+
+  [data-panel='privat'] .pv-facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  [data-panel='privat'] .pv-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  [data-panel='privat'] .main-col {
+    padding: 0 16px 40px;
+  }
+
+  [data-panel='privat'] .panel-page,
+  [data-panel='privat'] .profil-page {
+    padding-top: 18px;
+  }
+
+  [data-panel='privat'] .topbar {
+    margin: 0 -16px 18px;
+    padding: 10px 16px;
+  }
+
+  [data-panel='privat'] .sidebar {
+    position: fixed;
+    height: 100vh;
+  }
+
+  [data-panel='privat'] .pv-hero {
+    padding: 20px 18px 18px;
+  }
+
+  [data-panel='privat'] .pv-hero-title {
+    font-size: 23px;
+  }
+}
+
+@media (max-width: 640px) {
+  [data-panel='privat'] .card {
+    padding: 16px 15px;
+  }
+
+  [data-panel='privat'] .grid-4,
+  [data-panel='privat'] .grid-3,
+  [data-panel='privat'] .grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-panel='privat'] .pv-week {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  [data-panel='privat'] .pv-hero-side {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  /* På smala fönster får texten en minsta bredd och knapparna flyttar ner på
+     en egen rad i stället för att texten kläms ihop till några tecken. */
+  [data-panel='privat'] .list-item {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    align-items: flex-start;
+  }
+
+  [data-panel='privat'] .list-item-content {
+    min-width: 150px;
+    overflow-wrap: anywhere;
+  }
+
+  [data-panel='privat'] .list-item > .btn,
+  [data-panel='privat'] .list-item > .icon-btn,
+  [data-panel='privat'] .list-item > .chip,
+  [data-panel='privat'] .list-item > .confirm-inline {
+    flex: 0 0 auto;
+  }
+
+  [data-panel='privat'] .page-head h1 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 460px) {
+  [data-panel='privat'] .grid-4,
+  [data-panel='privat'] .grid-3,
+  [data-panel='privat'] .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-panel='privat'] .pv-week {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

@@ -117,7 +117,7 @@ export const PlannerCalendar: React.FC<Props> = ({ items, selected, onSelect }) 
       <p className="field-hint">
         {counts.total === 0
           ? 'Inga poster med datum ännu. Lägg till en post med datum så syns den i kalendern.'
-          : `${counts.total} poster med datum${
+          : `${counts.total} ${counts.total === 1 ? 'post' : 'poster'} med datum${
               counts.withoutDate > 0 ? ` · ${counts.withoutDate} utan datum` : ''
             }.`}
       </p>

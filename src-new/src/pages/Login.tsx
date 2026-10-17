@@ -3,6 +3,7 @@ import { Eye, EyeOff, KeyRound, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useTheme } from '../theme';
 import { useAuth } from '../lib/AuthContext';
 import { MIN_PASSWORD_LENGTH, validateNewPassword } from '../lib/password';
+import { demoSupported, setDemoRequested } from '../lib/demo-mode';
 
 /**
  * Hemsidans registreringsbot är den enda publika vägen till ett konto.
@@ -265,6 +266,28 @@ export const Login: React.FC = () => {
             </>
           )}
         </form>
+
+        {/* Bara i utvecklingsbygget: en genväg till panelen med påhittad
+            exempeldata. Den finns aldrig i en produktionsbundle och startar
+            ingen riktig session. */}
+        {import.meta.env.DEV && demoSupported() && (
+          <div className="demo-start" data-testid="demo-start">
+            <p className="demo-start-text">
+              Utvecklingsläge: visa privatelevpanelen med påhittad exempeldata.
+              Inget sparas och ingen session skapas.
+            </p>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setDemoRequested(true);
+                window.location.reload();
+              }}
+            >
+              Förhandsgranska som demoelev
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,11 +4,27 @@ import App from './App';
 import { ThemeProvider } from './theme';
 import './styles/globals.css';
 import './styles/panels.css';
+// Privatelevpanelens egna utseende. Filen är begränsad till [data-panel='privat']
+// och rör därför inte övriga panelers gränssnitt.
+import './styles/privat.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+/**
+ * Demoläget finns bara i utvecklingsbygget. Grenen är alltid falsk i `dist`, så
+ * Vite tar bort den (och därmed hela demo-modulen) ur produktionsbundeln.
+ */
+async function boot() {
+  if (import.meta.env.DEV) {
+    const { startDemoFromAddress } = await import('./demo/boot');
+    await startDemoFromAddress();
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+}
+
+void boot();

@@ -115,7 +115,7 @@ export const AmnenPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) => {
         <SectionCard
           key={subject.name}
           title={subject.name}
-          subtitle={`${subject.total} uppgifter · ${subject.documents.length} dokument`}
+          subtitle={`${subject.total} ${subject.total === 1 ? 'uppgift' : 'uppgifter'} · ${subject.documents.length} dokument`}
         >
           {subject.total > 0 && (
             <ProgressBar

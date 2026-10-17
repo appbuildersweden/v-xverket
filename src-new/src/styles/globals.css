@@ -23,6 +23,11 @@
   --banner-bg: #111827;
   --banner-fg: #f9fafb;
   --shadow-md: 0 12px 32px rgba(15, 23, 42, 0.1);
+
+  /* Kontrastsäkra menyfärger: den aktiva posten inverterar mot temat i stället
+     för att målas vit på vitt (accent är vit i mörkt läge). */
+  --nav-active-bg: #111111;
+  --nav-active-fg: #ffffff;
 }
 
 /* Mörkt läge */
@@ -46,6 +51,9 @@
   --banner-bg: #0b0e13;
   --banner-fg: #f9fafb;
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  --nav-active-bg: #ffffff;
+  --nav-active-fg: #111111;
 }
 
 /* Base */
@@ -54,6 +62,16 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Formulär och knappar ärver appens typsnitt, så att fälten inte byter
+   utseende mellan webbläsare och operativsystem. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 /* Layout */
@@ -64,13 +82,20 @@ body {
 
 /* Sidebar */
 .sidebar {
-  width: 260px;
+  width: 264px;
   background: var(--card);
   border-right: 1px solid var(--border);
-  padding: 24px 16px;
+  padding: 20px 14px;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  /* Menyn står still när innehållet scrollar, och har egen rullning om den
+     blir längre än fönstret. */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 .brand {
@@ -102,20 +127,26 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
+  border: 0;
   border-radius: 8px;
-  cursor: pointer;
-  color: var(--text);
+  /* Knappens egen standardbakgrund måste bort, annars blir menyn en ljus
+     platta med ljus text i mörkt läge. */
+  background: none;
+  font: inherit;
   font-size: 14px;
+  text-align: left;
+  color: var(--text);
+  cursor: pointer;
   transition: background 0.2s;
 }
 
 .nav-cat:hover {
-  background: var(--bg);
+  background: var(--hover);
 }
 
 .nav-cat.active {
-  background: var(--accent);
-  color: white;
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
 }
 
 .nav-cat-icon {
@@ -155,21 +186,26 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 8px 12px;
-  cursor: pointer;
+  border: 0;
+  background: none;
+  font: inherit;
   font-size: 13px;
+  text-align: left;
+  cursor: pointer;
   color: var(--text);
   transition: background 0.2s;
 }
 
 .nav-item:hover {
-  background: var(--muted);
-  color: var(--accent);
+  background: var(--hover);
+  color: var(--fg);
 }
 
 .nav-item.active {
-  background: var(--accent);
-  color: white;
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
 }
 
 .nav-item-icon {
@@ -294,7 +330,8 @@ body {
 }
 
 .btn-outline:hover {
-  background: var(--muted);
+  background: var(--hover);
+  border-color: var(--border-strong);
 }
 
 .btn-ghost {
@@ -1905,4 +1942,58 @@ button:disabled,
     bottom: 12px;
     width: auto;
   }
+}
+
+/* ================= Demoläge (endast utvecklingsbygget) ================= */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.demo-banner-badge {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--btn-fg);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.demo-banner-text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.demo-banner .btn {
+  flex: 0 0 auto;
+}
+
+.demo-start {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.demo-start-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-3);
 }

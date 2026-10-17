@@ -13,6 +13,7 @@ import {
   SupabaseClient,
   User,
 } from '@supabase/supabase-js';
+import { getDemoClient } from './demo-mode';
 import {
   AccountType,
   AccountsResult,
@@ -46,6 +47,12 @@ function getSupabaseAnonKey(): string {
 let supabaseClient: SupabaseClient | null = null;
 
 export function getOrCreateSupabaseClient(): SupabaseClient {
+  // Demoläget byter bara ut transporten mot en lokal klient i utvecklingsbygget.
+  // `getDemoClient` är alltid null i en produktionsbundle, så den riktiga
+  // klienten och autentiseringen påverkas inte.
+  const demo = getDemoClient();
+  if (demo) return demo;
+
   if (supabaseClient) return supabaseClient;
 
   const url = getSupabaseUrl();

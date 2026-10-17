@@ -187,7 +187,9 @@ const QuizRow: React.FC<{ set: QuizSet; onOpen: () => void; onDelete?: () => voi
       <div className="list-item-title">{set.title}</div>
       <div className="list-item-sub">
         {set.subject ? `${set.subject} · ` : ''}
-        {set.questionCount > 0 ? `${set.questionCount} frågor` : 'Frågor hämtas när du övar'}
+        {set.questionCount > 0
+          ? `${set.questionCount} ${set.questionCount === 1 ? 'fråga' : 'frågor'}`
+          : 'Frågor hämtas när du övar'}
       </div>
     </div>
     <button type="button" className="btn btn-outline btn-sm" onClick={onOpen}>
