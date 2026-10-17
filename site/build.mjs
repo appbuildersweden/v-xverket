@@ -19,6 +19,13 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = join(HERE, 'dist');
 const REPO = process.env.ELDA_REPO || 'appbuildersweden/v-xverket';
 const API = `https://api.github.com/repos/${REPO}/releases?per_page=30`;
+// Den publicerade sajten. Används bara som reserv när GitHub inte kan läsas:
+// då behålls den versionshistorik som redan är publicerad i stället för att
+// raderas av ett lokalt bygge utan token.
+const LIVE_SITE = (process.env.ELDA_UPDATER_BASE || 'https://elda-6a9.pages.dev').replace(
+  /\/$/,
+  '',
+);
 
 /** Appens version står i Tauri-konfigurationen och är den som byggs in. */
 async function appVersion() {
@@ -55,6 +62,33 @@ function parseNotes(body) {
     }
   }
   return { summary, sections: sections.filter((s) => s.items.length) };
+}
+
+/**
+ * Läser den versionshistorik som redan ligger publicerad.
+ *
+ * Ett bygge utan GitHub-token (t.ex. lokalt) får inte tömma sajtens
+ * versionshistorik: då skulle en publicering se ut som att inga versioner
+ * någonsin funnits. Den publicerade listan används därför som reserv.
+ */
+async function fetchPublishedReleases() {
+  const res = await fetch(`${LIVE_SITE}/releases.json`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data?.releases) ? data.releases : [];
+}
+
+/**
+ * Sparad kopia av den publicerade historiken, tagen från sajten själv.
+ *
+ * Sista utvägen när varken GitHub eller den publicerade sajten kan läsas
+ * (t.ex. ett lokalt bygge utan nätverk). Filen innehåller bara sådant som
+ * redan varit offentligt på sajten — inga hemligheter.
+ */
+async function readReleasesSnapshot() {
+  const raw = await readFile(join(HERE, 'releases-snapshot.json'), 'utf8');
+  const data = JSON.parse(raw);
+  return Array.isArray(data?.releases) ? data.releases : [];
 }
 
 async function fetchReleases() {
@@ -202,11 +236,29 @@ async function main() {
     releases = await fetchReleases();
     console.log(`✓ ${releases.length} release(s) hämtade från GitHub`);
   } catch (err) {
-    // Webbplatsen ska fungera även utan tillgång till GitHub – då visas
-    // "nedladdning ännu inte tillgänglig" i stället för fel eller påhittade siffror.
+    // Webbplatsen ska fungera även utan tillgång till GitHub – men en tom
+    // lista får inte ersätta en historik som redan är publicerad.
     fetchedAt = new Date().toISOString();
     console.warn(`! kunde inte hämta releaser: ${err.message}`);
-    releases = [];
+    try {
+      const published = await fetchPublishedReleases();
+      // En tom lista betyder att historiken redan är borta — då är den sparade
+      // kopian bättre än ingenting.
+      if (published.length === 0) throw new Error('den publicerade historiken är tom');
+      releases = published;
+      console.warn(
+        `! behåller ${releases.length} redan publicerad(e) release(s) i stället för att tömma historiken`,
+      );
+    } catch (fallbackErr) {
+      console.warn(`! kunde inte läsa den publicerade historiken heller: ${fallbackErr.message}`);
+      try {
+        releases = await readReleasesSnapshot();
+        console.warn(`! använder den sparade historiken (${releases.length} release(s))`);
+      } catch (snapshotErr) {
+        console.warn(`! ingen historik tillgänglig: ${snapshotErr.message}`);
+        releases = [];
+      }
+    }
   }
 
   // Uppdateringsmanifestet måste alltid finnas på den adress appen frågar

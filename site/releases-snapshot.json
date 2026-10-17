@@ -1,0 +1,147 @@
+{
+  "repo": "https://github.com/appbuildersweden/v-xverket",
+  "source": "https://github.com/appbuildersweden/v-xverket/releases",
+  "fetchedAt": "2026-10-17T15:48:49.743Z",
+  "updater": true,
+  "releases": [
+    {
+      "tag": "v0.2.1",
+      "name": "Elda v0.2.1",
+      "url": "https://github.com/appbuildersweden/v-xverket/releases/tag/v0.2.1",
+      "publishedAt": "2026-10-16T16:32:09Z",
+      "prerelease": false,
+      "draft": false,
+      "summary": "Inloggning",
+      "sections": [
+        {
+          "heading": "Ändringar",
+          "items": [
+            "Appen byggs nu med rätt Supabase-adress och anon-nyckel, så inloggning fungerar i den installerade appen.",
+            "Inloggning sker med användarnamn och lösenord.",
+            "Nya konton får automatiskt ett användarnamn från förnamn och efternamn, till exempel ejentu01.",
+            "Nya konton har ett tillfälligt lösenord och måste skapa ett eget vid första inloggningen.",
+            "Bygget avbryts om Supabase-konfigurationen saknas, så en oanvändbar app inte publiceras igen."
+          ]
+        }
+      ],
+      "assets": [
+        {
+          "name": "Elda_0.2.1_x64-setup.exe",
+          "size": 6402147,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.1_x64-setup.exe.sig",
+          "size": 432,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.1_x64_en-US.msi",
+          "size": 7708672,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.1_x64_en-US.msi.sig",
+          "size": 432,
+          "os": "Windows"
+        }
+      ]
+    },
+    {
+      "tag": "v0.2.0",
+      "name": "Elda v0.2.0",
+      "url": "https://github.com/appbuildersweden/v-xverket/releases/tag/v0.2.0",
+      "publishedAt": "2026-10-16T16:03:57Z",
+      "prerelease": false,
+      "draft": false,
+      "summary": "Inloggning och konton",
+      "sections": [
+        {
+          "heading": "Ändringar",
+          "items": [
+            "Inloggning sker med användarnamn och lösenord.",
+            "Nya konton får automatiskt ett användarnamn från förnamn och efternamn, till exempel ejentu01.",
+            "Nya konton har ett tillfälligt lösenord och måste skapa ett eget vid första inloggningen."
+          ]
+        }
+      ],
+      "assets": [
+        {
+          "name": "Elda_0.2.0_x64-setup.exe",
+          "size": 6400391,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.0_x64-setup.exe.sig",
+          "size": 432,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.0_x64_en-US.msi",
+          "size": 7708672,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.2.0_x64_en-US.msi.sig",
+          "size": 432,
+          "os": "Windows"
+        }
+      ]
+    },
+    {
+      "tag": "v0.1.0",
+      "name": "Elda v0.1.0",
+      "url": "https://github.com/appbuildersweden/v-xverket/releases/tag/v0.1.0",
+      "publishedAt": "2026-10-15T22:32:19Z",
+      "prerelease": false,
+      "draft": false,
+      "summary": "Första publicerade versionen av Elda för Windows.",
+      "sections": [
+        {
+          "heading": "Nya funktioner",
+          "items": [
+            "AI-studiehjälp i chatten, med uppföljningsfrågor i samma samtal",
+            "Planering med uppgifter, prioritet, förfallodatum och status",
+            "Belöningar och XP som följer din egen utveckling över tid",
+            "Dokument på beställning som färdiga Word-filer"
+          ]
+        },
+        {
+          "heading": "Förbättringar",
+          "items": [
+            "Appen heter nu Elda och använder egen ikon i fönster, genväg och installationsprogram",
+            "Signerade automatiska uppdateringar är konfigurerade"
+          ]
+        },
+        {
+          "heading": "Felrättningar",
+          "items": [
+            "Inga kända fel i den här versionen"
+          ]
+        }
+      ],
+      "assets": [
+        {
+          "name": "Elda_0.1.0_x64-setup.exe",
+          "size": 6397904,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.1.0_x64-setup.exe.sig",
+          "size": 432,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.1.0_x64_en-US.msi",
+          "size": 7704576,
+          "os": "Windows"
+        },
+        {
+          "name": "Elda_0.1.0_x64_en-US.msi.sig",
+          "size": 432,
+          "os": "Windows"
+        }
+      ]
+    }
+  ]
+}
