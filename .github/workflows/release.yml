@@ -101,11 +101,12 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            AI-hjälpen och registreringen
-            - AI-hjälpen säger nu rakt ut när tjänstens gratiskvot är slut eller krediter saknas, i stället för ett allmänt "försök igen".
-            - Registreringen förklarar att ansökan går till manuell granskning när AI-bedömningen inte kan göras, och att den inte är avslagen.
-            - Texterna kommer från servern, så de gäller även äldre installerade versioner.
-            - Inga ändringar i appens gränssnitt jämfört med 0.2.2; den här versionen publiceras också för att automatiska uppdateringar ska ha en ny version att hämta och verifiera.
+            Ny app med privatelevpanel
+            - Appen som installeras är nu den nya appen med egna paneler för elev, privat elev, lärare, speciallärare och admin.
+            - Privat elev har egen översikt, planering, ämnen, uppgifter, dokument, flashcards, provträning, framsteg och AI-studiehjälp — utan klass, klasschatt eller klasskamrater.
+            - Tomma listor visas som tomma och misslyckade hämtningar visas som ärligt fel i stället för falska siffror.
+            - Admin kan sätta kontotypen skolelev eller privat elev på ett elevkonto.
+            - Automatiska uppdateringar kontrolleras vid start och var sjätte timme.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
