@@ -15,6 +15,8 @@ import { LararePanel } from './pages/LararePanel';
 import { SpeciallararPanel } from './pages/SpeciallararPanel';
 import { AdminPanel } from './pages/AdminPanel';
 import { Panel } from './lib/auth-types';
+import { CosmeticsProvider } from './lib/cosmetics';
+import { CosmeticsEffects } from './components/cosmetics/CosmeticsEffects';
 import { defaultRoute, resolveRoute, routeToRender, type Route } from './lib/guards';
 import { formatHashRoute, parseHashRoute } from './lib/hash-route';
 import { demoActive, leaveDemo } from './lib/demo-mode';
@@ -250,6 +252,11 @@ function AppContent() {
           {renderContent()}
         </div>
       </div>
+      {/* Visuella effekter från shopen (dimma, spöktåg, stjärnfall). De ligger
+          ovanpå appen men tar aldrig emot klick, och stängs av helt för den som
+          har reducerad rörelse påslagen. */}
+      <CosmeticsEffects />
+
       {/* Kontrollerar nya versioner vid start och var sjätte timme. Rutan finns
           bara i den installerade appen; i webbläsaren gör den ingenting. */}
       <UpdateBanner />
@@ -260,9 +267,15 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      {/* Kosmetiken (aktivt tema, avatar, ram, märke, figur, dekoration och
+          effekt) hör till kontot. Den ligger innanför autentiseringen så att
+          den kan läsa det inloggade kontots ägande — och den ritar
+          standardtemat om inget tema är köpt. */}
+      <CosmeticsProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </CosmeticsProvider>
     </AuthProvider>
   );
 }

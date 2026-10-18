@@ -17,11 +17,13 @@ import {
   Layers,
   MessageCircle,
   MessageSquare,
+  Package,
   ScrollText,
   Settings,
   Shield,
   ShieldQuestion,
   Sparkles,
+  Store,
   UserCog,
   UserPlus,
   Users,
@@ -117,6 +119,25 @@ const ELEV_CATEGORIES: NavCategoryDef[] = [
       { id: 'belonningar', label: 'Belöningar och nivåer', icon: <Award size={17} /> },
     ],
   },
+  {
+    id: 'elev-shop',
+    label: 'Shop',
+    icon: <Store size={15} />,
+    items: [
+      {
+        id: 'shop',
+        label: 'Shop',
+        icon: <Store size={17} />,
+        description: 'Teman, figurer, avatarer och dekorationer för dina XP.',
+      },
+      {
+        id: 'samling',
+        label: 'Min samling',
+        icon: <Package size={17} />,
+        description: 'Allt du äger — och det du har utrustat.',
+      },
+    ],
+  },
 ];
 
 // ----------------------------------------------------------------
@@ -170,6 +191,25 @@ const PRIVAT_CATEGORIES: NavCategoryDef[] = [
     items: [
       { id: 'framsteg', label: 'Mina framsteg', icon: <Zap size={17} /> },
       { id: 'belonningar', label: 'Belöningar och nivåer', icon: <Award size={17} /> },
+    ],
+  },
+  {
+    id: 'privat-shop',
+    label: 'Shop',
+    icon: <Store size={15} />,
+    items: [
+      {
+        id: 'shop',
+        label: 'Shop',
+        icon: <Store size={17} />,
+        description: 'Teman, figurer, avatarer och dekorationer för dina XP.',
+      },
+      {
+        id: 'samling',
+        label: 'Min samling',
+        icon: <Package size={17} />,
+        description: 'Allt du äger — och det du har utrustat.',
+      },
     ],
   },
 ];
@@ -362,6 +402,19 @@ const ADMIN_CATEGORIES: NavCategoryDef[] = [
     items: [
       { id: 'uppgifter', label: 'Uppgifter och undervisningsmaterial', icon: <ClipboardList size={17} /> },
       { id: 'dokument', label: 'Elevdokument och lärardokument', icon: <FileText size={17} /> },
+    ],
+  },
+  {
+    id: 'adm-shop',
+    label: 'Shop',
+    icon: <Store size={15} />,
+    items: [
+      {
+        id: 'shop',
+        label: 'Shop och säsonger',
+        icon: <Store size={17} />,
+        description: 'Produkter, XP-priser, sällsynthet, nivåkrav och säsonger.',
+      },
     ],
   },
   {

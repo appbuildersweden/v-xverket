@@ -12,6 +12,8 @@ import { KlasschattPage } from './elev/KlasschattPage';
 import { MeddelandenPage } from './elev/MeddelandenPage';
 import { FramstegPage } from './elev/FramstegPage';
 import { BelonningarPage } from './shared/BelonningarPage';
+import { ShopPage } from './shared/ShopPage';
+import { SamlingPage } from './shared/SamlingPage';
 import { SectionPage } from '../components/SectionPage';
 import { labelForPage } from '../lib/nav';
 
@@ -54,6 +56,10 @@ export const ElevPanel: React.FC<Props> = ({ pageId, onNavigate }) => {
         return <FramstegPage />;
       case 'belonningar':
         return <BelonningarPage panel="elev" />;
+      case 'shop':
+        return <ShopPage panel="elev" />;
+      case 'samling':
+        return <SamlingPage panel="elev" onNavigate={onNavigate} />;
       default:
         // Ska inte kunna hända: ruttvakten tillåter bara kända sidor. Skulle det
         // ändå ske visas ett tydligt tomt läge i stället för en krasch.

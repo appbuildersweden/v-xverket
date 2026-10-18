@@ -361,7 +361,8 @@ describe('hem', () => {
     await renderPanel('hem');
 
     expect((await screen.findAllByText('Mina elever')).length).toBeGreaterThan(0);
-    expect(screen.getByText('Dagens planering')).toBeTruthy();
+    // Planeringen fylls på när panelens data har kommit in, så vänta in den.
+    expect(await screen.findByText('Dagens planering')).toBeTruthy();
     expect(screen.getByText('Planera veckan')).toBeTruthy();
     expect(screen.getByText('eanna02')).toBeTruthy();
     // En uppgift väntar på uppföljning — inlämnad men inte uppföljd.

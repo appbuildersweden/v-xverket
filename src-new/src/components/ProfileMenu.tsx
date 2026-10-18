@@ -4,6 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { useTheme } from '../theme';
 import { PANEL_LABELS, PanelType, ROLE_LABELS } from '../lib/nav';
 import { isKnownRole } from '../lib/auth-types';
+import { CosmeticAvatar } from './cosmetics/CosmeticAvatar';
 
 interface ProfileMenuProps {
   panel: PanelType;
@@ -42,7 +43,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ panel, onOpenProfile }
   }, [open]);
 
   const roleLabel = user && isKnownRole(user.role) ? ROLE_LABELS[user.role] : 'Ingen roll';
-  const initials = (user?.username ?? '?').slice(0, 1).toUpperCase();
+  const username = user?.username ?? '?';
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -60,7 +61,10 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ panel, onOpenProfile }
         aria-label="Konto och profil"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="avatar-circle">{initials}</span>
+        {/* Avataren är elevens egen: bild, ram och märke kommer från shopen och
+            visas bara när de är utrustade. Utan köp ritas initialen som förut,
+            och komponenten ritar då själv cirkeln (.kosmetik-avatar). */}
+        <CosmeticAvatar username={username} size={32} />
       </button>
 
       {open && (

@@ -1,0 +1,793 @@
+/* Elda – shop, samling och kosmetik.
+ *
+ * Allt här är scopat till `sh-`-klasser (butiken) och `kosmetik-`-klasserna
+ * (avatar, ram, märke, dekoration och effekter), så filen påverkar inga andra
+ * vyer. Färgerna kommer från appens vanliga variabler, vilket betyder att
+ * butiken följer med när ett UI-tema är aktivt.
+ */
+
+/* ---------------------------------------------------------------- Butiken */
+
+.sh-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.sh-saldo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.sh-saldo-varde {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sh-saldo-etikett {
+  font-size: 12px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sh-saldo-niva {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+/* Filterraden */
+.sh-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.sh-filter .field {
+  margin: 0;
+  min-width: 150px;
+}
+
+.sh-filter label {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-3);
+}
+
+.sh-filter select,
+.sh-filter input[type='search'] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.sh-filter .sh-filter-reset {
+  margin-left: auto;
+}
+
+/* Kategoriflikar */
+.sh-kategorier {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+  scrollbar-width: thin;
+}
+
+.sh-kategori {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sh-kategori[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-fg);
+}
+
+.sh-kategori-antal {
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+/* Produktnätet */
+.sh-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.sh-kort {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.sh-kort:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+.sh-kort[data-state='equipped'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.sh-kort[data-state='level'],
+.sh-kort[data-state='season'],
+.sh-kort[data-state='unpublished'] {
+  opacity: 0.82;
+}
+
+.sh-kort-bild {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 118px;
+  background: radial-gradient(circle at 50% 40%, var(--surface-2), var(--card));
+  border-bottom: 1px solid var(--border);
+}
+
+.sh-kort-bild img {
+  image-rendering: pixelated;
+  max-width: 72px;
+  max-height: 72px;
+}
+
+.sh-kort-bild .sh-tema-miniatyr {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.sh-kort-kropp {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px 14px;
+}
+
+.sh-kort-namn {
+  font-size: 14.5px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.sh-kort-beskrivning {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sh-kort-rad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.sh-pris {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sh-pris-otillrackligt {
+  color: #d9534f;
+}
+
+/* Sällsynthetsetiketter */
+.sh-raritet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.sh-raritet[data-raritet='vanlig'] {
+  border-color: #9ca3af;
+  color: #6b7280;
+}
+
+.sh-raritet[data-raritet='ovanlig'] {
+  border-color: #4ea36b;
+  color: #3f7f55;
+}
+
+.sh-raritet[data-raritet='sallsynt'] {
+  border-color: #3f83c4;
+  color: #2f6499;
+}
+
+.sh-raritet[data-raritet='episk'] {
+  border-color: #8a5cd6;
+  color: #6a44a8;
+}
+
+.sh-raritet[data-raritet='legendarisk'] {
+  border-color: #d99a2b;
+  color: #a8761c;
+}
+
+html[data-theme='dark'] .sh-raritet[data-raritet='vanlig'],
+html[data-ui-tema] .sh-raritet[data-raritet='vanlig'] {
+  color: #cbd5e1;
+}
+
+html[data-theme='dark'] .sh-raritet[data-raritet='ovanlig'],
+html[data-ui-tema] .sh-raritet[data-raritet='ovanlig'] {
+  color: #86efac;
+}
+
+html[data-theme='dark'] .sh-raritet[data-raritet='sallsynt'],
+html[data-ui-tema] .sh-raritet[data-raritet='sallsynt'] {
+  color: #93c5fd;
+}
+
+html[data-theme='dark'] .sh-raritet[data-raritet='episk'],
+html[data-ui-tema] .sh-raritet[data-raritet='episk'] {
+  color: #c4b5fd;
+}
+
+html[data-theme='dark'] .sh-raritet[data-raritet='legendarisk'],
+html[data-ui-tema] .sh-raritet[data-raritet='legendarisk'] {
+  color: #fcd34d;
+}
+
+/* Tillståndsetikett på kortet */
+.sh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+.sh-status[data-state='available'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sh-status[data-state='owned'],
+.sh-status[data-state='equipped'] {
+  border-color: #4ea36b;
+  color: #3f7f55;
+}
+
+.sh-status[data-state='level'],
+.sh-status[data-state='season'],
+.sh-status[data-state='xp'],
+.sh-status[data-state='unpublished'] {
+  border-color: #d99a2b;
+  color: #a8761c;
+}
+
+html[data-theme='dark'] .sh-status[data-state='owned'],
+html[data-theme='dark'] .sh-status[data-state='equipped'],
+html[data-ui-tema] .sh-status[data-state='owned'],
+html[data-ui-tema] .sh-status[data-state='equipped'] {
+  color: #86efac;
+}
+
+/* Detaljrutan */
+.sh-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 60;
+}
+
+.sh-dialog {
+  width: min(760px, 100%);
+  max-height: 88vh;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 720px) {
+  .sh-dialog {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sh-dialog-bild {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: radial-gradient(circle at 50% 40%, var(--surface-2), var(--card));
+  overflow: hidden;
+}
+
+.sh-dialog-bild img {
+  image-rendering: pixelated;
+  max-width: 120px;
+  max-height: 120px;
+}
+
+.sh-dialog-info h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.sh-dialog-info p {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+
+.sh-dialog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sh-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.sh-forklaring {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.sh-forklaring[data-ton='fel'] {
+  border-color: #d9534f;
+  color: #b03a37;
+}
+
+.sh-forklaring[data-ton='ok'] {
+  border-color: #4ea36b;
+  color: #3f7f55;
+}
+
+html[data-theme='dark'] .sh-forklaring[data-ton='fel'],
+html[data-ui-tema] .sh-forklaring[data-ton='fel'] {
+  color: #ff9c98;
+}
+
+html[data-theme='dark'] .sh-forklaring[data-ton='ok'],
+html[data-ui-tema] .sh-forklaring[data-ton='ok'] {
+  color: #86efac;
+}
+
+/* Förhandsvisning av ett tema */
+.sh-tema-preview {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.sh-tema-preview-bild {
+  height: 150px;
+  background-size: cover;
+  background-position: center;
+}
+
+.sh-tema-preview-palett {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  align-items: center;
+}
+
+.sh-tema-preview-punkt {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sh-tema-preview-prov {
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+}
+
+/* Miniatyrer för temakorten, en per temanyckel. */
+.sh-tema-miniatyr[data-tema='pumpa'] {
+  background-image: url('../assets/teman/pumpa.webp');
+}
+
+.sh-tema-miniatyr[data-tema='spokhus'] {
+  background-image: url('../assets/teman/spokhus.webp');
+}
+
+.sh-tema-miniatyr[data-tema='haxkonst'] {
+  background-image: url('../assets/teman/haxkonst.webp');
+}
+
+.sh-tema-miniatyr[data-tema='haunted-forest'] {
+  background-image: url('../assets/teman/haunted-forest.webp');
+}
+
+.sh-tema-miniatyr[data-tema='midnight'] {
+  background-image: url('../assets/teman/midnight.webp');
+}
+
+/* ---------------------------------------------------------------- Samling */
+
+.sh-samling-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.sh-samling-kort {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sh-samling-kort[data-equipped='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.sh-samling-bild {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.sh-samling-bild img {
+  image-rendering: pixelated;
+  max-width: 64px;
+  max-height: 64px;
+}
+
+.sh-samling-namn {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.sh-samling-meta {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+/* ---------------------------------------------------------------- Admin */
+
+.sh-admin-rad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+
+.sh-admin-rad[data-published='false'] {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.sh-admin-rad-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sh-admin-rad-namn {
+  font-weight: 650;
+  font-size: 14px;
+}
+
+.sh-admin-rad-meta {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.sh-admin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.sh-admin-form .field-wide {
+  grid-column: 1 / -1;
+}
+
+.sh-admin-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.sh-admin-bekraftelse {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #d99a2b;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- Kosmetik */
+
+.kosmetik-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: visible;
+}
+
+.kosmetik-avatar img {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.kosmetik-avatar-initial {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Ramar: en ring runt avataren plus ett valfritt ornament. */
+.kosmetik-ram {
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.kosmetik-ram[data-ram='ram-spindelnatet'] {
+  border: 2px solid #bfae8f;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25) inset;
+}
+
+.kosmetik-ram[data-ram='ram-slime'] {
+  border: 2px solid #6fbf73;
+  box-shadow: 0 0 10px rgba(111, 191, 115, 0.5);
+}
+
+.kosmetik-ram[data-ram='ram-manljuset'] {
+  border: 2px solid #cfe9ff;
+  box-shadow: 0 0 12px rgba(207, 233, 255, 0.6);
+}
+
+.kosmetik-ram[data-ram='ram-pumpaglod'] {
+  border: 2px solid #ff9a3c;
+  box-shadow: 0 0 14px rgba(255, 154, 60, 0.65);
+}
+
+.kosmetik-ram-ornament {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+}
+
+/* Märket bredvid namnet. */
+.kosmetik-marke {
+  width: 15px;
+  height: 15px;
+  image-rendering: pixelated;
+  vertical-align: -2px;
+  margin-left: 4px;
+}
+
+/* Figur och dekoration på profilsidan. */
+.kosmetik-profilfigur {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.kosmetik-profilfigur img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+
+.kosmetik-dekoration {
+  height: 84px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  opacity: 0.9;
+}
+
+/* Effekterna ligger ovanpå appen men tar aldrig emot klick. */
+.kosmetik-effekt {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.kosmetik-dimma {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -20px;
+  height: 180px;
+  background: linear-gradient(180deg, rgba(180, 200, 220, 0) 0%, rgba(180, 200, 220, 0.22) 100%);
+  filter: blur(6px);
+  animation: kosmetik-dimma-drag 26s linear infinite alternate;
+}
+
+@keyframes kosmetik-dimma-drag {
+  from {
+    transform: translateX(-4%);
+  }
+  to {
+    transform: translateX(4%);
+  }
+}
+
+.kosmetik-spoke {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  opacity: 0.5;
+  image-rendering: pixelated;
+  animation: kosmetik-spoke-flyg 32s linear infinite;
+}
+
+@keyframes kosmetik-spoke-flyg {
+  0% {
+    transform: translate(-8vw, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.45;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translate(108vw, -6vh);
+    opacity: 0;
+  }
+}
+
+.kosmetik-stjarna {
+  position: absolute;
+  top: -10px;
+  width: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  animation: kosmetik-stjarnfall 9s linear infinite;
+}
+
+@keyframes kosmetik-stjarnfall {
+  0% {
+    transform: translateY(-10vh);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90vh);
+    opacity: 0;
+  }
+}
+
+/* Reducerad rörelse: inga effekter alls, varken rörelse eller blink. */
+@media (prefers-reduced-motion: reduce) {
+  .kosmetik-effekt {
+    display: none;
+  }
+
+  .kosmetik-dimma,
+  .kosmetik-spoke,
+  .kosmetik-stjarna {
+    animation: none;
+  }
+
+  .sh-kort {
+    transition: none;
+  }
+}

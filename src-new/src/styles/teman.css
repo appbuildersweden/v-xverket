@@ -1,0 +1,355 @@
+/* Elda – UI-teman från shopen.
+ *
+ * Ett tema är inte en bakgrundsbild: det sätter hela paletten (ytor, text,
+ * ramar, knappar, meny, skuggor och fokusmarkering) och kan därefter lägga till
+ * egna dekorativa detaljer i sin egen regel. Grunden nedan gäller alla teman och
+ * använder samma variabler som appen redan bygger på — därför följer varje sida,
+ * panel och dialog med automatiskt.
+ *
+ * Ett nytt tema behöver bara:
+ *   1. en rad i `shop_products` med category 'tema' och en temanyckel,
+ *   2. en bild i `assets/teman/<nyckel>.webp`,
+ *   3. ett `[data-ui-tema='<nyckel>']`-block här med sin palett.
+ * Dekorationerna är frivilliga: standardtillståndet är "ingen dekoration", så
+ * ett nytt tema tvingas inte ärva de andras detaljer.
+ *
+ * Väljs inget tema finns ingen `data-ui-tema`-attribut alls, och då gäller
+ * appens vanliga ljusa/mörka läge precis som förut.
+ */
+
+/* ---------------------------------------------------------------- Grund */
+
+[data-ui-tema] {
+  /* Standardvärden för de frivilliga dekorationerna. */
+  --tema-bakgrund: none;
+  --tema-bakgrund-opacitet: 0.34;
+  --tema-topplinje: none;
+  --tema-kort-glod: none;
+  --tema-rubrik-farg: inherit;
+  --tema-effekt-dimma: none;
+  --tema-effekt-spoken: none;
+  --tema-effekt-stjarnfall: none;
+
+  color-scheme: dark;
+}
+
+/* Temats bild ligger bakom appens ytor och dämpas alltid, så att text och
+   kontroller behåller sin kontrast. */
+[data-ui-tema] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: var(--tema-bakgrund);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--tema-bakgrund-opacitet);
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-ui-tema] .app-layout {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ytor, ramar, meny och skuggor följer temats variabler. */
+[data-ui-tema] .card,
+[data-ui-tema] .menu,
+[data-ui-tema] .stat-card {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+[data-ui-tema] .topbar,
+[data-ui-tema] .sidebar {
+  background: var(--card);
+  border-color: var(--border);
+  backdrop-filter: saturate(120%);
+}
+
+[data-ui-tema] .card-title,
+[data-ui-tema] .panel-page h1,
+[data-ui-tema] h1,
+[data-ui-tema] h2 {
+  color: var(--tema-rubrik-farg);
+}
+
+/* Knappar: primärknappen får temats accent, sekundärknappen temats kant. */
+[data-ui-tema] .btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--tema-kort-glod);
+}
+
+[data-ui-tema] .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+[data-ui-tema] .btn-outline,
+[data-ui-tema] .icon-btn {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+}
+
+[data-ui-tema] .btn-outline:hover:not(:disabled),
+[data-ui-tema] .icon-btn:hover {
+  background: var(--hover);
+  border-color: var(--accent);
+}
+
+[data-ui-tema] .input,
+[data-ui-tema] select,
+[data-ui-tema] textarea,
+[data-ui-tema] .search-box {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+[data-ui-tema] .input::placeholder,
+[data-ui-tema] textarea::placeholder {
+  color: var(--text-3);
+}
+
+/* Menyns aktiva post inverterar mot temat även här. */
+[data-ui-tema] .nav-cat.active,
+[data-ui-tema] .nav-item.active,
+[data-ui-tema] .nav-sub-item.active,
+[data-ui-tema] .menu-item.active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
+}
+
+[data-ui-tema] .nav-cat:hover,
+[data-ui-tema] .nav-item:hover,
+[data-ui-tema] .nav-sub-item:hover,
+[data-ui-tema] .menu-item:hover {
+  background: var(--hover);
+}
+
+/* Etiketter, mätare och förlopp följer accenten. */
+[data-ui-tema] .pill,
+[data-ui-tema] .badge {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+[data-ui-tema] .progress-fill {
+  background: var(--accent);
+}
+
+[data-ui-tema] .content a {
+  color: var(--accent);
+}
+
+/* Fokus och markering: tydligt synliga i alla teman. */
+[data-ui-tema] *:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[data-ui-tema] ::selection {
+  background: var(--accent);
+  color: var(--btn-fg);
+}
+
+/* En tunn accentlinje längst upp i toppraden — bara om temat vill ha en. */
+[data-ui-tema] .topbar {
+  border-top: var(--tema-topplinje);
+}
+
+/* ---------------------------------------------------------------- Teman */
+
+/* 1. Pumpatema – varma orange accenter mot mörk jord. */
+[data-ui-tema='pumpa'] {
+  --bg: #150f09;
+  --fg: #fdf3e3;
+  --muted: #bda186;
+  --accent: #ff9a3c;
+  --card: #1e1610;
+  --border: #4a3520;
+  --surface: #22190f;
+  --surface-2: #2c2014;
+  --text: var(--fg);
+  --text-2: #f1dfc6;
+  --text-3: #c8ac8b;
+  --border-strong: #6b4a2a;
+  --hover: rgba(255, 154, 60, 0.16);
+  --btn-bg: #ff9a3c;
+  --btn-fg: #201206;
+  --banner-bg: #2a1c0f;
+  --banner-fg: #fdeed8;
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --nav-active-bg: #ff9a3c;
+  --nav-active-fg: #201206;
+
+  --tema-bakgrund: url('../assets/teman/pumpa.webp');
+  --tema-bakgrund-opacitet: 0.3;
+  --tema-topplinje: 2px solid rgba(255, 154, 60, 0.65);
+  --tema-rubrik-farg: #ffd9a8;
+  --tema-kort-glod: 0 10px 30px rgba(255, 122, 30, 0.16);
+}
+
+/* 2. Spökhus – nattblått, månljus och glasade ytor. */
+[data-ui-tema='spokhus'] {
+  --bg: #0b1117;
+  --fg: #eef4f8;
+  --muted: #93a7b3;
+  --accent: #8fd0ff;
+  --card: #121a22;
+  --border: #27333f;
+  --surface: #131c25;
+  --surface-2: #1a2530;
+  --text: var(--fg);
+  --text-2: #d5e1ea;
+  --text-3: #a3b6c1;
+  --border-strong: #3a4a58;
+  --hover: rgba(143, 208, 255, 0.14);
+  --btn-bg: #cfe9ff;
+  --btn-fg: #0b1117;
+  --banner-bg: #101922;
+  --banner-fg: #e8f3fb;
+  --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.5);
+  --nav-active-bg: #cfe9ff;
+  --nav-active-fg: #0b1117;
+
+  --tema-bakgrund: url('../assets/teman/spokhus.webp');
+  --tema-bakgrund-opacitet: 0.32;
+  --tema-topplinje: 2px solid rgba(143, 208, 255, 0.55);
+  --tema-rubrik-farg: #cfe9ff;
+  --tema-kort-glod: 0 12px 34px rgba(90, 150, 200, 0.14);
+}
+
+/* 3. Häxkonst – varm ved, levande ljus och en grön kittelglöd. */
+[data-ui-tema='haxkonst'] {
+  --bg: #160f16;
+  --fg: #fbeffa;
+  --muted: #bb97b8;
+  --accent: #86efac;
+  --card: #1f1420;
+  --border: #4a2a46;
+  --surface: #241726;
+  --surface-2: #2e1c2f;
+  --text: var(--fg);
+  --text-2: #f0dcee;
+  --text-3: #c9a8c6;
+  --border-strong: #6a3c62;
+  --hover: rgba(134, 239, 172, 0.14);
+  --btn-bg: #86efac;
+  --btn-fg: #10231a;
+  --banner-bg: #241726;
+  --banner-fg: #f7e9f6;
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.52);
+  --nav-active-bg: #86efac;
+  --nav-active-fg: #10231a;
+
+  --tema-bakgrund: url('../assets/teman/haxkonst.webp');
+  --tema-bakgrund-opacitet: 0.3;
+  --tema-topplinje: 2px solid rgba(255, 196, 107, 0.6);
+  --tema-rubrik-farg: #ffe3b0;
+  --tema-kort-glod: 0 10px 28px rgba(134, 239, 172, 0.14);
+}
+
+/* 4. Haunted Forest – turkos dimma mellan stammar i månljus. */
+[data-ui-tema='haunted-forest'] {
+  --bg: #071316;
+  --fg: #e9f7f8;
+  --muted: #8babb0;
+  --accent: #7ee0d6;
+  --card: #0d1e22;
+  --border: #1f3d43;
+  --surface: #0f2226;
+  --surface-2: #142c31;
+  --text: var(--fg);
+  --text-2: #cfe9ec;
+  --text-3: #9dc0c4;
+  --border-strong: #2f5a62;
+  --hover: rgba(126, 224, 214, 0.14);
+  --btn-bg: #7ee0d6;
+  --btn-fg: #06201d;
+  --banner-bg: #0c1f23;
+  --banner-fg: #e3f5f4;
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --nav-active-bg: #7ee0d6;
+  --nav-active-fg: #06201d;
+
+  --tema-bakgrund: url('../assets/teman/haunted-forest.webp');
+  --tema-bakgrund-opacitet: 0.36;
+  --tema-topplinje: 2px solid rgba(126, 224, 214, 0.5);
+  --tema-rubrik-farg: #bff3ee;
+  --tema-kort-glod: 0 12px 34px rgba(60, 170, 170, 0.16);
+}
+
+/* 5. Midnight Halloween – neonlila midnatt med magenta accent. */
+[data-ui-tema='midnight'] {
+  --bg: #160b24;
+  --fg: #f7ecff;
+  --muted: #a98ecb;
+  --accent: #ff5cf0;
+  --card: #1e0f30;
+  --border: #43256a;
+  --surface: #22123a;
+  --surface-2: #2c1748;
+  --text: var(--fg);
+  --text-2: #e6d5f7;
+  --text-3: #bda3dc;
+  --border-strong: #5d348f;
+  --hover: rgba(255, 92, 240, 0.16);
+  --btn-bg: #ff5cf0;
+  --btn-fg: #1b0724;
+  --banner-bg: #24113a;
+  --banner-fg: #f6e9ff;
+  --shadow-md: 0 18px 46px rgba(60, 0, 90, 0.55);
+  --nav-active-bg: #ff5cf0;
+  --nav-active-fg: #1b0724;
+
+  --tema-bakgrund: url('../assets/teman/midnight.webp');
+  --tema-bakgrund-opacitet: 0.34;
+  --tema-topplinje: 2px solid rgba(255, 92, 240, 0.7);
+  --tema-rubrik-farg: #ffc7f8;
+  --tema-kort-glod: 0 12px 36px rgba(255, 92, 240, 0.18);
+}
+
+/* Midnatt har en egen detalj: en tunn neonlinje under rubriken i korten. */
+[data-ui-tema='midnight'] .card-head {
+  border-bottom: 1px solid rgba(255, 92, 240, 0.25);
+  padding-bottom: 10px;
+}
+
+/* Pumpatemat har en egen detalj: lyktglödet i kortets överkant. */
+[data-ui-tema='pumpa'] .card::before {
+  content: '';
+  display: block;
+  height: 3px;
+  margin: -20px -20px 14px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, rgba(255, 154, 60, 0.85), rgba(255, 154, 60, 0));
+}
+
+/* Spökhus har en egen detalj: frostig kant runt korten. */
+[data-ui-tema='spokhus'] .card {
+  border-top-color: rgba(207, 233, 255, 0.35);
+}
+
+/* Skogs- och häxtemat lägger dimma längst ned i innehållet. */
+[data-ui-tema='haunted-forest'] .content::after,
+[data-ui-tema='haxkonst'] .content::after {
+  content: '';
+  display: block;
+  height: 120px;
+  margin-top: 24px;
+  background: var(--tema-effekt-dimma);
+  pointer-events: none;
+}
+
+[data-ui-tema='haunted-forest'] {
+  --tema-effekt-dimma: linear-gradient(180deg, rgba(126, 224, 214, 0) 0%, rgba(126, 224, 214, 0.14) 100%);
+}
+
+[data-ui-tema='haxkonst'] {
+  --tema-effekt-dimma: linear-gradient(180deg, rgba(134, 239, 172, 0) 0%, rgba(134, 239, 172, 0.12) 100%);
+}

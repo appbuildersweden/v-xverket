@@ -12,6 +12,7 @@
  */
 
 import { HALLOWEEN_REWARDS } from '../lib/halloween-rewards';
+import { SEASONS, SHOP_CATALOG } from '../lib/shop-catalog';
 
 export type DemoRow = Record<string, unknown>;
 export type DemoTables = Record<string, DemoRow[]>;
@@ -469,6 +470,41 @@ export function buildDemoTables(): DemoTables {
 
     // Trädgården börjar tom. Första upplåsta föremålet blir det första man ser.
     garden_placements: [],
+
+    // Shopen. Samma produkter, priser och sällsynthet som migreringen
+    // (`20261101000000_shop.sql`) och `shop-catalog.ts` — demoläget visar alltså
+    // samma butik som servern, men utan att något köps på riktigt.
+    seasons: SEASONS.map((season) => ({
+      id: season.id,
+      name: season.name,
+      description: season.description,
+      starts_at: season.startsAt,
+      ends_at: season.endsAt,
+      active: season.active,
+    })),
+    shop_products: SHOP_CATALOG.map((entry) => ({
+      id: `demo-shop-${entry.slug}`,
+      slug: entry.slug,
+      name: entry.name,
+      description: entry.description,
+      category: entry.category,
+      equip_kind:
+        entry.category === 'profilram'
+          ? 'ram'
+          : entry.category,
+      rarity: entry.rarity,
+      price_xp: entry.priceXp,
+      min_level: entry.minLevel,
+      season_id: entry.seasonId,
+      season_only: entry.seasonOnly,
+      asset_key: entry.assetKey,
+      theme_key: entry.themeKey,
+      ornament_key: entry.ornamentKey,
+      published: true,
+      position: entry.position,
+    })),
+    shop_purchases: [],
+    user_equipped: [],
 
     xp_transactions: [],
   };

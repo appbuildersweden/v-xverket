@@ -101,11 +101,12 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Fyrtioåtta nya belöningar från Halloween-arket
-            - Ikonarket är uppdelat i 48 enskilda ikoner — pumpor, varelser, godis, häx- och magisaker, kyrkogårdsting och mörka dekorationer. Var och en är nu en egen belöning med eget namn, egen bild och egen XP-gräns.
-            - Trösklarna är flätade in i den befintliga stegen (20–2 000 XP), så belöningar låses upp gradvis och varje ny XP-gräns ger exakt ett nytt föremål. Redan intjänad XP och tidigare upplåsningar ligger kvar orörda.
-            - Samlingen visar varje ikon med sin egen bild, sitt namn och exakt hur många XP som återstår; låsta ikoner syns tonade som kommande belöningar.
-            - Trädgården, bakgrunden, firandet och övriga funktioner är oförändrade sedan 0.2.7.
+            Shop med fem teman och en egen samling
+            - Ny grupp *Shop* i elev- och privatelevpanelen: 35 produkter i sju kategorier, betalda med XP som redan tjänats in på uppgifter. Inga riktiga pengar, inga loot-lådor och ingen ny XP-väg.
+            - Fem UI-teman — Pumpatema, Spökhus, Häxkonst, Haunted Forest och Midnight Halloween (300–600 XP) — byter färger, knappar, meny och bakgrund i hela appen. Varje tema har en egen bild som följer med i paketet.
+            - *Min samling* visar allt du äger och låter dig byta tema, avatar, ram, märke, figur och dekoration. Ett köp ligger kvar även om produkten slutar säljas eller säsongen tar slut.
+            - Servern äger köpet: samma köp kan aldrig dras två gånger, och priset kontrolleras i databasen. Adminpanelen har *Shop och säsonger* för priser, nivåkrav, publicering och säsonger.
+            - Trädgården, uppgifterna, XP:n och övriga funktioner är oförändrade sedan 0.2.8.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi

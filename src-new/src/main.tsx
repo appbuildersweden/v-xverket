@@ -11,6 +11,11 @@ import './styles/privat.css';
 import './styles/halloween.css';
 // Firandet vid upplåsning och översikten Mina framsteg.
 import './styles/celebrate.css';
+// Shopens egna ytor (produktkort, dialog, samling och adminlistan).
+import './styles/shop.css';
+// De fem UI-temana. Filen sätter paletten via `data-ui-tema` på <html> och rör
+// ingenting när inget tema är köpt.
+import './styles/teman.css';
 
 /**
  * Demoläget finns bara i utvecklingsbygget. Grenen är alltid falsk i `dist`, så

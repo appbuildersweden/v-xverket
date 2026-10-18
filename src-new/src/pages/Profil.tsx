@@ -6,6 +6,9 @@ import { ROLE_LABELS, PanelType, PANEL_LABELS } from '../lib/nav';
 import { isKnownRole } from '../lib/auth-types';
 import { MIN_PASSWORD_LENGTH, validateNewPassword } from '../lib/password';
 import { UpdateSettings } from '../components/UpdateSettings';
+import { useCosmetics } from '../lib/cosmetics';
+import { CosmeticAvatar } from '../components/cosmetics/CosmeticAvatar';
+import { halloweenIconFile } from '../lib/halloween-icons';
 
 interface ProfilProps {
   panel: PanelType;
@@ -24,6 +27,15 @@ interface ProfilProps {
 export const Profil: React.FC<ProfilProps> = ({ panel, onClose }) => {
   const { user, changePassword, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { equippedItem, themeKey, collection } = useCosmetics();
+
+  // Bara utrustade föremål visas. Att köpa en figur byter aldrig avataren —
+  // figuren är en egen plats och syns här när eleven själv har valt den.
+  const figure = equippedItem('figur');
+  const decoration = equippedItem('dekoration');
+  const themeItem = equippedItem('tema');
+  const figureSrc = figure?.assetKey ? halloweenIconFile(figure.assetKey) : null;
+  const decorationSrc = decoration?.assetKey ? halloweenIconFile(decoration.assetKey) : null;
 
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
@@ -66,6 +78,51 @@ export const Profil: React.FC<ProfilProps> = ({ panel, onClose }) => {
 
   return (
     <div className="profil-page" data-testid="profil-page">
+      <div className="card" data-testid="profil-kosmetik">
+        <div className="card-head">
+          <h2 className="card-title">Utseende från shopen</h2>
+          <span className="card-sub">
+            {collection.length === 0
+              ? 'Inga köpta föremål ännu'
+              : `${collection.length} ägda föremål`}
+          </span>
+        </div>
+        <div className="kosmetik-profil">
+          <CosmeticAvatar username={user?.username ?? '?'} size={56} />
+          <div className="kosmetik-profil-info">
+            <div className="kosmetik-profil-rad">
+              <span className="kosmetik-profil-etikett">Tema</span>
+              <span>{themeItem?.name ?? 'Standard'}</span>
+            </div>
+            <div className="kosmetik-profil-rad">
+              <span className="kosmetik-profil-etikett">Figur</span>
+              <span>{figure?.name ?? 'Ingen vald'}</span>
+            </div>
+            <div className="kosmetik-profil-rad">
+              <span className="kosmetik-profil-etikett">Dekoration</span>
+              <span>{decoration?.name ?? 'Ingen vald'}</span>
+            </div>
+          </div>
+        </div>
+        {(figureSrc || decorationSrc) && (
+          <div className="kosmetik-profil-scen" data-testid="profil-kosmetik-scen">
+            {decorationSrc && (
+              <img className="kosmetik-dekoration" src={decorationSrc} alt={decoration?.name ?? ''} />
+            )}
+            {figureSrc && (
+              <span className="kosmetik-profilfigur">
+                <img src={figureSrc} alt={figure?.name ?? ''} />
+              </span>
+            )}
+          </div>
+        )}
+        <p className="card-sub" style={{ marginTop: 10 }}>
+          {themeKey
+            ? 'Temat gäller i hela appen och kostar inget att byta.'
+            : 'Standardtemat används. Ett köpt tema kan aktiveras i shopen eller i samlingen.'}
+        </p>
+      </div>
+
       <div className="card">
         <div className="card-head">
           <h2 className="card-title">Konto</h2>

@@ -1,5 +1,32 @@
 # Halloween-trädgårdens media
 
+## Temabilder (`teman/`)
+
+De fem UI-temana använder en egen bakgrundsbild var:
+
+| Fil | Tema | Produkt |
+| --- | --- | --- |
+| `teman/pumpa.webp` | Pumpatema | `tema-pumpa`, 300 XP |
+| `teman/spokhus.webp` | Spökhus | `tema-spokhus`, 400 XP |
+| `teman/haxkonst.webp` | Häxkonst | `tema-haxkonst`, 450 XP |
+| `teman/haunted-forest.webp` | Haunted Forest | `tema-haunted-forest`, 500 XP |
+| `teman/midnight.webp` | Midnight Halloween | `tema-midnight`, 600 XP |
+
+Bilderna ligger lokalt i projektet och laddas aldrig från en extern adress. Ett
+köpt tema fungerar därför även om en främmande webbplats ändras eller
+försvinner. De används av `src/styles/teman.css` som `--tema-bakgrund` och
+förhandsvisas av `src/components/shop/ThemePreview.tsx`.
+
+Bilderna är tillhandahållna av projektägaren och omvandlas till WebP av
+`scripts/forbered-teman.py` (samma motiv, mindre fil). **Licens och rätt att
+distribuera bilderna behöver bekräftas av projektägaren innan de publiceras** —
+en bild som går att visa är inte samma sak som en bild som får användas.
+Saknas ett godkännande kan temat visas med bara sin palett: sätt
+`--tema-bakgrund: none` i temats block i `teman.css`.
+
+Dekorationerna i `teman.css` är frivilliga. Ett nytt tema behöver bara sin
+palett, sin bild och en rad i `shop_products`.
+
 | Fil | Roll |
 | --- | --- |
 | `halloween-bakgrund.webp` | Stillbilden (1536×1024). Visas medan videon laddar, och i stället för videon för den som har reducerad rörelse påslagen. |

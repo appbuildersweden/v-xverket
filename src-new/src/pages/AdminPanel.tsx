@@ -14,6 +14,7 @@ import { AdminAuditLogPage } from './admin/AdminAuditLogPage';
 import { AdminAiPage } from './admin/AdminAiPage';
 import { AdminAiSettingsPage } from './admin/AdminAiSettingsPage';
 import { AdminUpdatesPage } from './admin/AdminUpdatesPage';
+import { AdminShopPage } from './admin/AdminShopPage';
 
 interface Props {
   pageId: string;
@@ -55,6 +56,7 @@ export const AdminPanel: React.FC<Props> = ({ pageId, onNavigate }) => {
     if (pageId === 'ai-installningar' || pageId === 'ai-inställningar') return <AdminAiSettingsPage />;
     if (pageId === 'installningar') return <AdminSettingsPage onNavigate={onNavigate} />;
     if (pageId === 'uppdateringar') return <AdminUpdatesPage />;
+    if (pageId === 'shop') return <AdminShopPage />;
     if (pageId === 'create-user') return <AdminCreateAccountPage onNavigate={onNavigate} />;
     if (pageId === 'ansokningar') return <AdminRegistrationsPage />;
     if (pageId === 'granskningslogg') return <AdminAuditLogPage />;

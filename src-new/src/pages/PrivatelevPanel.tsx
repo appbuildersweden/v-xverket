@@ -8,6 +8,8 @@ import { FlashcardsPage } from './elev/FlashcardsPage';
 import { ProvtraningPage } from './elev/ProvtraningPage';
 import { FramstegPage } from './elev/FramstegPage';
 import { BelonningarPage } from './shared/BelonningarPage';
+import { ShopPage } from './shared/ShopPage';
+import { SamlingPage } from './shared/SamlingPage';
 import { PrivateStartPage } from './privat/PrivateStartPage';
 import { SectionPage } from '../components/SectionPage';
 import { labelForPage } from '../lib/nav';
@@ -49,6 +51,10 @@ export const PrivatelevPanel: React.FC<Props> = ({ pageId, onNavigate }) => {
         return <FramstegPage panel="privat" />;
       case 'belonningar':
         return <BelonningarPage panel="privat" />;
+      case 'shop':
+        return <ShopPage panel="privat" />;
+      case 'samling':
+        return <SamlingPage panel="privat" onNavigate={onNavigate} />;
       default:
         return (
           <SectionPage

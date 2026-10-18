@@ -228,7 +228,7 @@ export function createDemoClient(): SupabaseClient {
     return Number(row?.total_xp ?? 0);
   };
 
-  const addXp = (amount: number, note: string): void => {
+  const addXp = (amount: number, note: string, source = 'task'): void => {
     if (!tables.user_xp) tables.user_xp = [];
     const row = tables.user_xp.find((r) => r.user_id === DEMO_UID);
     if (row) row.total_xp = totalXp() + amount;
@@ -238,10 +238,25 @@ export function createDemoClient(): SupabaseClient {
       id: newId('demo-xp'),
       user_id: DEMO_UID,
       amount,
-      source: 'task',
+      source,
       note,
       created_at: new Date().toISOString(),
     });
+  };
+
+  const level = (): number => Math.floor(totalXp() / 100) + 1;
+
+  /** Samma säsongsregel som `season_is_active` på servern. */
+  const seasonIsActive = (seasonId: unknown): boolean => {
+    if (typeof seasonId !== 'string') return false;
+    const season = (tables.seasons ?? []).find((row) => row.id === seasonId);
+    if (!season || season.active !== true) return false;
+    const now = Date.now();
+    const starts = season.starts_at ? new Date(String(season.starts_at)).getTime() : null;
+    const ends = season.ends_at ? new Date(String(season.ends_at)).getTime() : null;
+    if (starts !== null && starts > now) return false;
+    if (ends !== null && ends <= now) return false;
+    return true;
   };
 
   /**
@@ -355,6 +370,152 @@ export function createDemoClient(): SupabaseClient {
             unlocks,
           },
           error: null,
+        };
+      }
+
+      // ------------------------------------------------------------ Shop
+      // Samma regler som serverns `shop_purchase`: publiserad produkt, aktiv
+      // säsong, nivåkrav, XP-saldo, ett ägande per konto och en idempotensnyckel
+      // som gör att ett upprepat anrop aldrig debiterar två gånger.
+      if (name === 'shop_purchase') {
+        const productId = String(a.p_product_id ?? '');
+        const key = String(a.p_idempotency_key ?? '');
+        if (key.length < 8) {
+          return {
+            data: null,
+            error: { message: 'Köpet saknar en giltig nyckel och kunde inte genomföras.' },
+          };
+        }
+
+        if (!tables.shop_purchases) tables.shop_purchases = [];
+        const mine = tables.shop_purchases.filter((row) => row.user_id === DEMO_UID);
+
+        const receipt = (purchase: DemoRow, already: boolean) => ({
+          data: {
+            ok: true,
+            already,
+            product_id: purchase.product_id,
+            slug: purchase.product_slug,
+            name: purchase.name,
+            price_xp: purchase.price_xp,
+            total_xp: totalXp(),
+            level: level(),
+            owned: true,
+          },
+          error: null,
+        });
+
+        const previous = mine.find((row) => row.idempotency_key === key);
+        if (previous) return receipt(previous, true);
+
+        const product = (tables.shop_products ?? []).find((row) => row.id === productId);
+        if (!product) return { data: null, error: { message: 'Föremålet finns inte.' } };
+
+        if (mine.some((row) => row.product_id === productId)) {
+          return { data: null, error: { message: 'Du äger redan det här föremålet.' } };
+        }
+        if (product.published !== true) {
+          return { data: null, error: { message: 'Föremålet går inte att köpa just nu.' } };
+        }
+        if (product.season_only === true && !seasonIsActive(product.season_id)) {
+          return {
+            data: null,
+            error: { message: 'Föremålet hör till en säsong som inte är aktiv just nu.' },
+          };
+        }
+
+        const minLevel = Number(product.min_level ?? 1);
+        if (level() < minLevel) {
+          return {
+            data: null,
+            error: {
+              message: `Föremålet kräver nivå ${minLevel}, och du är nivå ${level()}.`,
+            },
+          };
+        }
+
+        const price = Number(product.price_xp ?? 0);
+        if (totalXp() < price) {
+          return {
+            data: null,
+            error: { message: `Du saknar ${price - totalXp()} XP för det här köpet.` },
+          };
+        }
+
+        const purchase: DemoRow = {
+          id: newId('demo-kop'),
+          user_id: DEMO_UID,
+          product_id: productId,
+          product_slug: product.slug,
+          name: product.name,
+          category: product.category,
+          equip_kind: product.equip_kind ?? null,
+          rarity: product.rarity ?? null,
+          theme_key: product.theme_key ?? null,
+          asset_key: product.asset_key ?? null,
+          ornament_key: product.ornament_key ?? null,
+          price_xp: price,
+          min_level: minLevel,
+          season_id: product.season_id ?? null,
+          idempotency_key: key,
+          purchased_at: new Date().toISOString(),
+        };
+        tables.shop_purchases.push(purchase);
+
+        // XP dras exakt en gång, med ett negativt belopp som på servern.
+        addXp(-price, String(product.name ?? 'Köp'), 'shop_purchase');
+        return receipt(purchase, false);
+      }
+
+      if (name === 'shop_equip') {
+        const productId = String(a.p_product_id ?? '');
+        const purchase = (tables.shop_purchases ?? []).find(
+          (row) => row.user_id === DEMO_UID && row.product_id === productId,
+        );
+        if (!purchase) {
+          return { data: null, error: { message: 'Du äger inte det här föremålet.' } };
+        }
+        const kind = purchase.equip_kind ? String(purchase.equip_kind) : '';
+        if (!kind) {
+          return {
+            data: null,
+            error: { message: 'Det här föremålet är ett samlarobjekt och kan inte utrustas.' },
+          };
+        }
+        if (!tables.user_equipped) tables.user_equipped = [];
+        const existing = tables.user_equipped.find(
+          (row) => row.user_id === DEMO_UID && row.kind === kind,
+        );
+        if (existing) {
+          existing.product_id = productId;
+          existing.equipped_at = new Date().toISOString();
+        } else {
+          tables.user_equipped.push({
+            user_id: DEMO_UID,
+            kind,
+            product_id: productId,
+            equipped_at: new Date().toISOString(),
+          });
+        }
+        return {
+          data: { ok: true, kind, product_id: productId, equipped: true },
+          error: null,
+        };
+      }
+
+      if (name === 'shop_unequip') {
+        const kind = String(a.p_kind ?? '');
+        if (!tables.user_equipped) tables.user_equipped = [];
+        tables.user_equipped = tables.user_equipped.filter(
+          (row) => !(row.user_id === DEMO_UID && row.kind === kind),
+        );
+        return { data: { ok: true, kind, equipped: false }, error: null };
+      }
+
+      if (name.startsWith('admin_shop_')) {
+        return {
+          data: null,
+          error: { message: 'Demoläget har ingen administratör och sparar inget.' },
         };
       }
 

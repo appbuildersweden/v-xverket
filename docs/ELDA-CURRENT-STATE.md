@@ -1,6 +1,6 @@
 # Elda – aktuellt läge
 
-Kort ögonblicksbild för den nya appen (`src-new/`). Uppdaterad 2026-10-17.
+Kort ögonblicksbild för den nya appen (`src-new/`). Uppdaterad 2026-10-18.
 
 ## Den nya appen är nu den som installeras (0.2.4)
 
@@ -33,12 +33,28 @@ Detta är medvetet en kort status, inte en fullständig beskrivning. Detaljerna
 finns i `docs/registrering-och-roller.md`, `docs/adminpanel-och-scheman.md` och
 `src-new/README.md`.
 
+## Shopen och temana (0.2.9)
+
+Shopen är byggd och förberedd som version 0.2.9 men **inte publicerad**. Elev-
+och privatelevpanelen har gruppen *Shop* med sidorna *Shop* och *Min samling*;
+adminpanelen har *Shop och säsonger*. Detaljerna — katalog, teman, tabeller,
+funktioner och vad som är verifierat — står i `publicera-0.2.9.md` och i
+`src-new/README.md`.
+
+Kort: 35 produkter i sju kategorier, fem UI-teman (300–600 XP), ägandet i
+`shop_purchases` med en kopia av köpet, och all skrivning genom
+`shop_purchase`, `shop_equip`/`shop_unequip` samt `admin_shop_*`. Ingen
+riktig valuta, ingen loot och ingen ny XP-väg. Migreringen
+`20261101000000_shop.sql` är **inte körd** — tills den är det visar shopen
+`ERR_NOT_READY` i stället för tomma vyer.
+
 ## Verifierat i utvecklingsmiljön
 
 - `npx tsc --noEmit` grön i båda apparna (gamla `src/` och `src-new/`).
-- `npm test` i `src-new/`: 342 tester i 26 filer, gröna i fem körningar i rad
-  (2026-10-17, efter privatelevpanelen).
-- `npm run build` grön i båda apparna (båda kör `tsc && vite build`).
+- `npx vitest run` i `src-new/`: 443 tester i 38 filer, gröna
+  (2026-10-18, efter shopen och temana).
+- `npm run build` i rotappen grön: den bygger `src-new` (`tsc && vite build`) och
+  kopierar resultatet till `dist/`, som Tauri paketerar.
 - Databasen statiskt granskad: varje tabell som migreringarna skapar har
   `enable row level security`, och klienter har ingen skrivpolicy på `profiles`
   (all skrivning sker serversidigt).
@@ -165,13 +181,15 @@ Medvetet behållet: `App.tsx`-spärren för tvingat lösenordsbyte (andra lagret
 
 ## Nästa steg
 
-0. Fyll på OpenRouter-kontot (eller sätt en ny nyckel) och kör
+0. Kör migreringen `20261101000000_shop.sql` (`npx supabase db push`) och
+   publicera 0.2.9 enligt `publicera-0.2.9.md`.
+1. Fyll på OpenRouter-kontot (eller sätt en ny nyckel) och kör
    `node scripts/e2e-registrering.mjs` igen: då ska ett privat elevkonto få
    `status: "skapad"` utan administratörens inblandning.
-1. Starta Docker → `npx supabase init` → `npx supabase test db` (punkterna 1
+2. Starta Docker → `npx supabase init` → `npx supabase test db` (punkterna 1
    och 3 ovan).
-2. Deploya `register` (och `auth-login` om den inte redan är deployad) och kör
+3. Deploya `register` (och `auth-login` om den inte redan är deployad) och kör
    igenom registreringen en gång mot det riktiga projektet med ett testkonto.
-3. Verifiera inloggning, lösenordsbyte och kontoskapande i adminpanelen mot det
+4. Verifiera inloggning, lösenordsbyte och kontoskapande i adminpanelen mot det
    riktiga projektet.
-4. Därefter: biblioteket med utvecklingsskills och dess dokumentation.
+5. Därefter: biblioteket med utvecklingsskills och dess dokumentation.

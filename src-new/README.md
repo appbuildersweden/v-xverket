@@ -258,9 +258,52 @@ Migreringen `20261020000000_registration_roles.sql` skapar dessutom
 Saknas migreringen visas tydliga fel i gränssnittet (`ERR_NOT_READY` från
 `lib/db.ts`) i stället för tomma vyer eller påhittad data.
 
+## Shopen, temana och samlingen
+
+Shopen ligger i `supabase/migrations/20261101000000_shop.sql`
+(**icke-destruktiv**: nya tabeller, `add column if not exists` och två vidgade
+CHECK-villkor på `xp_transactions` — inga befintliga XP-, nivå- eller kontorader
+skrivs om).
+
+| Tabell | Innehåll |
+| --- | --- |
+| `seasons` | Säsonger (id, namn, fönster, aktiv). Halloween är den första raden. |
+| `shop_products` | Produkter med kategori, sällsynthet, XP-pris, nivåkrav, säsong, bild- och temanyckel samt `published`. |
+| `shop_purchases` | Genomförda köp med en **kopia** av namn, pris och utseende vid köptillfället. Ägandet ligger här. |
+| `user_equipped` | Aktivt tema och utrustade föremål per konto, ett per plats. |
+
+All skrivning går genom databasfunktionerna:
+
+- `shop_purchase(product_id, idempotency_key)` — prövar publicering, säsong,
+  nivåkrav, ägande och XP-saldo, låser användarens XP-rad och skriver köpet och
+  den negativa XP-raden i samma anrop. Samma nyckel ger samma kvitto, och en
+  samtidig dubblett fångas som `unique_violation` och besvaras med det köp som
+  redan finns — aldrig med ett andra avdrag.
+- `shop_equip(product_id)` / `shop_unequip(kind)` — utrustning och temabyte.
+  Kontrollerar ägandet och kostar aldrig XP.
+- `admin_shop_save_product`, `admin_shop_set_published` och
+  `admin_shop_save_season` — kräver `is_admin()` i funktionen, inte bara i
+  gränssnittet.
+
+XP:t är oförändrat: köp är `xp_transactions` med `source = 'shop_purchase'` och
+negativt belopp. Uppgifter ger fortfarande XP på samma sätt och exakt en gång.
+Säsongens tillgänglighet avgörs av `season_is_active(id)` på servern, aldrig av
+klientens klocka.
+
+Temana är ett gemensamt system, inte fem kopior av appen: `src/styles/teman.css`
+sätter paletten (ytor, text, ramar, knappar, meny, skuggor, fokus) via
+`data-ui-tema` på `<html>`, och varje tema lägger till sina egna dekorationer om
+det vill. Nya teman kräver en rad i `shop_products`, en bild i
+`src/assets/teman/` och ett `[data-ui-tema='…']`-block. Saknas temanyckeln faller
+appen tillbaka på standardtemat (`safeThemeKey`) utan att något ägande förloras.
+
+Efter en avpublicerad produkt eller en avslutad säsong ligger köpet kvar i
+`shop_purchases` och syns i **Min samling**; `on delete set null` på
+`product_id` gör att inte ens en borttagen produkt tar med sig ägandet.
+
 ## Testning
 
-`npm test` kör 275 tester i 19 filer. Registreringsbotens klienttester ligger i
+`npm test` kör 443 tester i 38 filer. Registreringsbotens klienttester ligger i
 `site/tests/bot.test.mjs` och körs med `npm test` i `site/`:
 
 - **Enhetstester** för ruttvakt, hash-rutter, lösenord, kontofiltrering,
@@ -281,6 +324,18 @@ Saknas migreringen visas tydliga fel i gränssnittet (`ERR_NOT_READY` från
   resultat, felfallen och att anropet aldrig innehåller en roll.
 - Schemat har dessutom enhetstester för veckodagar, validering, sortering,
   gruppering och filtrering (`src/lib/schedule.test.ts`, 15 tester).
+- Shopen prövas i `src/__tests__/shop.test.tsx` (21 tester): produktens
+  tillstånd (XP, nivå, säsong, ägande, avpublicering), att katalogen och
+  migreringens frö har samma priser, att samlingen behåller ägandet när en
+  produkt avpubliceras, och demolägets köpregler — nekade köp, exakt ett avdrag,
+  idempotent omförsök, dubbelköp, nivåkrav samt byte mellan två ägda teman utan
+  XP-kostnad.
+  Adminpanelens shop prövas i `src/__tests__/admin-shop.test.tsx` (4 tester):
+  listning, prisbekräftelse, avpublicering och säsongssparande.
+
+Testerna når aldrig nätet: `.env.test` i reporoten lämnar
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` tomma, så `lib/db.ts` avvisar
+anropet direkt i stället för att fråga ett riktigt projekt.
 
 Databastestet för scheman och uppgifter ligger i
 `supabase/tests/0003_admin_schedule_and_tasks.sql` och körs med
