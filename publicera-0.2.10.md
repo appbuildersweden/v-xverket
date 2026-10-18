@@ -1,7 +1,9 @@
 # Elda 0.2.10 – shopen växer: två teman och 19 nya föremål
 
-**Status: publiceras 18 oktober 2026.** Tagg `v0.2.10` startar releaseflödet.
-Commit, körnings-ID och efterkontroll fylls i när releasen är grön.
+**Status: publicerad 18 oktober 2026.** Commit `269df2c`, tagg `v0.2.10` och
+releasekörning 39161141725 är gröna. Hemsida, uppdateringsmanifest och
+installationsfiler är publicerade; databasmigreringen återstår (se *Kvar att
+göra*).
 
 ## Vad som ändrades
 
@@ -60,6 +62,28 @@ rör inga konton, XP-rader, köp eller utrustning.
 - Demoläget i webbläsaren: 54 av 54 produktkort, kategoriantalen
   7/12/8/8/8/8/3, Candy Crypt-provet visar gradient, båda nya temana ger nya
   beräknade färger, inga konsol- eller nätverksfel.
+
+## Publicerat och kontrollerat
+
+| Del | Resultat |
+| --- | --- |
+| Releasekörning | 39161141725 – grön, jobbet `release` utan felande steg |
+| GitHub Release | `v0.2.10`: exe 9 554 086 B, msi 10 829 824 B, båda signaturerna, `latest.json` |
+| Hemsida | https://elda-6a9.pages.dev visar **VERSION 0.2.10**; historiken toppar `v0.2.10` med texten *Shopen växer* |
+| Uppdatering | `update.json` = 0.2.10; `scripts/kontrollera-uppdatering.mjs` exit 0 (version, signatur och nedladdningsbar fil) |
+| Privat bucket | `elda-installers` har 0.2.10 exe och msi; `download`-funktionens `info` svarar 0.2.10; anonymt anrop ger 401 |
+| Riktig installation | 0.2.9 upptäckte 0.2.10, laddade ner 9 554 086 byte med godkänd signatur och installerade; registret och `app.exe` visar 0.2.10 |
+
+### Webbplatsen publicerades manuellt
+
+Releaseflödet hoppade över stegen för webbplatsen: `secrets.CLOUDFLARE_API_TOKEN`
+är inte satt i repo:t, så `PUBLISH_SITE` blev false och både
+webbplatsbygget, publiceringen och manifestkontrollen hoppades över. Därför
+byggdes `site/dist` från en ren worktree på taggen och publicerades med
+`npx wrangler pages deploy` – samma bygge som flödet gör – och
+installationsfilerna lades i den privata bucketen med `supabase storage cp`.
+Sätt tillbaka `CLOUDFLARE_API_TOKEN` och `CLOUDFLARE_ACCOUNT_ID` som secrets så
+sköter flödet publiceringen själv nästa gång.
 
 ## Kvar att göra
 

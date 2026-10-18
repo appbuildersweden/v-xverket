@@ -35,8 +35,9 @@ finns i `docs/registrering-och-roller.md`, `docs/adminpanel-och-scheman.md` och
 
 ## Shopen och temana (0.2.10)
 
-Shopen kom i 0.2.9 (commit `32e3af4`) och byggdes ut i 0.2.10 med 19 nya
-föremål och två gradient-teman. Elev- och privatelevpanelen har gruppen *Shop*
+Shopen kom i 0.2.9 (commit `32e3af4`) och byggdes ut i 0.2.10 (commit `269df2c`,
+tagg `v0.2.10`, releasekörning 39161141725) med 19 nya föremål och två
+gradient-teman. Elev- och privatelevpanelen har gruppen *Shop*
 med sidorna *Shop* och *Min samling*; adminpanelen har *Shop och säsonger*.
 Detaljerna — katalog, teman, tabeller, funktioner och vad som är verifierat —
 står i `publicera-0.2.10.md`, `publicera-0.2.9.md` och `src-new/README.md`.
@@ -53,8 +54,8 @@ migreringen. Ingen av dem är **körd** — tills de är det visar shopen
 ## Verifierat i utvecklingsmiljön
 
 - `npx tsc --noEmit` grön i båda apparna (gamla `src/` och `src-new/`).
-- `npx vitest run` i `src-new/`: 443 tester i 38 filer, gröna
-  (2026-10-18, efter shopen och temana).
+- `npx vitest run` i `src-new/`: 445 tester i 38 filer, gröna
+  (2026-10-18, efter 0.2.10).
 - `npm run build` i rotappen grön: den bygger `src-new` (`tsc && vite build`) och
   kopierar resultatet till `dist/`, som Tauri paketerar.
 - Databasen statiskt granskad: varje tabell som migreringarna skapar har
