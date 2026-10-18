@@ -1,8 +1,9 @@
 # Elda 0.2.9 – shopen, fem teman och samlingen
 
-**Status: förberedd i arbetsträdet.** Versionen är höjd och kontrollerna är
-körda, men inget är committat, taggat eller publicerat än. Stegen som återstår
-står under *Kvar att göra*.
+**Status: publicerad 18 oktober 2026.** Commit `32e3af4`, taggen `v0.2.9` och
+releasekörning 39157016725 är gröna. Hemsida, uppdateringsmanifest och
+installationsfiler är publicerade; databasmigreringen återstår (se *Kvar att
+göra*).
 
 ## Vad som ändrades
 
@@ -63,16 +64,29 @@ står under *Kvar att göra*.
   `src/assets/README.md` beskriver bilderna och att licensen för motiven måste
   bekräftas innan publicering.
 
+## Publicerat
+
+| Del | Version/adress |
+| --- | --- |
+| GitHub Release | `v0.2.9` – exe, msi, signaturer och `latest.json` (körning 39157016725, grön) |
+| Hemsida | https://elda-6a9.pages.dev – VERSION 0.2.9, publicerad 18 oktober 2026 |
+| Uppdatering | `https://elda-6a9.pages.dev/update.json` – 0.2.9, samma signatur som `.sig` |
+| Nedladdning | `elda-installers/Elda_0.2.9_x64-setup.exe` (9 552 298 B) och `Elda_0.2.9_x64_en-US.msi` (10 825 728 B) i den privata bucketen |
+| Databas | **återstår** – migreringen `20261101000000_shop.sql` är inte körd |
+
+CI körde releasen. Hemsidan och uppdateringsmanifestet publicerades lokalt med
+`npx wrangler pages deploy dist --project-name elda --branch main`, eftersom
+`CLOUDFLARE_API_TOKEN` fortfarande saknas i GitHub. Installationsfilerna laddades
+upp till den privata bucketen med `npx supabase storage cp --experimental
+--linked`.
+
 ## Kvar att göra
 
 | Steg | Varför |
 | --- | --- |
-| `git add` / `commit` | Shopen, temana, migreringen och dokumentationen är ocommittade. `.env.test` (som håller testerna borta från nätet) är ny och ska med. |
-| `git tag v0.2.9` + `git push origin main v0.2.9` | Startar releasekörningen som bygger exe och msi. |
-| `npx supabase db push` | Kör `20261101000000_shop.sql`. Kräver databaslösenord och ändrar det riktiga projektet — därför inte gjort härifrån. |
-| `npx supabase storage cp …` | Lägger `Elda_0.2.9_x64-setup.exe` och `.msi` i den privata bucketen `elda-installers`. |
-| `npx wrangler pages deploy dist --project-name elda --branch main` | Publicerar hemsidan och `update.json`; `CLOUDFLARE_API_TOKEN` saknas fortfarande i GitHub. |
+| `npx supabase db push` | Kör `20261101000000_shop.sql`. Kräver databaslösenord och ändrar det riktiga projektet — därför inte gjort härifrån. Tills den är körd visar shopen `ERR_NOT_READY`. |
 | Licensgenomgång av de fem temabilderna | Se `src-new/src/assets/README.md`. |
+| `CLOUDFLARE_API_TOKEN` i GitHub | Då publiceras hemsidan av CI i stället för lokalt. |
 
 ## Verifierat
 
@@ -87,6 +101,11 @@ står under *Kvar att göra*.
 | Shopen i webbläsaren (demoläge) | 35 av 35 produkter, kategoriantal 5/12/4/4/4/3/3, inga konsol- eller nätverksfel |
 | Min samling i webbläsaren | tomt läge med förklaring och väg tillbaka till shopen |
 | Temat i webbläsaren | `data-ui-tema="pumpa"` byter accent till `#ff9a3c` och sätter bakgrundsbilden; standardtemat återställs när attributet tas bort |
+| `node scripts/kontrollera-uppdatering.mjs` | version 0.2.9, signatur mot `.sig` stämmer, filen nedladdningsbar (9 552 298 B) |
+| `update.json` live | 0.2.9, anteckningen *Shop med fem teman och en egen samling* |
+| Hemsidan live | rubriken visar VERSION 0.2.9, versionshistoriken har `v0.2.9` överst |
+| `download`-funktionens `info` | 0.2.9, exe + msi, 9 552 298 B |
+| Anonym nedladdning | 401, som förut |
 
 En första full testkörning gav två tidsgränser (5 s) i de tunga
 Excel/PowerPoint-proven. Båda filerna gick grönt ensamma och hela sviten gick
@@ -105,8 +124,9 @@ koden. Siffrorna ovan är från den gröna hela körningen.
 - **Licensen för de fem temabilderna måste bekräftas** innan publicering. Hur
   man byter motiv eller kör temat utan bild står i
   `src-new/src/assets/README.md`.
-- **Ingen installerad app har uppdaterats end-to-end härifrån**, och ingen
-  tagg är skapad. Det är medvetet: publiceringen startar först när du säger till.
+- **Ingen installerad app har uppdaterats end-to-end härifrån.** Manifest,
+  signatur, filstorlek och nedladdning är verifierade med samma kontroller som
+  appen gör innan den installerar.
 - **Inga riktiga pengar, ingen loot och ingen ny XP-väg.** XP kommer fortfarande
   bara från slutförda uppgifter; köp är negativa `xp_transactions` med
   `source = 'shop_purchase'`.

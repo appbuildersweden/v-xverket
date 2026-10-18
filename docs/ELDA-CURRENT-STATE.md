@@ -35,9 +35,9 @@ finns i `docs/registrering-och-roller.md`, `docs/adminpanel-och-scheman.md` och
 
 ## Shopen och temana (0.2.9)
 
-Shopen är byggd och förberedd som version 0.2.9 men **inte publicerad**. Elev-
-och privatelevpanelen har gruppen *Shop* med sidorna *Shop* och *Min samling*;
-adminpanelen har *Shop och säsonger*. Detaljerna — katalog, teman, tabeller,
+Shopen publicerades som version 0.2.9 den 18 oktober 2026 (commit `32e3af4`,
+tagg `v0.2.9`). Elev- och privatelevpanelen har gruppen *Shop* med sidorna
+*Shop* och *Min samling*; adminpanelen har *Shop och säsonger*. Detaljerna — katalog, teman, tabeller,
 funktioner och vad som är verifierat — står i `publicera-0.2.9.md` och i
 `src-new/README.md`.
 
@@ -181,8 +181,8 @@ Medvetet behållet: `App.tsx`-spärren för tvingat lösenordsbyte (andra lagret
 
 ## Nästa steg
 
-0. Kör migreringen `20261101000000_shop.sql` (`npx supabase db push`) och
-   publicera 0.2.9 enligt `publicera-0.2.9.md`.
+0. Kör migreringen `20261101000000_shop.sql` (`npx supabase db push`) så att
+   shopen fungerar mot den riktiga databasen – se `publicera-0.2.9.md`.
 1. Fyll på OpenRouter-kontot (eller sätt en ny nyckel) och kör
    `node scripts/e2e-registrering.mjs` igen: då ska ett privat elevkonto få
    `status: "skapad"` utan administratörens inblandning.
