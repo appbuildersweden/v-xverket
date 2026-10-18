@@ -1904,13 +1904,16 @@ button:disabled,
   height: 5px;
   margin-top: 10px;
   border-radius: 999px;
-  background: var(--track);
+  /* Variablerna här är samma som appens övriga förloppsfält. De gamla
+     namnen (--track, --fill, --input-bg) fanns inte i temat, så rutan och
+     anteckningarna blev genomskinliga. */
+  background: var(--border);
   overflow: hidden;
 }
 
 .update-banner-fill {
   height: 100%;
-  background: var(--fill);
+  background: var(--accent);
   transition: width 160ms ease;
 }
 
@@ -1919,13 +1922,35 @@ button:disabled,
   margin-top: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--input-bg);
+  background: var(--surface-2);
   color: var(--text-2);
   font-family: inherit;
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
   overflow: auto;
+}
+
+/* ============ Uppdateringar i inställningarna ============ */
+/* Kortet på profilsidan, som alla roller når. Statusraden använder appens
+   befintliga .chat-notice/.login-err så att ljust och mörkt läge följer med. */
+.update-notes {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.update-settings-actions {
+  margin-top: 12px;
+}
+
+.update-settings-actions .btn {
+  width: 100%;
 }
 
 .update-banner-actions {

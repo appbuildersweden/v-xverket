@@ -75,6 +75,41 @@ export async function fetchPublishedUpdate(): Promise<{
   }
 }
 
+/**
+ * Delar av ett versionsnummer, eller null när texten inte börjar med en siffra.
+ * En eventuell förhandsversion ("-beta.1") räknas bort.
+ */
+function versionParts(value: string | null | undefined): number[] | null {
+  const match = /^(\d+(?:\.\d+)*)/.exec(String(value ?? '').trim());
+  if (!match) return null;
+  return match[1].split('.').map((part) => Number.parseInt(part, 10));
+}
+
+/**
+ * Sant när `candidate` är en nyare version än `current`, t.ex. 0.2.7 mot 0.2.6.
+ *
+ * Används när appen körs i en webbläsare: då finns ingen Tauri-uppdaterare som
+ * kan svara, och den publicerade versionen i `update.json` jämförs i stället med
+ * den version som bygget gjordes från. Saknas ett läsbart versionsnummer i
+ * någon av strängarna svaras false — hellre "ingen uppdatering" än ett felaktigt
+ * "ny version finns".
+ */
+export function isNewerVersion(
+  candidate: string | null | undefined,
+  current: string | null | undefined,
+): boolean {
+  const next = versionParts(candidate);
+  const installed = versionParts(current);
+  if (!next || !installed) return false;
+
+  for (let index = 0; index < Math.max(next.length, installed.length); index += 1) {
+    const left = next[index] ?? 0;
+    const right = installed[index] ?? 0;
+    if (left !== right) return left > right;
+  }
+  return false;
+}
+
 let cachedVersion: string | null = null;
 let suppressNotificationUntil = 0;
 
@@ -243,7 +278,8 @@ export async function updateNow(
  */
 export function currentBuiltVersion(): string {
   const globalAny = window as unknown as { __TAURI_APP_VERSION__?: string };
-  return globalAny.__TAURI_APP_VERSION__ ?? cachedVersion ?? '0.0.0';
+  const baked = typeof __ELDA_APP_VERSION__ === 'string' ? __ELDA_APP_VERSION__ : '';
+  return globalAny.__TAURI_APP_VERSION__ ?? cachedVersion ?? (baked || '0.0.0');
 }
 
 /**

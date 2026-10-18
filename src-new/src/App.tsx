@@ -237,7 +237,9 @@ function AppContent() {
           panel={activeRoute.panel}
           title={pageTitle}
           group={pageGroup}
-          subtitle={showProfile ? 'Ditt konto, utseende och session' : undefined}
+          subtitle={
+            showProfile ? 'Ditt konto, utseende, uppdateringar och session' : undefined
+          }
         />
         <div className="content">
           {notice && (

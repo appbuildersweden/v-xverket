@@ -5,6 +5,7 @@ import { useTheme } from '../theme';
 import { ROLE_LABELS, PanelType, PANEL_LABELS } from '../lib/nav';
 import { isKnownRole } from '../lib/auth-types';
 import { MIN_PASSWORD_LENGTH, validateNewPassword } from '../lib/password';
+import { UpdateSettings } from '../components/UpdateSettings';
 
 interface ProfilProps {
   panel: PanelType;
@@ -13,8 +14,12 @@ interface ProfilProps {
 
 /**
  * Profil & inställningar. Visar den serverstyrda kontoinformationen (användarnamn
- * och roll — inget som går att ändra härifrån), temaväljare, frivilligt
- * lösenordsbyte och utloggning som avslutar sessionen på riktigt.
+ * och roll — inget som går att ändra härifrån), temaväljare, uppdateringar,
+ * frivilligt lösenordsbyte och utloggning som avslutar sessionen på riktigt.
+ *
+ * Sidan är gemensam för alla roller: admin, elev, privat elev, lärare och
+ * speciallärare når den via kontomenyn och sidomenyn, och alla kan därför söka
+ * efter uppdateringar själva.
  */
 export const Profil: React.FC<ProfilProps> = ({ panel, onClose }) => {
   const { user, changePassword, logout } = useAuth();
@@ -114,6 +119,8 @@ export const Profil: React.FC<ProfilProps> = ({ panel, onClose }) => {
           </button>
         </div>
       </div>
+
+      <UpdateSettings />
 
       <div className="card">
         <div className="card-head">

@@ -903,6 +903,74 @@ describe('mina framsteg', () => {
     await renderElev('framsteg');
     expect(await screen.findByText('Ingen data ännu')).toBeTruthy();
   });
+
+  it('visar nivåring, nästa belöning och vägen till trädgården', async () => {
+    mocks.fetchXpState.mockResolvedValue({
+      ok: true,
+      data: { totalXp: 30, level: 1, xpPerLevel: 100, intoLevel: 30, xpToNext: 70 },
+    });
+    mocks.listRewardDefinitions.mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: 'r1',
+          name: 'Glödande pumpa',
+          description: null,
+          theme: 'halloween',
+          position: 1,
+          xp_required: 20,
+          bonus_xp: 0,
+          illustration: 'pumpa-glod',
+          unlocks_items: ['pumpa-glod'],
+          rarity: 'vanlig',
+          is_final: false,
+          active: true,
+        },
+        {
+          id: 'r2',
+          name: 'Månskenslyktan',
+          description: 'En lykta som brinner hela natten.',
+          theme: 'halloween',
+          position: 2,
+          xp_required: 60,
+          bonus_xp: 0,
+          illustration: 'lykta',
+          unlocks_items: ['lykta'],
+          rarity: 'sallsynt',
+          is_final: false,
+          active: true,
+        },
+      ],
+    });
+    mocks.listUnlocks.mockResolvedValue({
+      ok: true,
+      data: new Map([
+        [
+          'r1',
+          {
+            id: 'u1',
+            reward_id: 'r1',
+            bonus_xp_awarded: 0,
+            unlocked_at: '2026-10-01T10:00:00Z',
+            source_task_title: null,
+          },
+        ],
+      ]),
+    });
+
+    await renderElev('framsteg');
+
+    const hero = await screen.findByTestId('framsteg-hero');
+    expect(within(hero).getByText('Nästa belöning')).toBeTruthy();
+    expect(within(hero).getByText('Månskenslyktan')).toBeTruthy();
+    expect(within(hero).getByText('30 XP kvar')).toBeTruthy();
+    expect(
+      within(hero)
+        .getByRole('link', { name: /Öppna trädgården/i })
+        .getAttribute('href'),
+    ).toBe('#/elev/belonningar');
+    expect(screen.getByText('Milstolpar')).toBeTruthy();
+  });
 });
 
 describe('belöningar', () => {
@@ -1116,5 +1184,20 @@ describe('återkoppling på uppgifter', () => {
 
     expect(await screen.findByText('Inlämnad')).toBeTruthy();
     expect(screen.queryByTestId('teacher-feedback')).toBeNull();
+  });
+});
+
+describe('uppdateringar i inställningarna', () => {
+  it('låter eleven söka efter uppdateringar från profilen', async () => {
+    await renderElev('start');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Konto och profil' }));
+    const menu = await screen.findByRole('menu', { name: 'Kontomeny' });
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /profil & inställningar/i }));
+
+    const card = await screen.findByTestId('update-settings');
+    expect(within(card).getByText('Uppdateringar')).toBeTruthy();
+    expect(within(card).getByTestId('update-check')).toBeTruthy();
+    expect(within(card).getByTestId('update-current-version').textContent).toBeTruthy();
   });
 });

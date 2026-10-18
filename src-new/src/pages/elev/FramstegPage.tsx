@@ -1,5 +1,16 @@
 import React from 'react';
-import { BarChart3, Lock, Sparkles, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  Award,
+  BarChart3,
+  CheckCircle2,
+  Flame,
+  Lock,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+} from 'lucide-react';
 import { AssignedTask, groupTasksBySubject, listMyTasks } from '../../lib/assignments';
 import {
   PlannerTask,
@@ -12,7 +23,12 @@ import {
   listUnlocks,
 } from '../../lib/planner';
 import { RewardArt } from '../../components/halloween/RewardArt';
-import { activeSeason, buildCollection, xpUntilUnlock } from '../../lib/season';
+import {
+  activeSeason,
+  buildAchievements,
+  buildCollection,
+  xpUntilUnlock,
+} from '../../lib/season';
 import { QuizAttempt, listMyAttempts, scoreLabel, scorePercent } from '../../lib/quiz';
 import { FlashcardDeck, listDecks } from '../../lib/flashcards';
 import { DocumentRow, listDocuments } from '../../lib/documents';
@@ -89,10 +105,19 @@ async function loadFramsteg(): Promise<Result<Data>> {
   };
 }
 
+/** Omkretsen för nivåringen (r = 52). */
+const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+
+/** Hur många föremål som visas i översiktens samlingsvägg. */
+const COLLECTION_PREVIEW = 8;
+
 /**
  * Mina framsteg. Allt räknas fram från elevens egna uppgifter, resultat och
- * belöningar — det finns ingen påhittad statistik och inga betyg. Saknas data
- * visas ett tydligt tomt läge i stället.
+ * belöningar — det finns ingen påhittad statistik och inga betyg.
+ *
+ * Sidan är byggd uppifrån och ned: först var eleven står just nu (nivå, XP och
+ * nästa belöning), sedan vad som är gjort, därefter samlingen och milstolparna
+ * och sist detaljerna per ämne, provresultat och material.
  */
 export const FramstegPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) => {
   const copy = studentCopy(panel);
@@ -107,6 +132,10 @@ export const FramstegPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =>
   const open = total - done;
   const subjectGroups = groupTasksBySubject(tasks);
 
+  const xp = state.data?.xp;
+  const totalXp = xp?.totalXp ?? 0;
+  const levelRatio = xp && xp.xpPerLevel > 0 ? Math.min(xp.intoLevel / xp.xpPerLevel, 1) : 0;
+
   // Halloween-stegen: bara den aktiva säsongen räknas, och belöningarna kommer
   // från serverns upplåsningar. Trösklarna ligger i lib/halloween-rewards.ts.
   const seasonItems = buildCollection(
@@ -117,41 +146,241 @@ export const FramstegPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =>
     state.data?.unlocks ?? new Map<string, RewardUnlock>(),
   );
   const nextReward = seasonItems.find((item) => !item.unlocked) ?? null;
-  const unlockedRewards = seasonItems.filter((item) => item.unlocked).length;
+  const unlockedItems = seasonItems.filter((item) => item.unlocked);
+  const unlockedRewards = unlockedItems.length;
+
+  const attempts = state.data?.attempts ?? [];
+  const bestPercent =
+    attempts.length > 0
+      ? attempts.reduce(
+          (max, attempt) => Math.max(max, scorePercent(attempt.score, attempt.total)),
+          0,
+        )
+      : null;
+  const achievements = state.data
+    ? buildAchievements({
+        completedTasks: done,
+        quizAttempts: attempts.length,
+        bestQuizPercent: bestPercent,
+      })
+    : [];
+  const achievementsDone = achievements.filter((achievement) => achievement.unlocked).length;
+
+  const previewItems = [
+    ...unlockedItems.slice(-COLLECTION_PREVIEW),
+    ...seasonItems.filter((item) => !item.unlocked).slice(0, COLLECTION_PREVIEW),
+  ].slice(0, COLLECTION_PREVIEW + 4);
 
   return (
-    <div className="panel-page" data-testid={studentPageTestId(panel, 'framsteg')}>
-      <SectionCard title="Mina framsteg" subtitle="Din egen utveckling i Elda">
-        {state.loading && <LoadingState label="Räknar ihop dina framsteg…" />}
-        {!state.loading && state.error && <ErrorState message={state.error} onRetry={state.reload} />}
-        {state.data && (
-          <PartialDataNotice missing={state.data.missing} onRetry={state.reload} />
-        )}
+    <div className="panel-page framsteg-page" data-testid={studentPageTestId(panel, 'framsteg')}>
+      {state.loading && (
+        <SectionCard title="Mina framsteg" subtitle="Din egen utveckling i Elda">
+          <LoadingState label="Räknar ihop dina framsteg…" />
+        </SectionCard>
+      )}
+      {!state.loading && state.error && (
+        <SectionCard title="Mina framsteg" subtitle="Din egen utveckling i Elda">
+          <ErrorState message={state.error} onRetry={state.reload} />
+        </SectionCard>
+      )}
+      {state.data && <PartialDataNotice missing={state.data.missing} onRetry={state.reload} />}
 
-        {state.data && (
-          <div className="grid-4">
-            <StatCard label="Uppgifter klara" value={done} hint={`av ${total}`} />
-            <StatCard label="Kvar" value={open} />
-            <StatCard label="XP" value={state.data.xp.totalXp} hint={`Nivå ${state.data.xp.level}`} />
-            <StatCard label="Provträning" value={state.data.attempts.length} hint="genomförda försök" />
+      {state.data && xp && (
+        <section className="framsteg-hero" data-testid="framsteg-hero">
+          <div className="framsteg-level" aria-label={`Nivå ${xp.level}`}>
+            <svg viewBox="0 0 120 120" className="framsteg-ring" aria-hidden="true">
+              <circle className="framsteg-ring-track" cx="60" cy="60" r="52" />
+              <circle
+                className="framsteg-ring-value"
+                cx="60"
+                cy="60"
+                r="52"
+                strokeDasharray={RING_CIRCUMFERENCE}
+                strokeDashoffset={RING_CIRCUMFERENCE * (1 - levelRatio)}
+                transform="rotate(-90 60 60)"
+              />
+            </svg>
+            <div className="framsteg-level-inner">
+              <span className="framsteg-level-label">Nivå</span>
+              <strong>{xp.level}</strong>
+              <span className="framsteg-level-xp">
+                {xp.intoLevel}/{xp.xpPerLevel} XP
+              </span>
+            </div>
           </div>
-        )}
 
-        {state.data && (
-          <p className="security-note">
-            <BarChart3 size={14} aria-hidden="true" />
-            {copy.progressNote}
-          </p>
-        )}
-      </SectionCard>
+          <div className="framsteg-hero-body">
+            <p className="framsteg-kicker">
+              <Sparkles size={14} aria-hidden="true" /> {activeSeason.label} i Elda
+            </p>
+            <h1 className="framsteg-title">Dina framsteg</h1>
+            <p className="framsteg-hero-sub">
+              {nextReward
+                ? `${xp.xpToNext} XP kvar till nivå ${xp.level + 1}, och ${
+                    xpUntilUnlock(nextReward, totalXp)
+                  } XP kvar till ${nextReward.name}.`
+                : 'Du har låst upp hela säsongens samling. Njut av trädgården.'}
+            </p>
 
-      {state.data && total === 0 && state.data.attempts.length === 0 && (
+            <div className="framsteg-chips">
+              <span className="framsteg-chip">
+                <Star size={13} aria-hidden="true" /> {totalXp} XP totalt
+              </span>
+              <span className="framsteg-chip">
+                <CheckCircle2 size={13} aria-hidden="true" /> {done} av {total} uppgifter
+                klara
+              </span>
+              <span className="framsteg-chip">
+                <Trophy size={13} aria-hidden="true" /> {unlockedRewards} av{' '}
+                {seasonItems.length} belöningar
+              </span>
+            </div>
+
+            <div className="framsteg-level-bar">
+              <ProgressBar
+                value={xp.intoLevel}
+                max={Math.max(xp.xpPerLevel, 1)}
+                label={`Mot nivå ${xp.level + 1}`}
+                caption={`${xp.intoLevel} / ${xp.xpPerLevel} XP`}
+              />
+            </div>
+          </div>
+
+          <div className={`framsteg-next${nextReward ? '' : ' is-complete'}`}>
+            {nextReward ? (
+              <>
+                <span className="framsteg-next-label">
+                  <Target size={13} aria-hidden="true" /> Nästa belöning
+                </span>
+                <div className="framsteg-next-art" aria-hidden="true">
+                  {nextReward.artKey ? (
+                    <RewardArt artKey={nextReward.artKey} size={76} locked />
+                  ) : (
+                    <Lock size={26} />
+                  )}
+                </div>
+                <strong className="framsteg-next-name">{nextReward.name}</strong>
+                <span className="framsteg-next-left">
+                  {xpUntilUnlock(nextReward, totalXp)} XP kvar
+                </span>
+                <ProgressBar
+                  value={Math.min(totalXp, nextReward.xpRequired)}
+                  max={Math.max(nextReward.xpRequired, 1)}
+                  caption={`${totalXp} / ${nextReward.xpRequired} XP`}
+                />
+              </>
+            ) : (
+              <>
+                <span className="framsteg-next-label">
+                  <Award size={13} aria-hidden="true" /> Hela samlingen
+                </span>
+                <div className="framsteg-next-art" aria-hidden="true">
+                  <RewardArt artKey="kristall" size={76} />
+                </div>
+                <strong className="framsteg-next-name">Allt är upplåst</strong>
+                <span className="framsteg-next-left">Säsongen är klar</span>
+              </>
+            )}
+            <a className="framsteg-garden-link" href={`#/${panel}/belonningar`}>
+              Öppna trädgården <ArrowRight size={14} aria-hidden="true" />
+            </a>
+          </div>
+        </section>
+      )}
+
+      {state.data && (
+        <div className="grid-4 framsteg-stats">
+          <StatCard label="Uppgifter klara" value={done} hint={`av ${total}`} />
+          <StatCard label="Kvar" value={open} />
+          <StatCard label="XP" value={totalXp} hint={`Nivå ${xp?.level ?? 1}`} />
+          <StatCard label="Provträning" value={attempts.length} hint="genomförda försök" />
+        </div>
+      )}
+
+      {state.data && (
+        <p className="security-note">
+          <BarChart3 size={14} aria-hidden="true" />
+          {copy.progressNote}
+        </p>
+      )}
+
+      {state.data && total === 0 && attempts.length === 0 && (
         <SectionCard title="Inget att visa ännu" subtitle="Kom igång">
           <EmptyState
             icon={<BarChart3 size={22} />}
             title="Ingen data ännu"
             description={copy.progressEmpty}
           />
+        </SectionCard>
+      )}
+
+      {state.data && seasonItems.length > 0 && (
+        <SectionCard
+          title="Samlingen"
+          subtitle={`${unlockedRewards} av ${seasonItems.length} föremål upplåsta`}
+        >
+          <div className="framsteg-collection">
+            {previewItems.map((item) => (
+              <div
+                key={item.id}
+                className={`framsteg-collectible${item.unlocked ? ' is-unlocked' : ''}`}
+                title={item.unlocked ? item.name : `${item.name} — låses upp vid ${item.xpRequired} XP`}
+              >
+                <RewardArt
+                  artKey={item.artKey ?? undefined}
+                  size={62}
+                  locked={!item.unlocked}
+                  title={item.name}
+                />
+                <span className="framsteg-collectible-name">{item.name}</span>
+                {!item.unlocked && (
+                  <span className="framsteg-collectible-xp">
+                    {xpUntilUnlock(item, totalXp)} XP kvar
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="framsteg-collection-foot">
+            <Sparkles size={13} aria-hidden="true" /> Varje avklarad uppgift ger 10 XP. Vid
+            varje gräns låses nästa föremål upp — och ställs i trädgården.
+          </p>
+        </SectionCard>
+      )}
+
+      {state.data && achievements.length > 0 && (
+        <SectionCard
+          title="Milstolpar"
+          subtitle={`${achievementsDone} av ${achievements.length} uppnådda`}
+        >
+          <ul className="framsteg-milestones">
+            {achievements.map((achievement) => (
+              <li
+                key={achievement.id}
+                className={`framsteg-milestone${achievement.unlocked ? ' is-done' : ''}`}
+              >
+                <span className="framsteg-milestone-icon" aria-hidden="true">
+                  {achievement.unlocked ? <Flame size={16} /> : <Lock size={15} />}
+                </span>
+                <div className="framsteg-milestone-body">
+                  <div className="framsteg-milestone-head">
+                    <strong>{achievement.name}</strong>
+                    <span className="framsteg-milestone-count">
+                      {achievement.progress} / {achievement.target}
+                    </span>
+                  </div>
+                  <p>{achievement.description}</p>
+                  <ProgressBar
+                    value={achievement.progress}
+                    max={Math.max(achievement.target, 1)}
+                  />
+                  <span className="framsteg-milestone-reward">
+                    <Sparkles size={12} aria-hidden="true" /> {achievement.reward}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </SectionCard>
       )}
 
@@ -177,73 +406,10 @@ export const FramstegPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =>
         </SectionCard>
       )}
 
-      {state.data && (
-        <SectionCard
-          title="Nivå och belöningar"
-          subtitle={
-            nextReward
-              ? `Nästa belöning: ${nextReward.name}`
-              : 'Hela Halloween-samlingen är upplåst'
-          }
-        >
-          <div className="row-actions">
-            <Pill tone="info">
-              <Star size={13} aria-hidden="true" /> {state.data.xp.totalXp} XP
-            </Pill>
-            <Pill tone="muted">Nivå {state.data.xp.level}</Pill>
-            <Pill tone={nextReward ? 'muted' : 'ok'}>
-              {unlockedRewards} av {seasonItems.length} belöningar
-            </Pill>
-          </div>
-          <ProgressBar
-            value={state.data.xp.intoLevel}
-            max={state.data.xp.xpPerLevel}
-            label="Mot nästa nivå"
-            caption={`${state.data.xp.intoLevel} / ${state.data.xp.xpPerLevel} XP`}
-          />
-
-          {nextReward ? (
-            <div className="next-goal">
-              <div className="reward-popup-illu" aria-hidden="true">
-                {nextReward.artKey ? (
-                  <RewardArt artKey={nextReward.artKey} size={44} locked />
-                ) : (
-                  <Lock size={22} aria-hidden="true" />
-                )}
-              </div>
-              <div className="next-goal-body">
-                <div className="list-item-title">{nextReward.name}</div>
-                {nextReward.description && (
-                  <p className="list-item-sub">{nextReward.description}</p>
-                )}
-                <ProgressBar
-                  value={Math.min(state.data.xp.totalXp, nextReward.xpRequired)}
-                  max={Math.max(nextReward.xpRequired, 1)}
-                  caption={`${state.data.xp.totalXp} / ${nextReward.xpRequired} XP`}
-                />
-                <div className="row-actions">
-                  <Pill tone="info">
-                    {xpUntilUnlock(nextReward, state.data.xp.totalXp)} XP kvar
-                  </Pill>
-                  <Pill tone="muted">
-                    <Sparkles size={12} aria-hidden="true" /> 10 XP per avklarad uppgift
-                  </Pill>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="security-note">
-              <Sparkles size={14} aria-hidden="true" />
-              Du har låst upp alla Halloween-belöningar. Föremålen väntar i trädgården.
-            </p>
-          )}
-        </SectionCard>
-      )}
-
-      {state.data && state.data.attempts.length > 0 && (
+      {state.data && attempts.length > 0 && (
         <SectionCard title="Provträning" subtitle="Dina senaste resultat">
           <ul className="list">
-            {state.data.attempts.map((attempt) => (
+            {attempts.map((attempt) => (
               <li className="list-item list-item-static" key={attempt.id}>
                 <div className="list-item-content">
                   <div className="list-item-title">{attempt.set_title ?? 'Övning'}</div>

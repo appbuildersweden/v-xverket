@@ -340,11 +340,46 @@ export function gardenEffects(achievements: readonly Achievement[]): GardenEffec
 
 // ---------------------------------------------------------------- Trädgården
 
-/** Antal fasta platser i scenen. */
-export const GARDEN_SLOT_COUNT = 6;
+/**
+ * En namngiven plats i scenen. Platserna ligger på olika ställen i motivet —
+ * vid grinden, under lyktan, vid pumporna — så att trädgården ser ut som en
+ * trädgård och inte som en rad ikoner. `x` och `y` är procent av scenens bredd
+ * respektive höjd, och `scale` gör föremål längre bak mindre.
+ */
+export interface GardenSpot {
+  /** Platsnumret som sparas i databasen (0–5). */
+  slot: number;
+  /** Kort namn som visas när eleven väljer plats. */
+  label: string;
+  x: number;
+  y: number;
+  scale: number;
+}
+
+export const GARDEN_SPOTS: readonly GardenSpot[] = [
+  { slot: 0, label: 'Vid grinden', x: 12, y: 71, scale: 0.94 },
+  { slot: 1, label: 'Under lyktan', x: 30, y: 63, scale: 0.82 },
+  { slot: 2, label: 'Vid pumporna', x: 46, y: 76, scale: 1 },
+  { slot: 3, label: 'På trappan', x: 63, y: 66, scale: 0.86 },
+  { slot: 4, label: 'Bredvid häxan', x: 79, y: 57, scale: 0.78 },
+  { slot: 5, label: 'Vid staketet', x: 90, y: 73, scale: 0.92 },
+];
+
+/** Antal fasta platser i scenen. Följer `GARDEN_SPOTS`. */
+export const GARDEN_SLOT_COUNT = GARDEN_SPOTS.length;
 
 export function isValidSlot(slot: number): boolean {
   return Number.isInteger(slot) && slot >= 0 && slot < GARDEN_SLOT_COUNT;
+}
+
+/** Platsen med ett visst nummer, eller null när numret inte finns. */
+export function gardenSpot(slot: number): GardenSpot | null {
+  return GARDEN_SPOTS.find((spot) => spot.slot === slot) ?? null;
+}
+
+/** Namnet på en plats, t.ex. "Vid grinden". */
+export function gardenSpotLabel(slot: number): string {
+  return gardenSpot(slot)?.label ?? `Plats ${slot + 1}`;
 }
 
 /**

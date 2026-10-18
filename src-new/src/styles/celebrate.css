@@ -1,0 +1,726 @@
+/* ------------------------------------------------------------------
+   Upplåsningsfirandet
+
+   Firandet ligger i ett eget lager över appen. Ljusskenet, ringarna och
+   konfettin är rena dekorationer och ritas bara med CSS — innehållet (XP,
+   belöningens namn och föremålen) kommer från servern.
+   ------------------------------------------------------------------ */
+
+.reward-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.reward-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 50% at 50% 30%, rgba(255, 158, 51, 0.22), rgba(6, 4, 16, 0.82) 70%),
+    rgba(4, 3, 12, 0.72);
+  backdrop-filter: blur(6px);
+  animation: reward-veil-in 220ms ease both;
+}
+
+.reward-card {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 26px 24px 22px;
+  border-radius: 22px;
+  text-align: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 179, 71, 0.4);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255, 179, 71, 0.22), rgba(18, 12, 38, 0.97) 58%),
+    #120c26;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(143, 107, 255, 0.25) inset,
+    0 0 60px rgba(255, 150, 46, 0.18);
+  animation: reward-card-in 380ms cubic-bezier(0.18, 0.9, 0.3, 1.2) both;
+}
+
+/* Ljusskenet som pulserar bakom föremålet. */
+.reward-card::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  width: 320px;
+  height: 320px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 179, 71, 0.35), rgba(255, 179, 71, 0) 68%);
+  animation: reward-glow 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.reward-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.reward-confetti-bit {
+  position: absolute;
+  top: -14px;
+  width: var(--confetti-size, 8px);
+  height: calc(var(--confetti-size, 8px) * 0.45);
+  border-radius: 2px;
+  background: #ffb347;
+  opacity: 0.85;
+  transform: rotate(var(--confetti-rotate, 0deg));
+  animation: reward-confetti-fall 3s linear both;
+}
+
+.reward-confetti-1 {
+  background: #a98bff;
+}
+
+.reward-confetti-2 {
+  background: #7ee0c2;
+}
+
+.reward-confetti-3 {
+  background: #ff6f91;
+}
+
+.reward-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 150px;
+  margin: 4px 0 6px;
+}
+
+.reward-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 179, 71, 0.35);
+}
+
+.reward-ring-inner {
+  width: 118px;
+  height: 118px;
+  animation: reward-ring-pulse 3.6s ease-in-out infinite;
+}
+
+.reward-ring-outer {
+  width: 168px;
+  height: 168px;
+  border-style: dashed;
+  border-color: rgba(169, 139, 255, 0.35);
+  animation: reward-ring-spin 26s linear infinite;
+}
+
+.reward-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 10px 26px rgba(255, 140, 40, 0.35));
+}
+
+.reward-art-fallback {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.reward-copy {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.reward-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #ffc978;
+}
+
+.reward-title {
+  margin: 0;
+  font-size: clamp(22px, 3.6vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: #fdf6ff;
+}
+
+.reward-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.reward-xp-badge,
+.reward-bonus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.reward-xp-badge {
+  color: #201238;
+  background: linear-gradient(120deg, #ffd58f, #ffab3d);
+  box-shadow: 0 6px 18px rgba(255, 158, 46, 0.35);
+}
+
+.reward-bonus-badge {
+  color: #0d2a24;
+  background: linear-gradient(120deg, #9df0d5, #4fd0ac);
+}
+
+.reward-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(233, 226, 255, 0.78);
+  max-width: 36ch;
+}
+
+.reward-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.reward-item-chip {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 179, 71, 0.25);
+}
+
+.reward-item-text {
+  width: auto;
+  padding: 0 10px;
+  font-size: 12px;
+  color: rgba(233, 226, 255, 0.8);
+}
+
+.reward-more {
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(169, 139, 255, 0.28);
+  text-align: left;
+}
+
+.reward-more-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(200, 190, 230, 0.65);
+}
+
+.reward-more-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.reward-more-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  color: rgba(237, 231, 255, 0.85);
+}
+
+.reward-continue {
+  position: relative;
+  width: 100%;
+  margin-top: 18px;
+  justify-content: center;
+  border: none;
+  color: #201238;
+  background: linear-gradient(120deg, #ffd58f, #ffab3d);
+  box-shadow: 0 10px 24px rgba(255, 158, 46, 0.32);
+}
+
+.reward-continue:hover {
+  filter: brightness(1.05);
+}
+
+@keyframes reward-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes reward-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes reward-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes reward-ring-pulse {
+  0%,
+  100% {
+    transform: scale(0.96);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.9;
+  }
+}
+
+@keyframes reward-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes reward-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(0) rotate(var(--confetti-rotate, 0deg));
+  }
+  12% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(430px) rotate(calc(var(--confetti-rotate, 0deg) + 260deg));
+  }
+}
+
+/* ------------------------------------------------------------------
+   Mina framsteg
+   ------------------------------------------------------------------ */
+
+.framsteg-page {
+  display: grid;
+  gap: 16px;
+}
+
+.framsteg-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(190px, 236px);
+  gap: 22px;
+  align-items: center;
+  padding: 22px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(143, 107, 255, 0.3);
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(255, 158, 51, 0.16), transparent 55%),
+    radial-gradient(100% 120% at 100% 0%, rgba(122, 92, 255, 0.22), transparent 60%),
+    linear-gradient(160deg, #191131, #100b22);
+  box-shadow: 0 18px 46px rgba(4, 2, 14, 0.45);
+}
+
+.framsteg-level {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.framsteg-ring {
+  width: 132px;
+  height: 132px;
+  transform: rotate(0.001deg);
+}
+
+.framsteg-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 9;
+}
+
+.framsteg-ring-value {
+  fill: none;
+  stroke: #ffb347;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 700ms ease;
+  filter: drop-shadow(0 0 8px rgba(255, 158, 51, 0.55));
+}
+
+.framsteg-level-inner {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  gap: 0;
+  color: #fdf6ff;
+}
+
+.framsteg-level-label {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(214, 203, 245, 0.7);
+}
+
+.framsteg-level-inner strong {
+  font-size: 38px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.framsteg-level-xp {
+  font-size: 11px;
+  color: rgba(214, 203, 245, 0.75);
+}
+
+.framsteg-hero-body {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.framsteg-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffc978;
+}
+
+.framsteg-title {
+  margin: 0;
+  font-size: clamp(22px, 2.8vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: #fdf6ff;
+}
+
+.framsteg-hero-sub {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(230, 222, 255, 0.78);
+  max-width: 46ch;
+}
+
+.framsteg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.framsteg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(240, 235, 255, 0.9);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.framsteg-level-bar {
+  margin-top: 6px;
+  max-width: 420px;
+}
+
+/* Nästa belöning, som ett litet "kort i kortet". */
+.framsteg-next {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  text-align: center;
+  background: rgba(9, 6, 22, 0.55);
+  border: 1px solid rgba(255, 179, 71, 0.28);
+}
+
+.framsteg-next.is-complete {
+  border-color: rgba(126, 224, 194, 0.4);
+}
+
+.framsteg-next-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 201, 120, 0.9);
+}
+
+.framsteg-next-art {
+  display: grid;
+  place-items: center;
+  margin: 2px 0;
+  filter: drop-shadow(0 8px 20px rgba(255, 150, 46, 0.25));
+}
+
+.framsteg-next-name {
+  font-size: 14px;
+  color: #fdf6ff;
+}
+
+.framsteg-next-left {
+  font-size: 12px;
+  color: rgba(214, 203, 245, 0.75);
+}
+
+.framsteg-next .progress,
+.framsteg-next > * {
+  width: 100%;
+}
+
+.framsteg-garden-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #201238;
+  background: linear-gradient(120deg, #ffd58f, #ffab3d);
+}
+
+.framsteg-garden-link:hover {
+  filter: brightness(1.06);
+}
+
+.framsteg-stats {
+  margin-top: 2px;
+}
+
+/* Samlingsväggen */
+.framsteg-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(98px, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.framsteg-collectible {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 10px 6px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  opacity: 0.72;
+  transition: transform 160ms ease, opacity 160ms ease, border-color 160ms ease;
+}
+
+.framsteg-collectible.is-unlocked {
+  opacity: 1;
+  border-style: solid;
+  border-color: rgba(255, 179, 71, 0.35);
+  background: radial-gradient(120% 120% at 50% 0%, rgba(255, 179, 71, 0.16), rgba(18, 12, 38, 0.6));
+  box-shadow: 0 8px 20px rgba(4, 2, 14, 0.35);
+}
+
+.framsteg-collectible.is-unlocked:hover {
+  transform: translateY(-3px);
+}
+
+.framsteg-collectible-name {
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.framsteg-collectible-xp {
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.framsteg-collection-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Milstolpar */
+.framsteg-milestones {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.framsteg-milestone {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+}
+
+.framsteg-milestone.is-done {
+  border-color: rgba(255, 179, 71, 0.35);
+  background: linear-gradient(120deg, rgba(255, 179, 71, 0.12), rgba(143, 107, 255, 0.08));
+}
+
+.framsteg-milestone-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.framsteg-milestone.is-done .framsteg-milestone-icon {
+  color: #201238;
+  background: linear-gradient(140deg, #ffd58f, #ffab3d);
+}
+
+.framsteg-milestone-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.framsteg-milestone-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.framsteg-milestone-head strong {
+  font-size: 13.5px;
+}
+
+.framsteg-milestone-count {
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.framsteg-milestone-body p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.framsteg-milestone-reward {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+@media (max-width: 860px) {
+  .framsteg-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .framsteg-next {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .framsteg-hero {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+    padding: 18px 16px;
+  }
+
+  .framsteg-hero-body {
+    justify-items: center;
+  }
+
+  .framsteg-chips {
+    justify-content: center;
+  }
+
+  .framsteg-level-bar {
+    width: 100%;
+  }
+
+  .framsteg-collection {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  }
+}
+
+/* Den som väljer reducerad rörelse får firandet utan rörelse. */
+@media (prefers-reduced-motion: reduce) {
+  .reward-card,
+  .reward-veil,
+  .reward-card::before,
+  .reward-ring,
+  .reward-confetti-bit {
+    animation: none;
+  }
+
+  .reward-confetti {
+    display: none;
+  }
+}

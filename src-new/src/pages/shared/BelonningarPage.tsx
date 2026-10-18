@@ -324,6 +324,8 @@ export const BelonningarPage: React.FC<{ panel: PanelType }> = ({ panel }) => {
             totalXp={totalXp}
             placementError={garden.loadError ?? garden.actionError}
             busyKey={garden.busyKey}
+            onPlace={(itemKey, slot) => void garden.place(itemKey, slot)}
+            onMove={(itemKey, slot) => void garden.move(itemKey, slot)}
             onRemove={(itemKey) => void garden.remove(itemKey)}
             onRetryPlacements={() => void garden.reload()}
           />
@@ -370,7 +372,8 @@ export const BelonningarPage: React.FC<{ panel: PanelType }> = ({ panel }) => {
               Varje avklarad uppgift ger 10 XP, och vid varje XP-gräns låses nästa
               föremål upp. Rariteten visar hur långt in i säsongen föremålet hör
               hemma — den ändrar inte XP:n. Det senast upplåsta föremålet ställs
-              automatiskt i trädgården, och du kan flytta eller ta bort det när du vill.
+              automatiskt på en ledig plats. Vill du bestämma själv klickar du på
+              den plats i trädgården där föremålet ska stå, eller drar dit det.
             </p>
 
             {halloweenItems.length === 0 ? (

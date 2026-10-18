@@ -520,3 +520,25 @@ describe('skapa konto', () => {
     expect(screen.queryByTestId('create-success')).toBeNull();
   });
 });
+
+describe('uppdateringar i adminpanelen', () => {
+  it('låter administratören söka efter uppdateringar i inställningarna', async () => {
+    makeBackend();
+    await renderAdmin('installningar');
+
+    expect(await screen.findByTestId('page-admin-installningar')).toBeTruthy();
+
+    const card = await screen.findByTestId('update-settings');
+    expect(within(card).getByText('Uppdateringar')).toBeTruthy();
+    expect(within(card).getByTestId('update-check')).toBeTruthy();
+    expect(within(card).getByTestId('update-current-version').textContent).toBeTruthy();
+  });
+
+  it('visar samma ruta på adminens egen uppdateringssida', async () => {
+    makeBackend();
+    await renderAdmin('uppdateringar');
+
+    expect(await screen.findByTestId('page-admin-uppdateringar')).toBeTruthy();
+    expect(await screen.findByTestId('update-check')).toBeTruthy();
+  });
+});

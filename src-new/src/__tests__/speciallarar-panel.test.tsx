@@ -767,4 +767,17 @@ describe('profil och inställningar', () => {
     expect(within(menu).getByText('espec01')).toBeTruthy();
     expect(within(menu).getByText(/speciallärare/i)).toBeTruthy();
   });
+
+  it('låter specialläraren söka efter uppdateringar från profilen', async () => {
+    await renderPanel('hem');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Konto och profil' }));
+    const menu = await screen.findByRole('menu', { name: 'Kontomeny' });
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /profil & inställningar/i }));
+
+    const card = await screen.findByTestId('update-settings');
+    expect(within(card).getByText('Uppdateringar')).toBeTruthy();
+    expect(within(card).getByTestId('update-check')).toBeTruthy();
+    expect(within(card).getByTestId('update-current-version').textContent).toBeTruthy();
+  });
 });

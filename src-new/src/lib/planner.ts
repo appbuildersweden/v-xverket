@@ -87,6 +87,8 @@ export interface UnlockCelebration {
   illustration: string | null;
   bonusXp: number;
   items: string[];
+  /** Säsongens raritet, när servern skickar med den. */
+  rarity: string | null;
 }
 
 export interface CompleteResult {
@@ -302,6 +304,7 @@ export function mapUnlocks(raw: unknown): UnlockCelebration[] {
       illustration: typeof r.illustration === 'string' ? r.illustration : null,
       bonusXp: Number(r.bonus_xp ?? 0),
       items: Array.isArray(r.items) ? r.items.map((i) => String(i)) : [],
+      rarity: typeof r.rarity === 'string' ? r.rarity : null,
     };
   });
 }

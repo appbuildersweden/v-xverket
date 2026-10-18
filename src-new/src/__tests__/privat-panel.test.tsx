@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App';
 import { ThemeProvider } from '../theme';
@@ -213,5 +213,20 @@ describe('privatelevpanelens meny', () => {
       expect(screen.getByTestId('panel-privat')).toBeTruthy();
       expect(screen.queryByTestId('access-denied')).toBeNull();
     }
+  });
+});
+
+describe('uppdateringar i inställningarna', () => {
+  it('låter den privata eleven söka efter uppdateringar från profilen', async () => {
+    await renderPanel('start');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Konto och profil' }));
+    const menu = await screen.findByRole('menu', { name: 'Kontomeny' });
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /profil & inställningar/i }));
+
+    const card = await screen.findByTestId('update-settings');
+    expect(within(card).getByText('Uppdateringar')).toBeTruthy();
+    expect(within(card).getByTestId('update-check')).toBeTruthy();
+    expect(within(card).getByTestId('update-current-version').textContent).toBeTruthy();
   });
 });

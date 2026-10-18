@@ -354,3 +354,19 @@ describe('lärarens uppgifter och kontakt', () => {
     }
   });
 });
+
+describe('uppdateringar i inställningarna', () => {
+  it('låter läraren söka efter uppdateringar från profilen', async () => {
+    makeBackend({ exists: true, user: teacher() });
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Konto och profil' }));
+    const menu = await screen.findByRole('menu', { name: 'Kontomeny' });
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /profil & inställningar/i }));
+
+    const card = await screen.findByTestId('update-settings');
+    expect(within(card).getByText('Uppdateringar')).toBeTruthy();
+    expect(within(card).getByTestId('update-check')).toBeTruthy();
+    expect(within(card).getByTestId('update-current-version').textContent).toBeTruthy();
+  });
+});

@@ -14,6 +14,11 @@ const tauriConf = JSON.parse(
 );
 const updateEndpoint: string = tauriConf?.plugins?.updater?.endpoints?.[0] ?? '';
 
+// Appens version bakas in i bygget. I den installerade appen läser Tauri
+// versionen själv, men i en webbläsare finns ingen sådan läsning — och
+// inställningssidan ska kunna visa vilken version som faktiskt körs även där.
+const appVersion: string = JSON.parse(readFileSync(path.resolve(here, 'package.json'), 'utf8')).version ?? '';
+
 export default defineConfig({
   plugins: [react()],
   // Den nya appen läser samma .env som den befintliga appen (reporoten) i
@@ -21,6 +26,7 @@ export default defineConfig({
   envDir: path.resolve(here, '..'),
   define: {
     __ELDA_UPDATE_ENDPOINT__: JSON.stringify(updateEndpoint),
+    __ELDA_APP_VERSION__: JSON.stringify(appVersion),
   },
   clearScreen: false,
   server: {

@@ -1,15 +1,31 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { MousePointerClick, Plus, RotateCcw, Sparkles } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  GripVertical,
+  MousePointerClick,
+  Music,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  VolumeX,
+  X,
+} from 'lucide-react';
 import {
   Collectible,
+  GARDEN_SPOTS,
   GARDEN_SLOT_COUNT,
   GardenEffect,
   SeasonConfig,
+  gardenSpotLabel,
   xpUntilUnlock,
 } from '../../lib/season';
 import { GardenPlacement } from '../../lib/garden';
 import { RewardArt } from './RewardArt';
-import { halloweenBackdropVideo } from '../../lib/season-media';
+import {
+  HALLOWEEN_AMBIENCE_CREDIT,
+  halloweenAmbience,
+  halloweenAmbienceCover,
+  halloweenBackdropVideo,
+} from '../../lib/season-media';
 import backdropImage from '../../assets/halloween-bakgrund.webp';
 
 /**
@@ -60,6 +76,10 @@ interface Props {
   totalXp: number;
   placementError: string | null;
   busyKey: string | null;
+  /** Ställer ett föremål på en plats (utan plats: första lediga). */
+  onPlace?: (itemKey: string, slot?: number) => void;
+  /** Flyttar ett föremål till en annan plats och byter plats med det som står där. */
+  onMove?: (itemKey: string, slot: number) => void;
   onRemove: (itemKey: string) => void;
   onRetryPlacements: () => void;
 }
@@ -161,13 +181,47 @@ export const HalloweenGarden: React.FC<Props> = ({
   totalXp,
   placementError,
   busyKey,
+  onPlace,
+  onMove,
   onRemove,
   onRetryPlacements,
 }) => {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [traySlot, setTraySlot] = useState<number | null>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const [soundOn, setSoundOn] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const reducedMotion = usePrefersReducedMotion();
   const backdropVideo = halloweenBackdropVideo();
   const effectSet = useMemo(() => new Set(effects), [effects]);
+
+  // Ljudet startar bara när eleven själv trycker på knappen — webbläsare får
+  // inte starta ljud av sig själva, och appen ska vara tyst som standard.
+  useEffect(() => {
+    const audio = audioRef.current;
+    // `canPlayType` svarar tomt i miljöer utan ljuduppspelning (t.ex. tester),
+    // så knappen fungerar men inget försök görs där det ändå inte går.
+    if (!audio || !audio.canPlayType('audio/mpeg')) return;
+    if (soundOn) {
+      try {
+        const playing = audio.play();
+        if (playing && typeof playing.catch === 'function') playing.catch(() => undefined);
+      } catch {
+        // En webbläsare som nekar uppspelning ska inte krascha trädgården.
+      }
+    } else {
+      audio.pause();
+    }
+  }, [soundOn]);
+
+  useEffect(
+    () => () => {
+      const audio = audioRef.current;
+      if (audio && audio.canPlayType('audio/mpeg')) audio.pause();
+    },
+    [],
+  );
 
   const placeable = useMemo(
     () => items.filter((item) => item.unlocked && item.placementKey && item.artKey),
@@ -208,6 +262,51 @@ export const HalloweenGarden: React.FC<Props> = ({
       ? byKey.get(selectedKey) ?? null
       : null;
 
+  // Föremål som är upplåsta men inte utställda — de kan eleven välja till en
+  // ledig plats. Samma lista används av både väljaren och dra-och-släpp.
+  const available = useMemo(() => {
+    const placedKeys = new Set(activePlacements.map((placement) => placement.item_key));
+    return placeable.filter((item) => !placedKeys.has(item.placementKey as string));
+  }, [placeable, activePlacements]);
+
+  const placeAt = useCallback(
+    (itemKey: string, slot?: number) => {
+      if (onPlace) onPlace(itemKey, slot);
+      setTraySlot(null);
+      setMoveOpen(false);
+    },
+    [onPlace],
+  );
+
+  const moveTo = useCallback(
+    (itemKey: string, slot: number) => {
+      if (onMove) {
+        onMove(itemKey, slot);
+      } else {
+        onPlace?.(itemKey, slot);
+      }
+      setMoveOpen(false);
+    },
+    [onMove, onPlace],
+  );
+
+  /** Släpper ett föremål på en plats. Tom plats = ställ dit, annars = byt plats. */
+  const handleDrop = useCallback(
+    (slot: number) => {
+      const key = draggingKey;
+      setDraggingKey(null);
+      if (!key) return;
+      const occupant = bySlot.get(slot);
+      if (occupant && occupant.item_key === key) return;
+      if (occupant) {
+        moveTo(key, slot);
+        return;
+      }
+      placeAt(key, slot);
+    },
+    [draggingKey, bySlot, moveTo, placeAt],
+  );
+
   return (
     <section className="card hh-card" data-testid="halloween-garden">
       <div className="card-head">
@@ -221,10 +320,48 @@ export const HalloweenGarden: React.FC<Props> = ({
             uppgifter för att tända lyktorna — allt du ser här kommer från servern.
           </p>
         </div>
-        <div className="hh-season-badge" aria-hidden="true">
-          <RewardArt artKey="pumpa-glod" size={44} />
+        <div className="hh-head-tools">
+          <button
+            type="button"
+            className={`hh-sound-toggle${soundOn ? ' is-on' : ''}`}
+            aria-pressed={soundOn}
+            onClick={() => setSoundOn((value) => !value)}
+            title={HALLOWEEN_AMBIENCE_CREDIT}
+            data-testid="garden-sound-toggle"
+          >
+            <img
+              src={halloweenAmbienceCover()}
+              alt=""
+              className="hh-sound-cover"
+              draggable={false}
+            />
+            <span className="hh-sound-text">
+              <Music size={13} aria-hidden="true" />
+              {soundOn ? 'Stäng av ljudet' : 'Ljudlandskap'}
+            </span>
+            {soundOn ? (
+              <span className="hh-sound-wave" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            ) : (
+              <VolumeX size={15} aria-hidden="true" />
+            )}
+          </button>
+          <div className="hh-season-badge" aria-hidden="true">
+            <RewardArt artKey="pumpa-glod" size={44} />
+          </div>
+          <audio
+            ref={audioRef}
+            src={halloweenAmbience()}
+            loop
+            preload="none"
+            data-testid="garden-ambience"
+          />
         </div>
       </div>
+      {soundOn && <p className="hh-sound-credit">{HALLOWEEN_AMBIENCE_CREDIT}</p>}
 
       <div className="hh-scene" data-testid="halloween-scene">
         {backdropVideo && !reducedMotion ? (
@@ -360,36 +497,127 @@ export const HalloweenGarden: React.FC<Props> = ({
           <div className="hh-glow-floor" />
         </div>
 
-        <div className="hh-slots" role="group" aria-label="Platser i trädgården">
-          {Array.from({ length: GARDEN_SLOT_COUNT }, (_, slot) => {
-            const placement = bySlot.get(slot);
+        <div className="hh-spot-map" role="group" aria-label="Platser i trädgården">
+          {GARDEN_SPOTS.map((spot) => {
+            const placement = bySlot.get(spot.slot);
             const item = placement ? byKey.get(placement.item_key) ?? null : null;
             const isSelected = item?.placementKey === selectedKey;
+            const style = {
+              left: `${spot.x}%`,
+              top: `${spot.y}%`,
+              '--hh-spot-scale': spot.scale,
+            } as React.CSSProperties;
 
             if (!placement || !item) {
               return (
-                <span className="hh-slot hh-slot-empty" key={`slot-${slot}`}>
-                  <Plus size={14} aria-hidden="true" />
-                  <span className="hh-sr">Ledig plats {slot + 1}</span>
-                </span>
+                <button
+                  type="button"
+                  className="hh-slot hh-slot-empty"
+                  key={`slot-${spot.slot}`}
+                  style={style}
+                  onClick={() => {
+                    setTraySlot(spot.slot);
+                    setSelectedKey(null);
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleDrop(spot.slot);
+                  }}
+                  aria-label={`${spot.label}: ledig plats. Välj ett föremål att ställa här.`}
+                  data-testid={`garden-slot-empty-${spot.slot}`}
+                >
+                  <Plus size={15} aria-hidden="true" />
+                  <span className="hh-slot-tag">{spot.label}</span>
+                </button>
               );
             }
 
             return (
               <button
                 type="button"
-                key={`slot-${slot}`}
+                key={`slot-${spot.slot}`}
                 className={`hh-slot hh-slot-filled${isSelected ? ' is-selected' : ''}`}
-                onClick={() => setSelectedKey(isSelected ? null : (item.placementKey as string))}
+                style={style}
+                draggable
+                onDragStart={() => setDraggingKey(item.placementKey as string)}
+                onDragEnd={() => setDraggingKey(null)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDrop(spot.slot);
+                }}
+                onClick={() => {
+                  setSelectedKey(isSelected ? null : (item.placementKey as string));
+                  setMoveOpen(false);
+                }}
                 aria-pressed={isSelected}
-                aria-label={`${item.name}, placerad i trädgården. Visa detaljer.`}
+                aria-label={`${item.name}, ${spot.label.toLowerCase()}. Visa detaljer och flytta.`}
+                data-testid={`garden-slot-${spot.slot}`}
               >
                 <RewardArt artKey={item.artKey} size={56} title={item.name} />
+                <span className="hh-slot-tag">{spot.label}</span>
               </button>
             );
           })}
         </div>
+
+        {draggingKey && (
+          <div className="hh-drop-hint" role="status">
+            <GripVertical size={13} aria-hidden="true" /> Släpp på en plats för att
+            flytta föremålet
+          </div>
+        )}
       </div>
+
+      {traySlot !== null && (
+        <div className="hh-tray" role="group" aria-label={`Välj föremål till ${gardenSpotLabel(traySlot)}`} data-testid="garden-tray">
+          <div className="hh-tray-head">
+            <div>
+              <strong>{gardenSpotLabel(traySlot)}</strong>
+              <p>
+                Välj ett upplåst föremål som ska stå här. Du kan flytta det igen
+                genom att dra det till en annan plats.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="hh-icon-btn"
+              onClick={() => setTraySlot(null)}
+              aria-label="Stäng platsvalet"
+            >
+              <X size={15} aria-hidden="true" />
+            </button>
+          </div>
+
+          {available.length === 0 ? (
+            <p className="hh-tray-empty">
+              Alla upplåsta föremål står redan i trädgården. Ta bort ett föremål först,
+              eller klara fler uppgifter för att låsa upp nya.
+            </p>
+          ) : (
+            <ul className="hh-tray-grid">
+              {available.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="hh-tray-item"
+                    onClick={() => placeAt(item.placementKey as string, traySlot)}
+                    disabled={busyKey === item.placementKey}
+                  >
+                    <RewardArt
+                      artKey={item.artKey ?? undefined}
+                      size={54}
+                      title={item.name}
+                    />
+                    <span>{item.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="hh-garden-facts">
         <div>
@@ -425,6 +653,14 @@ export const HalloweenGarden: React.FC<Props> = ({
             <div className="hh-selected-actions">
               <button
                 type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => setMoveOpen((value) => !value)}
+                aria-expanded={moveOpen}
+              >
+                <GripVertical size={14} /> Flytta till annan plats
+              </button>
+              <button
+                type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => onRemove(selected.placementKey as string)}
                 disabled={busyKey === selected.placementKey}
@@ -434,11 +670,44 @@ export const HalloweenGarden: React.FC<Props> = ({
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => setSelectedKey(null)}
+                onClick={() => {
+                  setSelectedKey(null);
+                  setMoveOpen(false);
+                }}
               >
                 Stäng
               </button>
             </div>
+
+            {moveOpen && (
+              <ul className="hh-move-list" data-testid="garden-move-list">
+                {GARDEN_SPOTS.map((spot) => {
+                  const occupied = bySlot.get(spot.slot);
+                  const current = occupied?.item_key === selected.placementKey;
+                  return (
+                    <li key={spot.slot}>
+                      <button
+                        type="button"
+                        className={`hh-move-target${current ? ' is-current' : ''}`}
+                        disabled={current || busyKey !== null}
+                        onClick={() =>
+                          moveTo(selected.placementKey as string, spot.slot)
+                        }
+                      >
+                        <span>{spot.label}</span>
+                        <small>
+                          {current
+                            ? 'Står här'
+                            : occupied
+                              ? 'Byt plats'
+                              : 'Ledig'}
+                        </small>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         </div>
       )}
@@ -454,8 +723,8 @@ export const HalloweenGarden: React.FC<Props> = ({
         <p className="hh-hint">
           <MousePointerClick size={14} aria-hidden="true" />
           {placedCount === 0
-            ? 'Välj ett upplåst föremål i samlingen nedan och ställ det i trädgården.'
-            : 'Klicka på ett föremål i trädgården för att se vad det är.'}
+            ? 'Klicka på en ledig plats i trädgården och välj ett av dina upplåsta föremål.'
+            : 'Klicka på ett föremål för att se vad det är, eller dra det till en annan plats.'}
         </p>
       )}
 

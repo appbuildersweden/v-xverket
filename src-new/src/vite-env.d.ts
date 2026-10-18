@@ -11,3 +11,6 @@ interface ImportMeta {
 
 /** Uppdateringens adress, inläst från src-tauri/tauri.conf.json vid bygget. */
 declare const __ELDA_UPDATE_ENDPOINT__: string;
+
+/** Appens version, inläst från package.json vid bygget. */
+declare const __ELDA_APP_VERSION__: string;

@@ -9,6 +9,8 @@ import './styles/panels.css';
 import './styles/privat.css';
 // Säsongens trädgård. Filen är scopad till .hh-klasser och rör inte övriga vyer.
 import './styles/halloween.css';
+// Firandet vid upplåsning och översikten Mina framsteg.
+import './styles/celebrate.css';
 
 /**
  * Demoläget finns bara i utvecklingsbygget. Grenen är alltid falsk i `dist`, så

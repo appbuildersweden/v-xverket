@@ -101,13 +101,13 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Halloween-trädgården och XP för egna poster
-            - Ny Halloween-trädgård: tio belöningar på en levande scen med sömlös bakgrundsvideo, ritad grafik i stället för emoji och tydliga XP-steg (20 → 1200).
-            - Du kan ställa ut dina upplåsta föremål på sex platser i trädgården. Placeringarna sparas på servern, och bara föremål du faktiskt har låst upp får ställas ut.
-            - Varje ny, avklarad att-göra-post ger 10 XP — även för elever, som tidigare fick 0. Dubbel XP är fortfarande omöjligt.
-            - En belöning kan bara låsas upp av en ny, slutförd uppgift, och historiken visar vilken uppgift som låste upp den.
-            - Bockar du av en post i planeringen firas det med en egen ruta och ritad grafik, och framstegssidan visar nästa belöning och hela samlingen.
-            - Automatiska uppdateringar kontrolleras vid start och var sjätte timme, som förut.
+            Trädgården på riktiga platser, nytt firande och en tydligare framstegssida
+            - Trädgården har nu sex namngivna platser — vid grinden, under lyktan, vid pumporna, på trappan, bredvid häxan och vid staketet. Klicka på en ledig plats och välj föremål, eller dra ett föremål dit du vill ha det. Står det redan något där byter de två plats, och allt sparas på servern.
+            - Ett helt nytt firande när ett föremål låses upp: ljussken, konfetti, raritet, XP och alla föremål i samma ruta — utan rörelse för den som har reducerad rörelse påslagen.
+            - Mina framsteg är ombyggd: nivåring med XP till nästa nivå, nästa belöning med ritad grafik och exakt antal XP kvar, samlingen som vägg, milstolpar med riktig progress och en direkt väg till trädgården.
+            - Ljudlandskap i trädgården från Halloween-filen, med omslaget från filen på knappen. Ljudet är avstängt tills du själv sätter på det.
+            - Samlingskorten är ljusare och tydligare: upplåsta föremål lyfts fram, låsta visar exakt hur många XP som återstår.
+            - Uppdateringskortet finns kvar på profilsidan med kontroll, nedladdning och installation.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
