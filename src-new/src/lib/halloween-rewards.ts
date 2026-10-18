@@ -4,32 +4,42 @@
  * Trösklarna styr tre saker samtidigt och ligger därför på ett ställe:
  *   * upplåsningen på servern (raden `reward_definitions.xp_required`),
  *   * demolägets exempeldata,
- *   * texterna och ritad grafik i gränssnittet.
+ *   * texterna och grafiken i gränssnittet.
  *
- * Ändra en siffra här och kör migreringen `halloween_stegen` — då följer
+ * Ändra en siffra här och kör migreringen `halloween_ikoner` — då följer
  * servern, demoläget och gränssnittet med. Ingen annan fil räknar ut gränser.
  *
- * `artKey` pekar på ritad SVG i `components/halloween/RewardArt.tsx` och
- * `itemKey` är nyckeln servern kontrollerar när föremålet ställs i trädgården.
+ * Stegen består av två sorters belöningar:
+ *   * tio föremål med ritad SVG (`artKey` pekar på `RewardArt.tsx`), med
+ *     oförändrade trösklar — den som redan har låst upp dem behåller dem,
+ *   * 48 ikoner från ikonarket (`halloween-icons.ts`), en belöning per ikon.
+ *
+ * `itemKey` är nyckeln servern kontrollerar när ett föremål ställs i trädgården,
+ * och `position` ordnar raderna inbördes i biblioteket (den styr inga XP).
  */
 import { Rarity, SeasonArtKey } from './season';
+import { HALLOWEEN_ICONS } from './halloween-icons';
 
 export interface HalloweenReward {
   /** Belöningens namn. Används som nyckel mot databasen (`unique (name)`). */
   name: string;
   /** Total XP som krävs för att låsa upp belöningen. */
   xpRequired: number;
-  /** Ritad grafik i trädgården och samlingen. */
+  /** Grafiken i samlingen: ritad SVG eller en ikonbild. */
   artKey: SeasonArtKey;
   /** Föremålsnyckeln som sparas i `unlocked_decorations` och får ställas ut. */
   itemKey: string;
   rarity: Rarity;
   description: string;
-  /** Ordningen i samlingen. Halloween-stegen ligger efter övriga teman. */
+  /** Ordningen i biblioteket. */
   position: number;
 }
 
-export const HALLOWEEN_REWARDS: readonly HalloweenReward[] = [
+/**
+ * De tio belöningarna med ritad grafik. Trösklarna är oförändrade, så ingen
+ * tidigare upplåsning påverkas av att ikonerna läggs till.
+ */
+const DRAWN_REWARDS: readonly HalloweenReward[] = [
   {
     name: 'Lysande pumpalykta',
     xpRequired: 20,
@@ -121,6 +131,26 @@ export const HALLOWEEN_REWARDS: readonly HalloweenReward[] = [
     position: 20,
   },
 ];
+
+/** En belöning per ikon i ikonarket, med ikonens eget namn och XP-gräns. */
+const ICON_REWARDS: readonly HalloweenReward[] = HALLOWEEN_ICONS.map((icon, index) => ({
+  name: icon.name,
+  xpRequired: icon.xpRequired,
+  artKey: icon.key,
+  itemKey: icon.key,
+  rarity: icon.rarity,
+  description: icon.description,
+  position: 111 + index,
+}));
+
+/**
+ * Hela stegen i XP-ordning. Trösklarna är unika, så varje ny XP-gräns ger
+ * exakt ett nytt föremål.
+ */
+export const HALLOWEEN_REWARDS: readonly HalloweenReward[] = [
+  ...DRAWN_REWARDS,
+  ...ICON_REWARDS,
+].sort((a, b) => a.xpRequired - b.xpRequired || a.name.localeCompare(b.name, 'sv'));
 
 /** Alla trösklar i stigande ordning — praktiskt för texter och tester. */
 export const HALLOWEEN_XP_STEPS: readonly number[] = HALLOWEEN_REWARDS.map(

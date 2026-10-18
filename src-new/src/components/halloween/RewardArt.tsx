@@ -1,12 +1,16 @@
 import React, { useId } from 'react';
-import { SeasonArtKey, seasonArtKey } from '../../lib/season';
+import { DrawnArtKey, isDrawnArtKey, seasonArtKey } from '../../lib/season';
+import { halloweenIconFile } from '../../lib/halloween-icons';
 
 /**
- * Ritade föremål för Halloween-trädgården.
+ * Föremålen för Halloween-trädgården.
  *
- * Varje föremål är en egen SVG med gradienter, skuggor och ljus — inga emojis.
- * Grafiken skalas utan att bli suddig, följer med i bygget och kräver inga
+ * Den ritade grafiken är egna SVG:er med gradienter, skuggor och ljus — inga
+ * emojis. Den skalas utan att bli suddig, följer med i bygget och kräver inga
  * externa filer eller nätverk. Nycklarna matchar `unlocks_items` i databasen.
+ *
+ * Ikonbelöningarna (`ikon-…`) har i stället en egen PNG från ikonarket och
+ * visas som pixelbild i sin egen storlek — se `halloween-icons.ts`.
  */
 interface ArtProps {
   /** Unikt id-prefix så att gradienter inte krockar mellan två föremål. */
@@ -633,7 +637,7 @@ const MoonLanternArt: React.FC<ArtProps> = ({ uid }) => (
   </g>
 );
 
-const ART: Record<SeasonArtKey, React.FC<ArtProps>> = {
+const ART: Record<DrawnArtKey, React.FC<ArtProps>> = {
   'pumpa-glod': PumpkinArt,
   spoke: GhostArt,
   fladdermus: BatArt,
@@ -674,11 +678,28 @@ export const RewardArt: React.FC<Props> = ({
 }) => {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const key = seasonArtKey(artKey);
-  const Art = key ? ART[key] : null;
+  const iconFile = key ? halloweenIconFile(key) : null;
+  const classes = `hh-art${locked ? ' hh-art-locked' : ''}${className ? ` ${className}` : ''}`;
+
+  // Ikonbelöningarna är pixelbilder. De visas i sin egen storlek och skalas
+  // aldrig upp, så att varje pixel i originalet förblir en pixel.
+  if (iconFile) {
+    return (
+      <img
+        className={`${classes} hh-art-img`}
+        src={iconFile}
+        alt={title ?? ''}
+        aria-hidden={title ? undefined : true}
+        style={{ maxWidth: size, maxHeight: size }}
+      />
+    );
+  }
+
+  const Art = key && isDrawnArtKey(key) ? ART[key] : null;
 
   return (
     <svg
-      className={`hh-art${locked ? ' hh-art-locked' : ''}${className ? ` ${className}` : ''}`}
+      className={classes}
       width={size}
       height={size}
       viewBox="0 0 120 120"

@@ -101,13 +101,11 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Trädgården på riktiga platser, nytt firande och en tydligare framstegssida
-            - Trädgården har nu sex namngivna platser — vid grinden, under lyktan, vid pumporna, på trappan, bredvid häxan och vid staketet. Klicka på en ledig plats och välj föremål, eller dra ett föremål dit du vill ha det. Står det redan något där byter de två plats, och allt sparas på servern.
-            - Ett helt nytt firande när ett föremål låses upp: ljussken, konfetti, raritet, XP och alla föremål i samma ruta — utan rörelse för den som har reducerad rörelse påslagen.
-            - Mina framsteg är ombyggd: nivåring med XP till nästa nivå, nästa belöning med ritad grafik och exakt antal XP kvar, samlingen som vägg, milstolpar med riktig progress och en direkt väg till trädgården.
-            - Ljudlandskap i trädgården från Halloween-filen, med omslaget från filen på knappen. Ljudet är avstängt tills du själv sätter på det.
-            - Samlingskorten är ljusare och tydligare: upplåsta föremål lyfts fram, låsta visar exakt hur många XP som återstår.
-            - Uppdateringskortet finns kvar på profilsidan med kontroll, nedladdning och installation.
+            Fyrtioåtta nya belöningar från Halloween-arket
+            - Ikonarket är uppdelat i 48 enskilda ikoner — pumpor, varelser, godis, häx- och magisaker, kyrkogårdsting och mörka dekorationer. Var och en är nu en egen belöning med eget namn, egen bild och egen XP-gräns.
+            - Trösklarna är flätade in i den befintliga stegen (20–2 000 XP), så belöningar låses upp gradvis och varje ny XP-gräns ger exakt ett nytt föremål. Redan intjänad XP och tidigare upplåsningar ligger kvar orörda.
+            - Samlingen visar varje ikon med sin egen bild, sitt namn och exakt hur många XP som återstår; låsta ikoner syns tonade som kommande belöningar.
+            - Trädgården, bakgrunden, firandet och övriga funktioner är oförändrade sedan 0.2.7.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi

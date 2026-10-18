@@ -12,6 +12,7 @@
  * upplåsta ligger kvar i samlingen eftersom de kommer från databasen.
  */
 import { RewardDefinition, RewardUnlock } from './planner';
+import { HalloweenIconKey, isHalloweenIconKey } from './halloween-icons';
 
 // ---------------------------------------------------------------- Säsonger
 
@@ -95,13 +96,21 @@ export const SEASON_ART_KEYS = [
   'manlykta',
 ] as const;
 
-export type SeasonArtKey = (typeof SEASON_ART_KEYS)[number];
+/** Nycklarna med ritad SVG i `components/halloween/RewardArt.tsx`. */
+export type DrawnArtKey = (typeof SEASON_ART_KEYS)[number];
+
+/**
+ * Allt en belöning kan visa: ritad grafik eller en uppdelad ikonbild.
+ * Ikonbelöningarna har egna nycklar (`ikon-…`) med en bildfil i stället för
+ * ritad grafik — se `halloween-icons.ts`.
+ */
+export type SeasonArtKey = DrawnArtKey | HalloweenIconKey;
 
 /**
  * Äldre rader i belöningsbiblioteket använder kortare nycklar. De pekas om här
  * i stället för att databasen behöver skrivas om innan migreringen är körd.
  */
-const ART_ALIASES: Readonly<Record<string, SeasonArtKey>> = {
+const ART_ALIASES: Readonly<Record<string, DrawnArtKey>> = {
   pumpa: 'pumpa-glod',
   'pumpa-liten': 'pumpa-glod',
   manskenslykta: 'lykta',
@@ -126,8 +135,13 @@ const ART_ALIASES: Readonly<Record<string, SeasonArtKey>> = {
   manljus: 'manlykta',
 };
 
-export function isSeasonArtKey(value: string): value is SeasonArtKey {
+export function isDrawnArtKey(value: string): value is DrawnArtKey {
   return (SEASON_ART_KEYS as readonly string[]).includes(value);
+}
+
+/** Sant för både ritad grafik och en ikonbild. */
+export function isSeasonArtKey(value: string): value is SeasonArtKey {
+  return isDrawnArtKey(value) || isHalloweenIconKey(value);
 }
 
 /** Översätter en nyckel från databasen till en ritad tillgång, om det finns. */

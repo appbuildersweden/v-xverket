@@ -865,6 +865,16 @@
   opacity: 0.85;
 }
 
+/* Ikonbelöningarna är pixelbilder. De ritas i sin egen storlek (högst den
+   ruta gränssnittet frågar efter) och skalas alltid utan utjämning, så att
+   varje pixel i originalet förblir en pixel på skärmen. */
+.hh-art-img {
+  image-rendering: pixelated;
+  -ms-interpolation-mode: nearest-neighbor;
+  width: auto;
+  height: auto;
+}
+
 .hh-item-lock {
   position: absolute;
   right: 8px;
