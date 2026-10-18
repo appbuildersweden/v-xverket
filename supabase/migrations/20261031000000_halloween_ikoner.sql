@@ -69,7 +69,7 @@ values
   ('Vit pumpa', 'En blek pumpa som nästan lyser i mörkret.', 'halloween', 155, 1730, 0, 'ikon-vit-pumpa', '{ikon-vit-pumpa}', 'legendarisk', false, true),
   ('Två pumpor', 'En stor och en liten pumpa, sida vid sida.', 'halloween', 156, 1820, 0, 'ikon-pumpor', '{ikon-pumpor}', 'legendarisk', false, true),
   ('Spöke med armar', 'Ett spöke som sträcker armarna i vädret när det blir uppspelt.', 'halloween', 157, 1910, 0, 'ikon-spoke-armar', '{ikon-spoke-armar}', 'legendarisk', false, true),
-  ('Måne', 'En månskära med en stjärna i släptåg — säsongens sista föremål.', 'halloween', 158, 2000, 0, 'ikon-mane', '{ikon-mane}', 'legendarisk', false, true),
+  ('Måne', 'En månskära med en stjärna i släptåg — säsongens sista föremål.', 'halloween', 158, 2000, 0, 'ikon-mane', '{ikon-mane}', 'legendarisk', false, true)
 on conflict (name) do update set
   description = excluded.description,
   theme = excluded.theme,
@@ -144,5 +144,5 @@ where name <> all (array[
   'Vit pumpa',
   'Två pumpor',
   'Spöke med armar',
-  'Måne',
+  'Måne'
 ]);
