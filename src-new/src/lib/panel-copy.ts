@@ -52,7 +52,8 @@ const SKOLELEV: StudentCopy = {
   planningDayFilter: 'från din lärare och',
   planningAssignedTitle: 'Från din lärare',
   planningAssignedEmpty: 'När din lärare ger dig en uppgift eller planering dyker den upp här.',
-  planningXpNote: 'Egna poster ger ingen XP. Din XP kommer från uppgifter som din lärare har gett dig.',
+  planningXpNote:
+    'Varje egen post som du bockar av ger 10 XP — en gång per post. Uppgifter från din lärare ger också 10 XP. XP:n låser upp Halloween-belöningarna.',
   documentsSubtitle: 'Material från din lärare och dina egna filer',
   documentsEmpty:
     'När din lärare delar material med dig, eller du laddar upp en egen fil, visas den här.',
@@ -83,7 +84,8 @@ const PRIVAT: StudentCopy = {
   planningAssignedTitle: 'Tilldelat dig',
   planningAssignedEmpty:
     'Inget har tilldelats dig. Dina egna studiepass lägger du upp under Mina egna poster.',
-  planningXpNote: 'Egna poster ger ingen XP. Din XP kommer från uppgifter som är dina egna.',
+  planningXpNote:
+    'Varje post du bockar av ger 10 XP — en gång per post. XP:n låser upp Halloween-belöningarna i trädgården.',
   documentsSubtitle: 'Ditt eget studiematerial',
   documentsEmpty: 'Ladda upp en egen fil så visas den här.',
   progressNote:

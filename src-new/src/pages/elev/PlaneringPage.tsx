@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { CalendarCheck, ClipboardList, Plus, Search } from 'lucide-react';
 import {
   PlannerTask,
+  UnlockCelebration,
+  XpState,
   completeTask,
+  fetchXpState,
   countPlannerTasks,
   deleteTask,
   listTasks,
@@ -24,6 +27,7 @@ import {
   Toolbar,
 } from '../../components/ui';
 import { PlannerTaskFormModal, PlannerTaskItem } from '../../components/PlannerTask';
+import { RewardCelebration } from '../../components/RewardCelebration';
 import { PlannerCalendar } from '../../components/PlannerCalendar';
 import { Panel } from '../../lib/auth-types';
 import { studentCopy, studentPageTestId } from '../../lib/panel-copy';
@@ -31,20 +35,29 @@ import { studentCopy, studentPageTestId } from '../../lib/panel-copy';
 interface Data {
   own: PlannerTask[];
   assigned: AssignedTask[];
+  /** Elevens totala XP — samma summa som belöningarna räknas ur. */
+  xp: XpState;
 }
 
 async function loadPlanering(): Promise<Result<Data>> {
-  const [own, assigned] = await Promise.all([listTasks(), listMyTasks()]);
+  const [own, assigned, xp] = await Promise.all([listTasks(), listMyTasks(), fetchXpState()]);
   if (!own.ok) return own;
   if (!assigned.ok) return assigned;
-  return { ok: true, data: { own: own.data, assigned: assigned.data } };
+  if (!xp.ok) return xp;
+  return {
+    ok: true,
+    data: { own: own.data, assigned: assigned.data, xp: xp.data },
+  };
 }
 
 /**
- * Min planering. Här finns två tydligt åtskilda saker:
+ * Min planering är elevens att-göra-lista. Här finns två tydligt åtskilda
+ * saker:
  *   * Planering som din lärare har gett dig (läses, status ändras under Uppgifter).
  *   * Dina egna poster, som bara du ser och kan ändra.
- * Egna poster ger ingen XP — XP kommer från uppgifter som läraren har gett dig.
+ *
+ * En egen post som bockas av ger 10 XP — exakt en gång per post. Servern avgör
+ * det, och samma svar innehåller de belöningar som XP:n låste upp.
  */
 export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) => {
   const copy = studentCopy(panel);
@@ -55,11 +68,17 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
   const [search, setSearch] = useState('');
   const [day, setDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [celebration, setCelebration] = useState<{
+    xp: number;
+    unlocks: UnlockCelebration[];
+  } | null>(null);
 
   const today = todayISO();
   const own = state.data?.own ?? [];
   const assigned = state.data?.assigned ?? [];
   const counts = countPlannerTasks(own, today);
+  const ownXp = state.data?.xp.totalXp ?? 0;
 
   const visibleOwn = own
     .filter((task) => (day ? task.due_date === day : true))
@@ -76,15 +95,35 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
   ).slice(0, day ? 20 : 6);
 
   const handleComplete = async (task: PlannerTask) => {
+    setError(null);
+    setNotice(null);
     const result = await completeTask(task.id);
-    if (result.ok) state.reload();
-    else setError(result.error);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+
+    const { xpAwarded, unlocks } = result.data;
+    setNotice(
+      xpAwarded > 0
+        ? `Posten är klar. Du fick ${xpAwarded} XP.`
+        : 'Posten var redan avklarad — ingen ny XP betalas ut.',
+    );
+    if (xpAwarded > 0 || unlocks.length > 0) {
+      setCelebration({ xp: xpAwarded, unlocks });
+    }
+    state.reload();
   };
 
   const handleReopen = async (task: PlannerTask) => {
+    setNotice(null);
     const result = await reopenTask(task.id);
-    if (result.ok) state.reload();
-    else setError(result.error);
+    if (result.ok) {
+      setNotice('Posten är öppen igen. Den XP du redan fått ligger kvar.');
+      state.reload();
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleStart = async (task: PlannerTask) => {
@@ -110,13 +149,18 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
             {error}
           </div>
         )}
+        {notice && (
+          <div className="state-note" role="status" data-testid="planner-notice">
+            {notice}
+          </div>
+        )}
 
         {state.data && (
           <div className="grid-4">
             <StatCard label="Tilldelat" value={assigned.filter((t) => t.status !== 'klar').length} />
             <StatCard label="Egna poster" value={counts.open} />
-            <StatCard label="Idag" value={counts.today} />
-            <StatCard label="Försenade" value={counts.overdue} />
+            <StatCard label="Klara" value={counts.done} />
+            <StatCard label="XP" value={ownXp} hint="10 XP per avklarad post" />
           </div>
         )}
       </SectionCard>
@@ -180,7 +224,7 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
 
       <SectionCard
         title="Mina egna poster"
-        subtitle="Bara du ser dem"
+        subtitle="Bara du ser dem · 10 XP när du bockar av"
         action={
           <button type="button" className="btn btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={16} /> Ny post
@@ -254,6 +298,7 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
                 task={task}
                 today={today}
                 completeLabel="Klar"
+                showXp
                 onStart={() => void handleStart(task)}
                 onComplete={() => void handleComplete(task)}
                 onReopen={() => void handleReopen(task)}
@@ -264,6 +309,14 @@ export const PlaneringPage: React.FC<{ panel?: Panel }> = ({ panel = 'elev' }) =
           </ul>
         )}
       </SectionCard>
+
+      {celebration && (
+        <RewardCelebration
+          xpAwarded={celebration.xp}
+          unlocks={celebration.unlocks}
+          onClose={() => setCelebration(null)}
+        />
+      )}
 
       {(showForm || editing) && (
         <PlannerTaskFormModal

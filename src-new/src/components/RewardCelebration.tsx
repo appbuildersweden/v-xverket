@@ -1,7 +1,20 @@
 import React from 'react';
 import { Sparkles, Star } from 'lucide-react';
 import { UnlockCelebration } from '../lib/planner';
+import { seasonArtKey } from '../lib/season';
+import { RewardArt } from './halloween/RewardArt';
 import { Modal } from './forms';
+
+/** Små ljuspunkter som sprids ut från föremålet när det låses upp. */
+const SPARKS = Array.from({ length: 10 }, (_, index) => {
+  const angle = (Math.PI * 2 * index) / 10;
+  const distance = 52 + (index % 3) * 16;
+  return {
+    x: Math.round(Math.cos(angle) * distance),
+    y: Math.round(Math.sin(angle) * distance * 0.8) - 20,
+    delay: (index % 5) * 0.08,
+  };
+});
 
 interface Props {
   /** Upplåsta belöningar från servern (kan vara tom). */
@@ -30,8 +43,25 @@ export const RewardCelebration: React.FC<Props> = ({ unlocks, xpAwarded, onClose
 
         {first && (
           <>
-            <div className="reward-popup-illu" aria-hidden="true">
-              {first.illustration ?? '🏅'}
+            <div className="reward-popup-illu hh-celebrate" aria-hidden="true">
+              {seasonArtKey(first.illustration) ? (
+                <RewardArt artKey={first.illustration} size={104} />
+              ) : (
+                (first.illustration ?? '🏅')
+              )}
+              {SPARKS.map((spark, index) => (
+                <span
+                  key={`spark-${index}`}
+                  className="hh-spark"
+                  style={
+                    {
+                      '--spark-x': `${spark.x}px`,
+                      '--spark-y': `${spark.y}px`,
+                      '--spark-delay': `${spark.delay}s`,
+                    } as React.CSSProperties
+                  }
+                />
+              ))}
             </div>
             {first.description && <p className="reward-popup-desc">{first.description}</p>}
             {first.bonusXp > 0 && (
@@ -41,11 +71,17 @@ export const RewardCelebration: React.FC<Props> = ({ unlocks, xpAwarded, onClose
             )}
             {first.items.length > 0 && (
               <div className="reward-popup-items">
-                {first.items.map((item) => (
-                  <span className="reward-popup-item" key={item}>
-                    {item}
-                  </span>
-                ))}
+                {first.items.map((item) =>
+                  seasonArtKey(item) ? (
+                    <span className="reward-popup-item" key={item}>
+                      <RewardArt artKey={item} size={34} />
+                    </span>
+                  ) : (
+                    <span className="reward-popup-item" key={item}>
+                      {item}
+                    </span>
+                  ),
+                )}
               </div>
             )}
             {unlocks.length > 1 && (

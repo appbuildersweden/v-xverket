@@ -681,27 +681,31 @@ describe('belöningar och upplåsningar', () => {
       data: [
         {
           id: 'r1',
-          name: 'Blomma',
+          name: 'Lysande pumpalykta',
           description: null,
-          theme: 'natur',
-          position: 1,
-          xp_required: 25,
+          theme: 'halloween',
+          position: 101,
+          xp_required: 20,
           bonus_xp: 0,
-          illustration: null,
-          unlocks_items: [],
+          illustration: 'pumpa-glod',
+          unlocks_items: ['pumpa-glod'],
+          rarity: 'vanlig',
           is_final: false,
+          active: true,
         },
         {
           id: 'r2',
-          name: 'Sol',
+          name: 'Häxkittel',
           description: null,
-          theme: 'natur',
-          position: 2,
-          xp_required: 50,
+          theme: 'halloween',
+          position: 107,
+          xp_required: 550,
           bonus_xp: 0,
-          illustration: null,
-          unlocks_items: [],
+          illustration: 'kittel',
+          unlocks_items: ['kittel'],
+          rarity: 'sallsynt',
           is_final: false,
+          active: true,
         },
       ],
     });
@@ -717,17 +721,19 @@ describe('belöningar och upplåsningar', () => {
 
     await renderPanel('belonningar');
 
-    expect(await screen.findByText('Blomma')).toBeTruthy();
-    expect(screen.getAllByText('Sol').length).toBeGreaterThan(0);
+    // Den upplåsta belöningen finns både i samlingen och i historiken.
+    expect((await screen.findAllByText('Lysande pumpalykta')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Häxkittel').length).toBeGreaterThan(0);
     expect(screen.getByText('30')).toBeTruthy();
     expect(screen.getAllByText(/nästa mål/i).length).toBeGreaterThan(0);
   });
 
-  it('visar trädgården som växer med speciallärarens XP', async () => {
+  it('visar bara Halloween-trädgården som aktiv trädgård', async () => {
     mocks.fetchXpState.mockResolvedValue({
       ok: true,
       data: { totalXp: 30, level: 1, xpPerLevel: 100, intoLevel: 30, xpToNext: 70 },
     });
+    // Den gamla växtträdgården får inte visas som aktiv säsong längre.
     mocks.listRewardDefinitions.mockResolvedValue({
       ok: true,
       data: [
@@ -744,11 +750,10 @@ describe('belöningar och upplåsningar', () => {
 
     await renderPanel('belonningar');
 
-    const garden = await screen.findByTestId('reward-garden');
-    expect(within(garden).getByText(/en grodd/)).toBeTruthy();
-    expect(within(garden).getAllByTestId('garden-plot-unlocked')).toHaveLength(1);
-    expect(within(garden).getAllByTestId('garden-plot-locked')).toHaveLength(1);
-    expect(within(garden).getByText('50 XP')).toBeTruthy();
+    const garden = await screen.findByTestId('halloween-garden');
+    expect(within(garden).getByTestId('halloween-scene')).toBeTruthy();
+    expect(screen.queryByTestId('reward-garden')).toBeNull();
+    expect(screen.queryByText('Din trädgård')).toBeNull();
   });
 });
 

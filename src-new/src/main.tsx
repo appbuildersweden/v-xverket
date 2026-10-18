@@ -7,6 +7,8 @@ import './styles/panels.css';
 // Privatelevpanelens egna utseende. Filen är begränsad till [data-panel='privat']
 // och rör därför inte övriga panelers gränssnitt.
 import './styles/privat.css';
+// Säsongens trädgård. Filen är scopad till .hh-klasser och rör inte övriga vyer.
+import './styles/halloween.css';
 
 /**
  * Demoläget finns bara i utvecklingsbygget. Grenen är alltid falsk i `dist`, så

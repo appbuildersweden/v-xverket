@@ -41,6 +41,9 @@ node_modules
 # Publicerade installationsfiler (byggda artefakter, aldrig i källkod)
 site/downloads/
 
+# Råa källmedia (stora filer som inte hör till källkoden)
+haloween mp4/
+
 # Lokala testartefakter för hemsidan
 site/config-test.json
 site/test-run

@@ -244,6 +244,49 @@ export function createDemoClient(): SupabaseClient {
     });
   };
 
+  /**
+   * Låser upp de belöningar som XP-summan har nått. Samma regel som servern:
+   * en belöning låses upp en gång, aldrig av ett klick och aldrig av att en
+   * sida laddas om — bara när en uppgift gav ny XP.
+   */
+  const unlockReachedRewards = (): Array<Record<string, unknown>> => {
+    const total = totalXp();
+    if (!tables.reward_unlocks) tables.reward_unlocks = [];
+    const already = new Set(
+      tables.reward_unlocks
+        .filter((row) => row.user_id === DEMO_UID)
+        .map((row) => String(row.reward_id)),
+    );
+    const unlocked: Array<Record<string, unknown>> = [];
+
+    for (const reward of tables.reward_definitions ?? []) {
+      const id = String(reward.id);
+      if (reward.active === false || already.has(id)) continue;
+      if (total < Number(reward.xp_required ?? 0)) continue;
+
+      tables.reward_unlocks.push({
+        id: newId('demo-unlock'),
+        user_id: DEMO_UID,
+        reward_id: id,
+        bonus_xp_awarded: 0,
+        unlocked_at: new Date().toISOString(),
+      });
+      already.add(id);
+
+      unlocked.push({
+        id,
+        name: reward.name,
+        description: reward.description,
+        theme: reward.theme,
+        illustration: reward.illustration,
+        bonus_xp: 0,
+        items: reward.unlocks_items,
+      });
+    }
+
+    return unlocked;
+  };
+
   const rpc = (name: string, args?: Record<string, unknown>) => {
     const run = (): { data: unknown; error: { message: string } | null } => {
       const a = args ?? {};
@@ -253,15 +296,24 @@ export function createDemoClient(): SupabaseClient {
         const task = (tables.spec_tasks ?? []).find((r) => r.id === id);
         if (!task) return { data: null, error: { message: 'Uppgiften finns inte.' } };
         let awarded = 0;
-        if (task.status !== 'klar') {
-          task.status = 'klar';
-          task.completed_at = new Date().toISOString();
+        let unlocks: Array<Record<string, unknown>> = [];
+        task.status = 'klar';
+        task.completed_at = task.completed_at ?? new Date().toISOString();
+        // XP betalas bara ut en gång per post. `xp_awarded` ligger kvar även om
+        // posten öppnas igen, så samma uppgift kan aldrig ge poäng två gånger.
+        if (!task.xp_awarded) {
           task.xp_awarded = true;
           awarded = 10;
           addXp(awarded, String(task.title ?? 'Egen post'));
+          unlocks = unlockReachedRewards();
         }
         return {
-          data: { xp_awarded: awarded, total_xp: totalXp(), level: Math.floor(totalXp() / 100) + 1, unlocks: [] },
+          data: {
+            xp_awarded: awarded,
+            total_xp: totalXp(),
+            level: Math.floor(totalXp() / 100) + 1,
+            unlocks,
+          },
           error: null,
         };
       }
@@ -286,11 +338,13 @@ export function createDemoClient(): SupabaseClient {
           task.submission = a.p_submission.trim();
           task.submitted_at = new Date().toISOString();
         }
+        let unlocks: Array<Record<string, unknown>> = [];
         if (task.status === 'klar' && !task.xp_awarded) {
           task.xp_awarded = true;
-          task.completed_at = new Date().toISOString();
+          task.completed_at = task.completed_at ?? new Date().toISOString();
           awarded = 10;
           addXp(awarded, String(task.title ?? 'Uppgift'));
+          unlocks = unlockReachedRewards();
         }
         return {
           data: {
@@ -298,7 +352,7 @@ export function createDemoClient(): SupabaseClient {
             xp_awarded: awarded,
             total_xp: totalXp(),
             level: Math.floor(totalXp() / 100) + 1,
-            unlocks: [],
+            unlocks,
           },
           error: null,
         };
@@ -350,6 +404,55 @@ export function createDemoClient(): SupabaseClient {
       }
 
       if (name === 'mark_follow_up') {
+        return { data: null, error: null };
+      }
+
+      // Trädgårdens platser. Samma regler som servern: bara föremål som hör
+      // till en upplåst belöning får ställas ut.
+      if (name === 'garden_place_item') {
+        const itemKey = String(a.p_item_key ?? '');
+        const slot = Number(a.p_slot ?? -1);
+        if (!Number.isInteger(slot) || slot < 0 || slot > 5) {
+          return { data: null, error: { message: 'Ogiltig plats i trädgården.' } };
+        }
+        const unlockedIds = new Set(
+          (tables.reward_unlocks ?? [])
+            .filter((row) => row.user_id === DEMO_UID)
+            .map((row) => String(row.reward_id)),
+        );
+        const reward = (tables.reward_definitions ?? []).find(
+          (row) =>
+            unlockedIds.has(String(row.id)) &&
+            Array.isArray(row.unlocks_items) &&
+            (row.unlocks_items as unknown[]).includes(itemKey),
+        );
+        if (!reward) {
+          return { data: null, error: { message: 'Föremålet är inte upplåst.' } };
+        }
+        if (!tables.garden_placements) tables.garden_placements = [];
+        tables.garden_placements = tables.garden_placements.filter(
+          (row) =>
+            !(
+              row.user_id === DEMO_UID &&
+              (row.slot === slot || row.item_key === itemKey)
+            ),
+        );
+        tables.garden_placements.push({
+          user_id: DEMO_UID,
+          item_key: itemKey,
+          slot,
+          reward_id: reward.id,
+          updated_at: new Date().toISOString(),
+        });
+        return { data: null, error: null };
+      }
+
+      if (name === 'garden_remove_item') {
+        const itemKey = String(a.p_item_key ?? '');
+        if (!tables.garden_placements) tables.garden_placements = [];
+        tables.garden_placements = tables.garden_placements.filter(
+          (row) => !(row.user_id === DEMO_UID && row.item_key === itemKey),
+        );
         return { data: null, error: null };
       }
 

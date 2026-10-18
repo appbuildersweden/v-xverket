@@ -515,13 +515,64 @@ describe('min planering', () => {
     );
   });
 
-  it('markerar en egen post som klar', async () => {
+  it('markerar en egen post som klar och visar de 10 XP servern betalade ut', async () => {
     mocks.listTasks.mockResolvedValue({ ok: true, data: [makePlannerTask()] });
+    mocks.completeTask.mockResolvedValue({
+      ok: true,
+      data: { xpAwarded: 10, totalXp: 20, level: 1, unlocks: [] },
+    });
 
     await renderElev('planering');
     fireEvent.click(await screen.findByRole('button', { name: 'Klar' }));
 
     await waitFor(() => expect(mocks.completeTask).toHaveBeenCalledWith('plan-1'));
+    expect((await screen.findAllByText(/Du fick 10 XP/)).length).toBeGreaterThan(0);
+    // Serverns svar avgör siffran — rutan kan aldrig visa fel summa.
+    expect(screen.queryByText(/ingen ny XP/)).toBeNull();
+  });
+
+  it('visar upplåsningen när XP:n når en belöning', async () => {
+    mocks.listTasks.mockResolvedValue({ ok: true, data: [makePlannerTask()] });
+    mocks.completeTask.mockResolvedValue({
+      ok: true,
+      data: {
+        xpAwarded: 10,
+        totalXp: 20,
+        level: 1,
+        unlocks: [
+          {
+            id: 'r1',
+            name: 'Lysande pumpalykta',
+            description: 'En pumpalykta som brinner hela natten.',
+            theme: 'halloween',
+            illustration: 'pumpa-glod',
+            bonusXp: 0,
+            items: ['pumpa-glod'],
+          },
+        ],
+      },
+    });
+
+    await renderElev('planering');
+    fireEvent.click(await screen.findByRole('button', { name: 'Klar' }));
+
+    expect(await screen.findByTestId('reward-celebration')).toBeTruthy();
+    // Rubriken ligger i modalens huvud, innehållet i rutan.
+    expect(screen.getAllByText(/Ny belöning: Lysande pumpalykta/).length).toBeGreaterThan(0);
+  });
+
+  it('förklarar att en redan avklarad post inte ger ny XP', async () => {
+    mocks.listTasks.mockResolvedValue({ ok: true, data: [makePlannerTask()] });
+    mocks.completeTask.mockResolvedValue({
+      ok: true,
+      data: { xpAwarded: 0, totalXp: 10, level: 1, unlocks: [] },
+    });
+
+    await renderElev('planering');
+    fireEvent.click(await screen.findByRole('button', { name: 'Klar' }));
+
+    expect((await screen.findAllByText(/ingen ny XP/)).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('reward-celebration')).toBeNull();
   });
 });
 
@@ -855,6 +906,30 @@ describe('mina framsteg', () => {
 });
 
 describe('belöningar', () => {
+  function beloning(
+    id: string,
+    name: string,
+    xp: number,
+    illustration: string,
+    overrides: Record<string, unknown> = {},
+  ) {
+    return {
+      id,
+      name,
+      description: null,
+      theme: 'halloween',
+      position: 11,
+      xp_required: xp,
+      bonus_xp: 0,
+      illustration,
+      unlocks_items: [illustration],
+      rarity: 'vanlig',
+      is_final: false,
+      active: true,
+      ...overrides,
+    };
+  }
+
   it('visar XP, nivå och upplåsta belöningar från servern', async () => {
     mocks.fetchXpState.mockResolvedValue({
       ok: true,
@@ -863,8 +938,10 @@ describe('belöningar', () => {
     mocks.listRewardDefinitions.mockResolvedValue({
       ok: true,
       data: [
-        { id: 'r1', name: 'Blomman', description: 'Första steget', theme: 'it', position: 1, xp_required: 25, bonus_xp: 0, illustration: '🌸', unlocks_items: ['blomma'], is_final: false },
-        { id: 'r2', name: 'Solen', description: 'Nästa steg', theme: 'it', position: 2, xp_required: 100, bonus_xp: 0, illustration: '☀️', unlocks_items: ['sol'], is_final: false },
+        beloning('r1', 'Lysande pumpalykta', 20, 'pumpa-glod'),
+        beloning('r2', 'Häxkittel', 550, 'kittel', { position: 17, rarity: 'sallsynt' }),
+        // Ett avstängt tema får inte synas i gränssnittet längre.
+        beloning('r3', 'Blomman', 25, 'blomma', { theme: 'tradgard', active: false }),
       ],
     });
     mocks.listUnlocks.mockResolvedValue({
@@ -876,36 +953,47 @@ describe('belöningar', () => {
 
     await renderElev('belonningar');
 
-    expect(await screen.findByText('Blomman')).toBeTruthy();
-    expect(screen.getAllByText('Solen').length).toBeGreaterThan(0);
-    expect(screen.getAllByTestId('reward-unlocked')).toHaveLength(1);
-    expect(screen.getAllByTestId('reward-locked')).toHaveLength(1);
+    // Den upplåsta belöningen finns både i samlingen och i historiken.
+    expect((await screen.findAllByText('Lysande pumpalykta')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Häxkittel').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('hh-item-unlocked')).toHaveLength(1);
+    expect(screen.getAllByTestId('hh-item-locked')).toHaveLength(1);
     expect(screen.getByText('Nästa mål')).toBeTruthy();
+    // Det avstängda temat visas inte alls.
+    expect(screen.queryByText('Blomman')).toBeNull();
   });
 
   it('visar ett tydligt tomläge när belöningsbiblioteket är tomt', async () => {
     await renderElev('belonningar');
-    expect(await screen.findByText('Inga belöningar i biblioteket')).toBeTruthy();
+    expect(await screen.findByText('Inga Halloween-föremål i biblioteket ännu')).toBeTruthy();
   });
 });
 
-describe('trädgården', () => {
-  function gardenReward(id: string, name: string, xp: number, position: number, illustration: string) {
+describe('Halloween-trädgården', () => {
+  function halloweenReward(
+    id: string,
+    name: string,
+    xp: number,
+    position: number,
+    illustration: string,
+    rarity = 'vanlig',
+  ) {
     return {
       id,
       name,
       description: null,
-      theme: 'tradgard',
+      theme: 'halloween',
       position,
       xp_required: xp,
       bonus_xp: 0,
       illustration,
-      unlocks_items: [id],
+      unlocks_items: [illustration],
+      rarity,
       is_final: false,
     };
   }
 
-  it('växer med XP och visar vad som är upplåst och vad som återstår', async () => {
+  it('visar Halloween som enda trädgård och skiljer låsta från upplåsta föremål', async () => {
     mocks.fetchXpState.mockResolvedValue({
       ok: true,
       data: { totalXp: 60, level: 1, xpPerLevel: 100, intoLevel: 60, xpToNext: 40 },
@@ -913,36 +1001,41 @@ describe('trädgården', () => {
     mocks.listRewardDefinitions.mockResolvedValue({
       ok: true,
       data: [
-        gardenReward('blomma', 'Blomma', 25, 24, '🌸'),
-        gardenReward('sol', 'Sol', 50, 25, '☀️'),
-        gardenReward('stjarna', 'Stjärna', 75, 26, '⭐'),
-        gardenReward('hjarta', 'Hjärta', 100, 27, '❤️'),
+        halloweenReward('pumpa', 'Glad pumpa', 30, 11, 'pumpa-glod'),
+        halloweenReward('kittel', 'Kitteln', 280, 16, 'kittel', 'sallsynt'),
       ],
     });
     mocks.listUnlocks.mockResolvedValue({
       ok: true,
       data: new Map([
-        ['blomma', { id: 'u1', reward_id: 'blomma', bonus_xp_awarded: 0, unlocked_at: '2026-10-14T10:00:00Z' }],
-        ['sol', { id: 'u2', reward_id: 'sol', bonus_xp_awarded: 0, unlocked_at: '2026-10-15T10:00:00Z' }],
+        [
+          'pumpa',
+          {
+            id: 'u1',
+            reward_id: 'pumpa',
+            bonus_xp_awarded: 0,
+            unlocked_at: '2026-10-14T10:00:00Z',
+            source_task_title: 'Räkna kapitel 3',
+            source_kind: 'student',
+          },
+        ],
       ]),
     });
 
     await renderElev('belonningar');
 
-    const garden = await screen.findByTestId('reward-garden');
-    expect(within(garden).getByText(/en ung planta/)).toBeTruthy();
-    expect(within(garden).getByText('60 XP')).toBeTruthy();
-    // Två av fyra föremål är upplåsta — resten visas med sitt XP-krav.
-    expect(within(garden).getAllByTestId('garden-plot-unlocked')).toHaveLength(2);
-    expect(within(garden).getAllByTestId('garden-plot-locked')).toHaveLength(2);
-    expect(within(garden).getByText('75 XP')).toBeTruthy();
-    expect(within(garden).getByText('100 XP')).toBeTruthy();
+    const garden = await screen.findByTestId('halloween-garden');
+    expect(within(garden).getByTestId('halloween-scene')).toBeTruthy();
+    expect(screen.queryByTestId('reward-garden')).toBeNull();
+    expect(screen.queryByText('Din trädgård')).toBeNull();
 
-    // Trädet har vuxit en bit: scenens skede följer XP.
-    expect(screen.getByTestId('garden-tree').getAttribute('data-stage')).not.toBe('0');
+    // Ett föremål är upplåst och ett är låst — båda syns i samlingen.
+    expect(screen.getAllByTestId('hh-item-unlocked')).toHaveLength(1);
+    expect(screen.getAllByTestId('hh-item-locked')).toHaveLength(1);
+    expect(screen.getByText(/Genom uppgiften ”Räkna kapitel 3”/)).toBeTruthy();
   });
 
-  it('förklarar när trädgårdens belöningar saknas i biblioteket', async () => {
+  it('förklarar när inga Halloween-föremål är upplåsta ännu', async () => {
     mocks.fetchXpState.mockResolvedValue({
       ok: true,
       data: { totalXp: 20, level: 1, xpPerLevel: 100, intoLevel: 20, xpToNext: 80 },
@@ -950,8 +1043,9 @@ describe('trädgården', () => {
 
     await renderElev('belonningar');
 
-    expect(await screen.findByTestId('garden-empty')).toBeTruthy();
-    expect(screen.getByText(/finns inte i belöningsbiblioteket ännu/i)).toBeTruthy();
+    expect(await screen.findByTestId('halloween-garden')).toBeTruthy();
+    expect(screen.getByText(/Inga Halloween-föremål är upplåsta ännu/i)).toBeTruthy();
+    expect(screen.queryByTestId('reward-garden')).toBeNull();
   });
 });
 

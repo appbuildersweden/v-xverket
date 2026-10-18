@@ -59,6 +59,13 @@ export interface RewardDefinition {
   bonus_xp: number;
   illustration: string | null;
   unlocks_items: string[];
+  /** Raritet från migreringen; äldre rader saknar värdet och blir 'vanlig'. */
+  rarity?: string | null;
+  /**
+   * false = belöningen är avstängd och visas inte. Äldre rader saknar värdet
+   * och räknas då som aktiva.
+   */
+  active?: boolean | null;
   is_final: boolean;
 }
 
@@ -67,6 +74,9 @@ export interface RewardUnlock {
   reward_id: string;
   bonus_xp_awarded: number;
   unlocked_at: string;
+  /** Uppgiften som utlöste upplåsningen (finns från Halloween-migreringen). */
+  source_task_title?: string | null;
+  source_kind?: 'spec' | 'student' | null;
 }
 
 export interface UnlockCelebration {

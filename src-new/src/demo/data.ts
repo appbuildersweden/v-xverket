@@ -11,6 +11,8 @@
  * produktionsanvändning.
  */
 
+import { HALLOWEEN_REWARDS } from '../lib/halloween-rewards';
+
 export type DemoRow = Record<string, unknown>;
 export type DemoTables = Record<string, DemoRow[]>;
 
@@ -144,12 +146,12 @@ export function buildDemoTables(): DemoTables {
         title: 'Gör klart övningsprov 2',
         description: 'Tidsgräns 45 minuter, som på det riktiga provet.',
         notes: null,
-        due_date: day(-1),
+        due_date: day(2),
         priority: 'medel',
-        status: 'klar',
+        status: 'ej_paborjad',
         category: 'Matematik',
-        completed_at: stamp(-1, 3),
-        xp_awarded: true,
+        completed_at: null,
+        xp_awarded: false,
         created_at: stamp(-8),
         updated_at: stamp(-1, 3),
       },
@@ -348,35 +350,8 @@ export function buildDemoTables(): DemoTables {
       },
     ],
 
-    flashcard_progress: [
-      {
-        id: 'demo-progress-1',
-        user_id: DEMO_UID,
-        card_id: 'demo-card-1',
-        known_count: 3,
-        repeat_count: 1,
-        last_result: true,
-        updated_at: stamp(-1),
-      },
-      {
-        id: 'demo-progress-2',
-        user_id: DEMO_UID,
-        card_id: 'demo-card-2',
-        known_count: 2,
-        repeat_count: 0,
-        last_result: true,
-        updated_at: stamp(-1),
-      },
-      {
-        id: 'demo-progress-3',
-        user_id: DEMO_UID,
-        card_id: 'demo-card-3',
-        known_count: 0,
-        repeat_count: 2,
-        last_result: false,
-        updated_at: stamp(-1),
-      },
-    ],
+    // Inga kort är repeterade än — demoläget börjar från samma nolläge som en ny elev.
+    flashcard_progress: [],
 
     quiz_sets: [
       {
@@ -464,146 +439,38 @@ export function buildDemoTables(): DemoTables {
       },
     ],
 
-    quiz_attempts: [
-      {
-        id: 'demo-attempt-1',
-        user_id: DEMO_UID,
-        set_id: 'demo-quiz-1',
-        score: 3,
-        total: 4,
-        completed_at: stamp(-2),
-      },
-      {
-        id: 'demo-attempt-2',
-        user_id: DEMO_UID,
-        set_id: 'demo-quiz-2',
-        score: 1,
-        total: 1,
-        completed_at: stamp(-8),
-      },
-    ],
+    // En helt färsk elev har inte gjort några prov än, så framstegen börjar på noll.
+    quiz_attempts: [],
 
-    user_xp: [{ user_id: DEMO_UID, total_xp: 240 }],
+    user_xp: [{ user_id: DEMO_UID, total_xp: 0 }],
     reward_settings: [{ key: 'xp_per_level', value: 100 }],
 
-    reward_definitions: [
-      {
-        id: 'demo-reward-1',
-        name: 'Första fröet',
-        description: 'Ett litet frö har landat i jorden.',
-        theme: 'tradgard',
-        position: 0,
-        xp_required: 50,
-        bonus_xp: 0,
-        illustration: '🌱',
-        unlocks_items: ['frö'],
-        is_final: false,
-      },
-      {
-        id: 'demo-reward-2',
-        name: 'Grodd',
-        description: 'Något gror under ytan.',
-        theme: 'tradgard',
-        position: 1,
-        xp_required: 120,
-        bonus_xp: 10,
-        illustration: '🌿',
-        unlocks_items: ['grodd'],
-        is_final: false,
-      },
-      {
-        id: 'demo-reward-3',
-        name: 'Ung planta',
-        description: 'Plantan sträcker sig mot ljuset.',
-        theme: 'tradgard',
-        position: 2,
-        xp_required: 200,
-        bonus_xp: 15,
-        illustration: '🪴',
-        unlocks_items: ['planta'],
-        is_final: false,
-      },
-      {
-        id: 'demo-reward-4',
-        name: 'Träd med knoppar',
-        description: 'Snart slår det ut.',
-        theme: 'tradgard',
-        position: 3,
-        xp_required: 320,
-        bonus_xp: 20,
-        illustration: '🌳',
-        unlocks_items: ['knoppar'],
-        is_final: false,
-      },
-      {
-        id: 'demo-reward-5',
-        name: 'Fokusmärket',
-        description: 'För dig som håller i ett studiepass hela vägen.',
-        theme: 'it',
-        position: 4,
-        xp_required: 400,
-        bonus_xp: 0,
-        illustration: '🎯',
-        unlocks_items: [],
-        is_final: false,
-      },
-      {
-        id: 'demo-reward-6',
-        name: 'Sammanhangsmärket',
-        description: 'För dig som kopplar ihop det du lärt dig.',
-        theme: 'it',
-        position: 5,
-        xp_required: 600,
-        bonus_xp: 0,
-        illustration: '🧩',
-        unlocks_items: [],
-        is_final: true,
-      },
-    ],
+    // Halloween-stegen. Trösklarna och nycklarna kommer från
+    // `lib/halloween-rewards.ts`, så demoläget visar exakt samma nivåer som
+    // servern använder. Inga andra teman är aktiva i gränssnittet.
+    reward_definitions: HALLOWEEN_REWARDS.map((reward) => ({
+      id: `demo-${reward.artKey}`,
+      name: reward.name,
+      description: reward.description,
+      theme: 'halloween',
+      position: reward.position,
+      xp_required: reward.xpRequired,
+      bonus_xp: 0,
+      illustration: reward.artKey,
+      unlocks_items: [reward.itemKey],
+      rarity: reward.rarity,
+      is_final: false,
+      active: true,
+    })),
 
-    reward_unlocks: [
-      {
-        id: 'demo-unlock-1',
-        user_id: DEMO_UID,
-        reward_id: 'demo-reward-1',
-        bonus_xp_awarded: 0,
-        unlocked_at: stamp(-6),
-      },
-      {
-        id: 'demo-unlock-2',
-        user_id: DEMO_UID,
-        reward_id: 'demo-reward-2',
-        bonus_xp_awarded: 10,
-        unlocked_at: stamp(-3),
-      },
-    ],
+    // Nollställt läge: inga belöningar är uppnådda och ingen XP är intjänad.
+    // På så sätt kan demoläget visa hela resan från 0 XP och första låsta mål.
+    reward_unlocks: [],
 
-    xp_transactions: [
-      {
-        id: 'demo-xp-1',
-        user_id: DEMO_UID,
-        amount: 10,
-        source: 'task',
-        note: 'Gör klart övningsprov 2',
-        created_at: stamp(-1, 3),
-      },
-      {
-        id: 'demo-xp-2',
-        user_id: DEMO_UID,
-        amount: 10,
-        source: 'reward',
-        note: 'Grodd',
-        created_at: stamp(-3),
-      },
-      {
-        id: 'demo-xp-3',
-        user_id: DEMO_UID,
-        amount: 10,
-        source: 'task',
-        note: 'Sammanfatta kapitel 3',
-        created_at: stamp(-6),
-      },
-    ],
+    // Trädgården börjar tom. Första upplåsta föremålet blir det första man ser.
+    garden_placements: [],
+
+    xp_transactions: [],
   };
 }
 
