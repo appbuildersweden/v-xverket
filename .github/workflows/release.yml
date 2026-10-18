@@ -101,12 +101,12 @@ jobs:
           # versionshistorik (site/build.mjs läser den). Håll den därför kort
           # och beskriv vad som faktiskt ändrats.
           releaseBody: |
-            Shop med fem teman och en egen samling
-            - Ny grupp *Shop* i elev- och privatelevpanelen: 35 produkter i sju kategorier, betalda med XP som redan tjänats in på uppgifter. Inga riktiga pengar, inga loot-lådor och ingen ny XP-väg.
-            - Fem UI-teman — Pumpatema, Spökhus, Häxkonst, Haunted Forest och Midnight Halloween (300–600 XP) — byter färger, knappar, meny och bakgrund i hela appen. Varje tema har en egen bild som följer med i paketet.
-            - *Min samling* visar allt du äger och låter dig byta tema, avatar, ram, märke, figur och dekoration. Ett köp ligger kvar även om produkten slutar säljas eller säsongen tar slut.
-            - Servern äger köpet: samma köp kan aldrig dras två gånger, och priset kontrolleras i databasen. Adminpanelen har *Shop och säsonger* för priser, nivåkrav, publicering och säsonger.
-            - Trädgården, uppgifterna, XP:n och övriga funktioner är oförändrade sedan 0.2.8.
+            Shopen växer: fler teman, ramar och dekorationer
+            - 19 nya föremål i shopen, 54 totalt i sju kategorier, fortfarande betalda med XP som redan tjänats in på uppgifter. Inga riktiga pengar, inga loot-lådor och ingen ny XP-väg.
+            - Två nya UI-teman: *Ghostly Moonlight* (550 XP) och *Candy Crypt* (350 XP). De målar sin bakgrund med gradienter, så de behöver ingen bildfil och kan inte sluta fungera om en fil byts ut.
+            - Fyra nya profilramar, fyra avatarer, fyra märken och fem dekorationer — alla med bilder som redan finns i paketet.
+            - Butikens förhandsvisning visar nu även teman utan bild, och samlingen, köpen och utrustningen fungerar som förut.
+            - Trädgården, uppgifterna, XP:n och övriga funktioner är oförändrade sedan 0.2.9.
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi

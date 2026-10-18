@@ -27,9 +27,15 @@ export const ThemePreview: React.FC<Props> = ({ themeKey, name, active = false }
       data-testid={`sh-tema-preview-${themeKey}`}
       aria-hidden="true"
     >
+      {/* Teman utan bildfil (t.ex. de som bara är en gradient) visar sin egen
+          bakgrund från temats variabler — förhandsvisningen är alltså aldrig tom. */}
       <div
         className="sh-tema-preview-bild"
-        style={background ? { backgroundImage: `url(${background})` } : undefined}
+        style={
+          background
+            ? { backgroundImage: `url(${background})` }
+            : { background: 'var(--tema-bakgrund)' }
+        }
       />
       <div className="sh-tema-preview-prov">
         <div className="card">

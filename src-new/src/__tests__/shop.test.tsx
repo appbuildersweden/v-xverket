@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDemoClient } from '../demo/client';
@@ -15,7 +15,12 @@ import {
   ShopPurchase,
   ShopSeason,
 } from '../lib/shop';
-import { RARITY_META_SHOP, SHOP_CATALOG, SHOP_RARITIES } from '../lib/shop-catalog';
+import {
+  RARITY_META_SHOP,
+  SHOP_CATALOG,
+  SHOP_RARITIES,
+  THEME_KEYS,
+} from '../lib/shop-catalog';
 import { safeThemeKey } from '../lib/cosmetics';
 
 /**
@@ -131,17 +136,25 @@ describe('produktens tillstånd', () => {
   });
 });
 
-describe('katalogen och migreringen', () => {
-  it('har samma produkter och priser som fröet i databasen', () => {
-    const sql = readFileSync(
-      resolve(process.cwd(), '../supabase/migrations/20261101000000_shop.sql'),
-      'utf8',
-    );
-    const rows = sql
+/** Fröna som fyller katalogen. Fler migreringar läggs till här, inte i koden. */
+const SEED_FILES = [
+  '../supabase/migrations/20261101000000_shop.sql',
+  '../supabase/migrations/20261102000000_shop_utokning.sql',
+];
+
+function seedRows(): string[] {
+  return SEED_FILES.flatMap((file) =>
+    readFileSync(resolve(process.cwd(), file), 'utf8')
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.startsWith("('"))
-      .map((line) => line.slice(1)); // ta bort inledande parentes
+      .map((line) => line.slice(1)),
+  ); // ta bort inledande parentes
+}
+
+describe('katalogen och migreringen', () => {
+  it('har samma produkter och priser som fröet i databasen', () => {
+    const rows = seedRows();
 
     expect(rows.length).toBe(SHOP_CATALOG.length);
 
@@ -154,6 +167,12 @@ describe('katalogen och migreringen', () => {
       expect(row).toContain(`, '${entry.category}', `);
       expect(row).toContain(`, '${entry.rarity}', ${entry.priceXp}, ${entry.minLevel}, `);
     }
+
+    // Samma produkt får bara fröas en gång, annars kan två migreringar
+    // skriva över varandras pris utan att någon märker det.
+    const slugs = rows.map((row) => /^'([^']+)'/.exec(row)?.[1]);
+    expect(new Set(slugs).size).toBe(rows.length);
+    expect(slugs).toContain('tema-candy-crypt');
   });
 
   it('använder de fem sällsynthetsgraderna som en fast klassificering', () => {
@@ -168,16 +187,38 @@ describe('katalogen och migreringen', () => {
     expect(RARITY_META_SHOP.legendarisk.label).toBe('Legendarisk');
   });
 
-  it('har fem kompletta UI-teman med rätt priser', () => {
+  it('har sju kompletta UI-teman med rätt priser', () => {
     const themes = SHOP_CATALOG.filter((entry) => entry.category === 'tema');
-    expect(themes).toHaveLength(5);
+    expect(themes).toHaveLength(7);
     expect(themes.map((entry) => [entry.themeKey, entry.priceXp])).toEqual([
       ['pumpa', 300],
       ['spokhus', 400],
       ['haxkonst', 450],
       ['haunted-forest', 500],
       ['midnight', 600],
+      ['ghostly-moonlight', 550],
+      ['candy-crypt', 350],
     ]);
+  });
+
+  it('har en temafil för varje temanyckel som katalogen säljer', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/styles/teman.css'), 'utf8');
+    for (const key of THEME_KEYS) {
+      expect(css, `teman.css saknar block för ${key}`).toContain(
+        `[data-ui-tema='${key}']`,
+      );
+    }
+  });
+
+  it('säljer bara föremål som har en bild i projektet', () => {
+    const icons = new Set(
+      readdirSync(resolve(process.cwd(), 'src/assets/halloween-ikoner')),
+    );
+    for (const entry of SHOP_CATALOG) {
+      expect(icons.has(`${entry.assetKey}.png`), `bilden saknas för ${entry.slug}`).toBe(
+        true,
+      );
+    }
   });
 });
 

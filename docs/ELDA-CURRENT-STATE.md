@@ -33,19 +33,21 @@ Detta är medvetet en kort status, inte en fullständig beskrivning. Detaljerna
 finns i `docs/registrering-och-roller.md`, `docs/adminpanel-och-scheman.md` och
 `src-new/README.md`.
 
-## Shopen och temana (0.2.9)
+## Shopen och temana (0.2.10)
 
-Shopen publicerades som version 0.2.9 den 18 oktober 2026 (commit `32e3af4`,
-tagg `v0.2.9`). Elev- och privatelevpanelen har gruppen *Shop* med sidorna
-*Shop* och *Min samling*; adminpanelen har *Shop och säsonger*. Detaljerna — katalog, teman, tabeller,
-funktioner och vad som är verifierat — står i `publicera-0.2.9.md` och i
-`src-new/README.md`.
+Shopen kom i 0.2.9 (commit `32e3af4`) och byggdes ut i 0.2.10 med 19 nya
+föremål och två gradient-teman. Elev- och privatelevpanelen har gruppen *Shop*
+med sidorna *Shop* och *Min samling*; adminpanelen har *Shop och säsonger*.
+Detaljerna — katalog, teman, tabeller, funktioner och vad som är verifierat —
+står i `publicera-0.2.10.md`, `publicera-0.2.9.md` och `src-new/README.md`.
 
-Kort: 35 produkter i sju kategorier, fem UI-teman (300–600 XP), ägandet i
+Kort: 54 produkter i sju kategorier, sju UI-teman (300–600 XP), ägandet i
 `shop_purchases` med en kopia av köpet, och all skrivning genom
 `shop_purchase`, `shop_equip`/`shop_unequip` samt `admin_shop_*`. Ingen
-riktig valuta, ingen loot och ingen ny XP-väg. Migreringen
-`20261101000000_shop.sql` är **inte körd** — tills den är det visar shopen
+riktig valuta, ingen loot och ingen ny XP-väg. De 19 sista produkterna (två
+teman, fyra avatarer, fyra ramar, fyra märken och fem dekorationer) ligger i
+`20261102000000_shop_utokning.sql`, som bygger vidare på den första
+migreringen. Ingen av dem är **körd** — tills de är det visar shopen
 `ERR_NOT_READY` i stället för tomma vyer.
 
 ## Verifierat i utvecklingsmiljön

@@ -353,3 +353,78 @@
 [data-ui-tema='haxkonst'] {
   --tema-effekt-dimma: linear-gradient(180deg, rgba(134, 239, 172, 0) 0%, rgba(134, 239, 172, 0.12) 100%);
 }
+
+/* 6. Ghostly Moonlight – blåsvart natt med kallt månsken.
+   Temat har ingen fotografi bakom sig: bakgrunden är en gradient, så det
+   behöver ingen bildfil och kan inte sluta fungera om en fil byts ut. */
+[data-ui-tema='ghostly-moonlight'] {
+  --bg: #070c14;
+  --fg: #eef4fb;
+  --muted: #93a6bb;
+  --accent: #b9d6f2;
+  --card: #0d1520;
+  --border: #1f2c3b;
+  --surface: #101a26;
+  --surface-2: #152232;
+  --text: var(--fg);
+  --text-2: #dbe7f3;
+  --text-3: #a8bacd;
+  --border-strong: #2f4256;
+  --hover: rgba(185, 214, 242, 0.14);
+  --btn-bg: #d8e8f8;
+  --btn-fg: #08111b;
+  --banner-bg: #0e1824;
+  --banner-fg: #e6f0fa;
+  --shadow-md: 0 18px 46px rgba(0, 0, 0, 0.55);
+  --nav-active-bg: #d8e8f8;
+  --nav-active-fg: #08111b;
+
+  --tema-bakgrund: radial-gradient(900px 500px at 50% -10%, rgba(200, 225, 255, 0.22), transparent 65%),
+    linear-gradient(180deg, #0b1420, #060a11 70%);
+  --tema-bakgrund-opacitet: 0.6;
+  --tema-topplinje: 2px solid rgba(200, 225, 255, 0.45);
+  --tema-rubrik-farg: #dbe9fb;
+  --tema-kort-glod: 0 12px 34px rgba(160, 200, 240, 0.12);
+}
+
+/* 7. Candy Crypt – godiskryptan: rosa, mint och mörk choklad. */
+[data-ui-tema='candy-crypt'] {
+  --bg: #1b1022;
+  --fg: #fff1f8;
+  --muted: #c3a0b4;
+  --accent: #ff8fc7;
+  --card: #24142c;
+  --border: #53275f;
+  --surface: #281631;
+  --surface-2: #331c3d;
+  --text: var(--fg);
+  --text-2: #f6dcea;
+  --text-3: #d9b3c9;
+  --border-strong: #6f3880;
+  --hover: rgba(255, 143, 199, 0.16);
+  --btn-bg: #ff8fc7;
+  --btn-fg: #2a0b1e;
+  --banner-bg: #2a1633;
+  --banner-fg: #ffe6f3;
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --nav-active-bg: #ff8fc7;
+  --nav-active-fg: #2a0b1e;
+
+  --tema-bakgrund: radial-gradient(900px 480px at 85% -10%, rgba(255, 143, 199, 0.22), transparent 62%),
+    radial-gradient(700px 420px at 5% 105%, rgba(134, 239, 172, 0.14), transparent 60%),
+    linear-gradient(180deg, #241231, #150b1c 60%, #100812);
+  --tema-bakgrund-opacitet: 0.65;
+  --tema-topplinje: 2px solid rgba(255, 143, 199, 0.6);
+  --tema-rubrik-farg: #ffc7e3;
+  --tema-kort-glod: 0 12px 34px rgba(255, 143, 199, 0.16);
+}
+
+/* Egna detaljer för de två gradient-temana. */
+[data-ui-tema='ghostly-moonlight'] .card {
+  border-top-color: rgba(200, 225, 255, 0.32);
+}
+
+[data-ui-tema='candy-crypt'] .card-head {
+  border-bottom: 1px dashed rgba(255, 143, 199, 0.35);
+  padding-bottom: 10px;
+}

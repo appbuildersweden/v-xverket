@@ -483,6 +483,18 @@ html[data-ui-tema] .sh-forklaring[data-ton='ok'] {
   background-image: url('../assets/teman/midnight.webp');
 }
 
+/* De två gradient-temana har ingen bildfil — provet ritas av deras palett. */
+.sh-tema-miniatyr[data-tema='ghostly-moonlight'] {
+  background-image: radial-gradient(120px 80px at 50% -10%, rgba(200, 225, 255, 0.35), transparent 65%),
+    linear-gradient(180deg, #0b1420, #060a11 70%);
+}
+
+.sh-tema-miniatyr[data-tema='candy-crypt'] {
+  background-image: radial-gradient(110px 80px at 85% -10%, rgba(255, 143, 199, 0.4), transparent 62%),
+    radial-gradient(90px 70px at 5% 105%, rgba(134, 239, 172, 0.25), transparent 60%),
+    linear-gradient(180deg, #241231, #100812);
+}
+
 /* ---------------------------------------------------------------- Samling */
 
 .sh-samling-grid {
@@ -648,6 +660,26 @@ html[data-ui-tema] .sh-forklaring[data-ton='ok'] {
 .kosmetik-ram[data-ram='ram-pumpaglod'] {
   border: 2px solid #ff9a3c;
   box-shadow: 0 0 14px rgba(255, 154, 60, 0.65);
+}
+
+.kosmetik-ram[data-ram='ram-spokgloet'] {
+  border: 2px solid #dbe7f3;
+  box-shadow: 0 0 12px rgba(219, 231, 243, 0.55);
+}
+
+.kosmetik-ram[data-ram='ram-fladdermusvingar'] {
+  border: 2px solid #8a63b8;
+  box-shadow: 0 0 10px rgba(138, 99, 184, 0.55);
+}
+
+.kosmetik-ram[data-ram='ram-trolldom'] {
+  border: 2px solid #b78bff;
+  box-shadow: 0 0 14px rgba(183, 139, 255, 0.6);
+}
+
+.kosmetik-ram[data-ram='ram-godisstangen'] {
+  border: 2px solid #ff8fc7;
+  box-shadow: 0 0 10px rgba(255, 143, 199, 0.5);
 }
 
 .kosmetik-ram-ornament {
