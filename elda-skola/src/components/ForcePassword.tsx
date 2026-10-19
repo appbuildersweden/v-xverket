@@ -30,9 +30,9 @@ export const ForcePassword: React.FC = () => {
     <div className="login-wrap">
       <div className="login-identity">
         <div className="login-banner">
-          <img src="/ronneby.webp" alt="Ronnebyån" />
+          <img src="ronneby.webp" alt="Ronnebyån" />
           <div className="login-banner-shade" />
-          <img className="login-banner-mark" src="/elda-icon.png" alt="Elda" />
+          <img className="login-banner-mark" src="elda-icon.png" alt="Elda" />
           <span className="login-banner-caption">En trygg plats för lärande</span>
         </div>
         <h1>Ett sista steg</h1>

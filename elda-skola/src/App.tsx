@@ -43,7 +43,7 @@ function parseRoute(hash: string): Route | null {
 function Splash() {
   return (
     <div className="splash">
-      <img src="/elda-icon.png" alt="" />
+      <img src="elda-icon.png" alt="" />
       <strong>Elda Skola</strong>
       <span>Laddar…</span>
     </div>

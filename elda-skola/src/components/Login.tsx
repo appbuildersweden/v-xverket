@@ -56,9 +56,9 @@ export const Login: React.FC = () => {
     <div className="login-wrap">
       <div className="login-identity">
         <div className="login-banner">
-          <img src="/ronneby.webp" alt="Ronnebyån" />
+          <img src="ronneby.webp" alt="Ronnebyån" />
           <div className="login-banner-shade" />
-          <img className="login-banner-mark" src="/elda-icon.png" alt="Elda" />
+          <img className="login-banner-mark" src="elda-icon.png" alt="Elda" />
           <span className="login-banner-caption">En trygg plats för lärande</span>
         </div>
         <h1>Välkommen till Elda Skola</h1>
@@ -69,7 +69,7 @@ export const Login: React.FC = () => {
 
       <div className="login-form-side">
         <form className="login-card" onSubmit={submit} noValidate>
-          <img className="login-card-logo" src="/elda-icon.png" alt="Elda" />
+          <img className="login-card-logo" src="elda-icon.png" alt="Elda" />
           <span className="login-pill">Skolplattform</span>
           <h2>{mustSetNewPassword ? 'Skapa nytt lösenord' : 'Logga in'}</h2>
           <p className="lead">

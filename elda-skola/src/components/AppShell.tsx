@@ -127,7 +127,7 @@ export const AppShell: React.FC<Props> = ({
             onClick={() => onNavigate(nav[0].id)}
             aria-label="Elda Skola – startsida"
           >
-            <img src="/elda-icon.png" alt="" />
+            <img src="elda-icon.png" alt="" />
             <span className="brand-text">
               <strong>Elda Skola</strong>
               <small>{panel === 'larare' ? 'Lärarpanel' : panel === 'admin' ? 'Administration' : 'Elevpanel'}</small>

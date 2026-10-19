@@ -116,7 +116,7 @@ export const ElevHem: React.FC<Props> = ({ onNavigate }) => {
       />
 
       <div className="hero">
-        <img src="/ronneby.webp" alt="Ronnebyån en solig dag" />
+        <img src="ronneby.webp" alt="Ronnebyån en solig dag" />
         <div className="hero-content">
           <div className="hero-meta">
             <span>Vecka {isoWeek()}</span>
