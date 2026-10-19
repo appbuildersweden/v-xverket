@@ -1,10 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { KeyRound, LogOut, Search } from 'lucide-react';
+import { KeyRound, LogOut, Save, Search, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import type { SchoolRole } from '../../lib/types';
-import { Alert, Badge, Button, Card, EmptyState, Modal, PageIntro, Spinner, Stat } from '../../components/ui';
+import type { AdaptationStats, SchoolRole } from '../../lib/types';
+import { Alert, Badge, Button, Card, EmptyState, Field, Modal, PageIntro, Spinner, Stat } from '../../components/ui';
 import { ADMIN_NAV } from '../../components/AppShell';
+import { getAdaptationStats, getSchoolSettings, saveSchoolSettings } from '../../lib/api';
+import {
+  applySchoolSettings,
+  validateSchoolSettings,
+  type SchoolSettingsErrors,
+} from '../../lib/school-settings';
 
 interface Account {
   id: string;
@@ -337,27 +343,8 @@ const AdminUnavailable: React.FC<{ page: string }> = ({ page }) => {
   if (page === 'logg') return <AdminAuditLog />;
   if (page === 'amnen') return <AdminSubjects />;
 
-  if (page === 'stod') {
-    return (
-      <Card title="Anpassningar och elevstöd">
-        <EmptyState
-          title="Skyddat elevinnehåll"
-          description="Anpassningar och individuellt stöd kräver ett uttryckligt lärarbehörighetsflöde. Adminpanelen visar därför inga känsliga elevuppgifter."
-        />
-      </Card>
-    );
-  }
-
-  if (page === 'installningar') {
-    return (
-      <Card title="Systeminställningar">
-        <EmptyState
-          title="Inga systeminställningar har konfigurerats"
-          description="Skolinställningar kräver en separat backendmodell. Vyn visas därför ärligt som tom i stället för att låtsas spara värden."
-        />
-      </Card>
-    );
-  }
+  if (page === 'stod') return <AdminAdaptationStats />;
+  if (page === 'installningar') return <AdminSchoolSettings />;
 
   if (!pageInfo) {
     return (
@@ -511,6 +498,230 @@ const AdminSubjects: React.FC = () => {
               <Badge tone="neutral">{row.classes.length} klasser</Badge>
             </div>
           ))}
+        </div>
+      )}
+    </Card>
+  );
+};
+
+/**
+ * Anpassningar är känsliga. Admin får se att flödet används, men aldrig
+ * elevens namn eller innehållet i anpassningen – det styrs av RLS och av att
+ * serverfunktionen bara returnerar aggregat.
+ */
+const AdminAdaptationStats: React.FC = () => {
+  const [stats, setStats] = useState<AdaptationStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await getAdaptationStats();
+        if (live) setStats(next);
+      } catch (err) {
+        if (!live) return;
+        setStats(null);
+        setError(err instanceof Error ? err.message : 'Kunde inte hämta statistiken.');
+      } finally {
+        if (live) setLoading(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [reloadKey]);
+
+  return (
+    <Card
+      title="Anpassningar och elevstöd"
+      subtitle="Sammanställning av skolans anpassningar. Innehållet är begränsat till de lärare som undervisar eleven."
+      action={
+        <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+          Uppdatera
+        </Button>
+      }
+    >
+      {error && (
+        <Alert>
+          {error}
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+              Försök igen
+            </Button>
+          </div>
+        </Alert>
+      )}
+      {loading ? (
+        <Spinner label="Hämtar sammanställningen…" />
+      ) : !stats ? (
+        <EmptyState
+          title="Endast för administratörer"
+          description="Kontot saknar administratörsbehörighet, eller så kunde sammanställningen inte läsas."
+        />
+      ) : (
+        <div className="stack">
+          <div className="grid-4">
+            <Stat label="Anpassningar" value={stats.total} hint="Totalt registrerade" />
+            <Stat label="Aktiva" value={stats.active} hint="Pågående stöd" />
+            <Stat label="Avslutade" value={stats.completed} />
+            <Stat label="Elever" value={stats.students} hint="Berörda elever" />
+          </div>
+          {stats.total === 0 && (
+            <EmptyState
+              title="Inga anpassningar registrerade"
+              description="Lärare registrerar anpassningar under Elevstöd i lärarpanelen. De visas här som antal, aldrig med elevinnehåll."
+            />
+          )}
+          <div className="notice">
+            <ShieldCheck size={17} />
+            <span>
+              Elevnamn, rubriker och stödinsatser visas aldrig i adminpanelen. De kan bara
+              läsas av lärare som undervisar eleven, enligt databasens RLS-policyer.
+              {stats.last_updated
+                ? ` Senaste ändringen gjordes ${new Date(stats.last_updated).toLocaleString('sv-SE')}.`
+                : ''}
+            </span>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+/** Skolövergripande inställningar. Endast admin kan spara – kontrolleras i databasen. */
+const AdminSchoolSettings: React.FC = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [errors, setErrors] = useState<SchoolSettingsErrors>({});
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const settings = await getSchoolSettings();
+        if (!live) return;
+        setName(settings.school_name);
+        setEmail(settings.contact_email ?? '');
+        setUpdatedAt(settings.updated_at);
+        applySchoolSettings(settings);
+      } catch (err) {
+        if (live) {
+          setError(err instanceof Error ? err.message : 'Kunde inte hämta inställningarna.');
+        }
+      } finally {
+        if (live) setLoading(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [reloadKey]);
+
+  const save = async () => {
+    const check = validateSchoolSettings({ schoolName: name, contactEmail: email });
+    setErrors(check.errors);
+    setNotice(null);
+    if (!check.ok) return;
+
+    setSaving(true);
+    setError(null);
+    try {
+      const saved = await saveSchoolSettings({ schoolName: name, contactEmail: email });
+      applySchoolSettings(saved);
+      setName(saved.school_name);
+      setEmail(saved.contact_email ?? '');
+      setUpdatedAt(saved.updated_at);
+      setNotice('Inställningarna är sparade.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kunde inte spara inställningarna.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card
+      title="Systeminställningar"
+      subtitle="Skolövergripande värden som delas av alla inloggade. Personliga val ligger kvar under Profil och inställningar."
+    >
+      {notice && <Alert tone="success">{notice}</Alert>}
+      {error && (
+        <Alert>
+          {error}
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+              Läs om
+            </Button>
+          </div>
+        </Alert>
+      )}
+      {loading ? (
+        <Spinner label="Hämtar inställningarna…" />
+      ) : (
+        <div className="stack">
+          <div className="grid-2">
+            <Field
+              label="Skolans namn"
+              htmlFor="school-name"
+              required
+              hint="Visas i sidopanelen och i toppfältet. 2–80 tecken."
+            >
+              <input
+                id="school-name"
+                className="input"
+                value={name}
+                maxLength={80}
+                onChange={(event) => setName(event.target.value)}
+              />
+              {errors.schoolName && <p className="field-error">{errors.schoolName}</p>}
+            </Field>
+            <Field
+              label="Kontaktadress"
+              htmlFor="school-email"
+              hint="Frivillig. Visas för inloggade användare under Profil och inställningar."
+            >
+              <input
+                id="school-email"
+                className="input"
+                type="email"
+                value={email}
+                maxLength={160}
+                placeholder="skolan@exempel.se"
+                onChange={(event) => setEmail(event.target.value)}
+              />
+              {errors.contactEmail && <p className="field-error">{errors.contactEmail}</p>}
+            </Field>
+          </div>
+          <div className="row-between">
+            <Button icon={<Save size={16} />} loading={saving} onClick={() => void save()}>
+              Spara inställningar
+            </Button>
+            <span className="small muted">
+              {updatedAt
+                ? `Senast ändrad ${new Date(updatedAt).toLocaleString('sv-SE')}`
+                : 'Ingen ändring har sparats ännu.'}
+            </span>
+          </div>
+          <div className="notice">
+            <ShieldCheck size={17} />
+            <span>
+              Ändringar sparas i databasen och kontrolleras av en serverfunktion som
+              kräver administratörsroll. Varje sparande loggas i aktivitetsloggen.
+            </span>
+          </div>
         </div>
       )}
     </Card>

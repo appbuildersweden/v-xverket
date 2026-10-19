@@ -11,6 +11,8 @@ import type {
   SchoolClass,
   SchoolDocument,
   SchoolEvent,
+  SchoolSettings,
+  AdaptationStats,
   StudentRow,
   Submission,
   Task,
@@ -731,6 +733,55 @@ export async function saveAdaptation(input: {
 export async function deleteAdaptation(id: string): Promise<void> {
   const { error } = await supabase.rpc('elda_skola_delete_adaptation', { p_id: id });
   if (error) fail(error);
+}
+
+// ------------------------------------------------------- skolans inställningar
+
+function toSchoolSettings(data: unknown): SchoolSettings | null {
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null | undefined;
+  if (!row || typeof row.school_name !== 'string') return null;
+  return {
+    school_name: row.school_name,
+    contact_email: typeof row.contact_email === 'string' ? row.contact_email : null,
+    updated_at: typeof row.updated_at === 'string' ? row.updated_at : null,
+  };
+}
+
+export async function getSchoolSettings(): Promise<SchoolSettings> {
+  const { data, error } = await supabase.rpc('elda_skola_school_settings');
+  if (error) fail(error);
+  return (
+    toSchoolSettings(data) ?? { school_name: 'Elda Skola', contact_email: null, updated_at: null }
+  );
+}
+
+export async function saveSchoolSettings(input: {
+  schoolName: string;
+  contactEmail: string;
+}): Promise<SchoolSettings> {
+  const { data, error } = await supabase.rpc('elda_skola_save_school_settings', {
+    p_school_name: input.schoolName.trim(),
+    p_contact_email: input.contactEmail.trim() || null,
+  });
+  if (error) fail(error);
+  const saved = toSchoolSettings(data);
+  if (!saved) throw new ApiError('Inställningarna sparades men kunde inte läsas tillbaka.');
+  return saved;
+}
+
+/** Aggregat för adminpanelen. Returnerar null när kontot inte är admin. */
+export async function getAdaptationStats(): Promise<AdaptationStats | null> {
+  const { data, error } = await supabase.rpc('elda_skola_adaptation_stats');
+  if (error) fail(error);
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null | undefined;
+  if (!row) return null;
+  return {
+    total: Number(row.total ?? 0),
+    active: Number(row.active ?? 0),
+    completed: Number(row.completed ?? 0),
+    students: Number(row.students ?? 0),
+    last_updated: typeof row.last_updated === 'string' ? row.last_updated : null,
+  };
 }
 
 // --------------------------------------------------------------- kalenderhjälp

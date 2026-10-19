@@ -23,6 +23,11 @@ import {
 } from 'lucide-react';
 import { Avatar } from './ui';
 import { longDate, isoWeek, displayName } from '../lib/format';
+import {
+  cachedSchoolSettings,
+  loadSchoolSettings,
+  subscribeSchoolSettings,
+} from '../lib/school-settings';
 import type { Identity, Profile } from '../lib/types';
 
 export type PanelKind = 'elev' | 'larare' | 'admin';
@@ -244,6 +249,15 @@ export const AppShell: React.FC<Props> = ({
     }
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [school, setSchool] = useState(cachedSchoolSettings);
+
+  // Skolans namn kommer från skolinställningarna och uppdateras direkt när en
+  // administratör sparar nya värden – utan omladdning.
+  useEffect(() => {
+    const unsubscribe = subscribeSchoolSettings(setSchool);
+    void loadSchoolSettings();
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     try {
@@ -285,12 +299,12 @@ export const AppShell: React.FC<Props> = ({
             type="button"
             className="brand"
             onClick={() => onNavigate(nav[0].id)}
-            aria-label="Elda Skola – startsida"
-            title="Elda Skola"
+            aria-label={`${school.school_name} – startsida`}
+            title={school.school_name}
           >
             <img src="elda-icon.png" alt="" />
             <span className="brand-text">
-              <strong>Elda Skola</strong>
+              <strong>{school.school_name}</strong>
               <small>{roleLabel === 'Lärare' ? 'Lärarpanel' : roleLabel === 'Administratör' ? 'Administration' : 'Elevpanel'}</small>
             </span>
           </button>

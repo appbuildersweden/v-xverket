@@ -206,6 +206,22 @@ export interface CreatedStudent {
   mustChangePassword: boolean;
 }
 
+/** Skolövergripande inställningar som delas av alla inloggade. */
+export interface SchoolSettings {
+  school_name: string;
+  contact_email: string | null;
+  updated_at: string | null;
+}
+
+/** Endast aggregat – innehållet i anpassningarna är fortsatt skyddat. */
+export interface AdaptationStats {
+  total: number;
+  active: number;
+  completed: number;
+  students: number;
+  last_updated: string | null;
+}
+
 export interface RosterRow {
   id: string;
   username: string;

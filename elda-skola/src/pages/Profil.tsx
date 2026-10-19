@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertCircle,
   BookOpen,
@@ -24,6 +24,7 @@ import {
 import { dateTime, displayName, shortDate } from '../lib/format';
 import { validateNewPassword, MIN_PASSWORD_LENGTH } from '../lib/password';
 import { defaultStartPage, saveStartPage } from '../lib/settings';
+import { cachedSchoolSettings, subscribeSchoolSettings } from '../lib/school-settings';
 import type { Contact } from '../lib/types';
 import { Alert, Avatar, Badge, Button, Card, Field, PageIntro, Spinner } from '../components/ui';
 
@@ -213,6 +214,10 @@ export const Profil: React.FC<Props> = ({ panel, onNavigate }) => {
 };
 
 const SchoolInfo: React.FC<{ panel: PanelKind }> = ({ panel }) => {
+  // Skolans kontaktadress kommer från skolinställningarna.
+  const [school, setSchool] = useState(cachedSchoolSettings);
+  useEffect(() => subscribeSchoolSettings(setSchool), []);
+
   const state = useAsync(async () => {
     const classes = await listClasses();
     const rosters =
@@ -256,6 +261,12 @@ const SchoolInfo: React.FC<{ panel: PanelKind }> = ({ panel }) => {
             );
           })}
         </div>
+      )}
+      {school.contact_email && (
+        <p className="small muted" style={{ marginTop: 10 }}>
+          Skolans kontaktadress:{' '}
+          <a href={`mailto:${school.contact_email}`}>{school.contact_email}</a>
+        </p>
       )}
       <p className="small muted" style={{ marginTop: 10 }}>
         Klass, ämne och skolplacering sätts av skolan. Samma konto och profil används
