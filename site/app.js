@@ -500,7 +500,11 @@ function setupFeedback(config) {
   const form = byId('feedback-form');
   if (!form) return;
   const submit = byId('fb-submit');
-  const url = typeof config?.feedbackUrl === 'string' ? config.feedbackUrl : '';
+  // Förslagen skickas till en anonym RPC i den delade databasen. Anon-nyckeln
+  // är publik och ger bara rätt att anropa funktionen, inte att läsa tabellen.
+  const base = typeof config?.supabaseUrl === 'string' ? config.supabaseUrl.replace(/\/$/, '') : '';
+  const anonKey = typeof config?.supabaseAnonKey === 'string' ? config.supabaseAnonKey : '';
+  const url = base && anonKey ? `${base}/rest/v1/rpc/submit_public_feedback` : '';
   const ready = /^https:\/\//i.test(url);
 
   const showStatus = (message, kind) => {
@@ -544,10 +548,24 @@ function setupFeedback(config) {
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product, message }),
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ p_product: product, p_message: message }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // Servern förklarar själv varför förslaget avvisades, på svenska.
+        const body = await res.json().catch(() => null);
+        showStatus(
+          typeof body?.message === 'string'
+            ? body.message
+            : 'Förslaget kunde inte skickas. Försök igen om en stund.',
+          'error',
+        );
+        return;
+      }
       form.reset();
       showStatus('Tack! Ditt förslag är skickat.', 'ok');
     } catch (err) {

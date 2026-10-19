@@ -326,12 +326,7 @@ async function main() {
 
   const configFile = join(DIST, 'config.json');
   const supabase = await supabaseConfig();
-  // Förslag skickas bara till en riktig https-mottagare. Saknas den visar
-  // feedbacksidan ett besked och knappen är inaktiv.
-  const feedbackRaw = (process.env.ELDA_FEEDBACK_URL || '').trim();
-  const feedbackUrl = /^https:\/\/[^\s]+$/.test(feedbackRaw) ? feedbackRaw : '';
   const config = buildSiteConfig({ ...supabase, skolaUrl });
-  if (feedbackUrl) config.feedbackUrl = feedbackUrl;
   if (Object.keys(config).length > 0) {
     await writeFile(configFile, JSON.stringify(config, null, 2) + '\n');
     const delar = [
