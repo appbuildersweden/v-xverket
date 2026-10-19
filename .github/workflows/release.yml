@@ -18,6 +18,7 @@ name: Release
 #   ELDA_DOWNLOAD_BASE                 – t.ex. https://elda.pages.dev/downloads
 #   VITE_SUPABASE_URL                  – projektets adress
 #   VITE_SUPABASE_ANON_KEY             – publik anon-nyckel (ligger i klienten)
+#   ELDA_SKOLA_URL                     – adressen till Elda-skola (frivillig)
 #
 # VITE_SUPABASE_* behövs eftersom appen bakar in Supabase-adressen i bygget.
 # Utan dem startar appen men kan inte logga in, så bygget stoppas hellre nedan.
@@ -167,9 +168,28 @@ jobs:
           # och registreringssidan visar "inte tillgänglig".
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          # Adressen till Elda-skola. Tom variabel är tillåtet: då publiceras
+          # sidan utan knapp och sektionen säger att plattformen inte går att
+          # öppna ännu. Endast https-adresser godkänns av build.mjs.
+          ELDA_SKOLA_URL: ${{ vars.ELDA_SKOLA_URL }}
         run: |
           npm install
           npm run build
+
+      - name: Bygg Elda Skola under /skola
+        # Elda Skola är en egen Vite-app. Den byggs med base /skola/ direkt in i
+        # webbplatsens dist, så att samma Pages-deploy serverar båda. Samma
+        # publika Supabase-variabler som appbygget använder.
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
+        working-directory: elda-skola
+        env:
+          ELDA_SKOLA_BUILD: '1'
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npx vite build --outDir ../site/dist/skola --emptyOutDir
 
       - name: Publicera till Cloudflare Pages
         if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}

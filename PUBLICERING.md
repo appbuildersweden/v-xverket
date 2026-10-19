@@ -48,10 +48,30 @@ Satta på **Settings → Secrets and variables → Actions** i repo:t:
 | `CLOUDFLARE_API_TOKEN` | secret | token med behörighet *Cloudflare Pages: Edit* |
 | `VITE_SUPABASE_URL` | variable | projektets adress, `https://<projekt>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | variable | projektets publika anon-nyckel (den ligger ändå i klienten) |
+| `ELDA_SKOLA_URL` | variable (frivillig) | adressen till skolplattformen, t.ex. `https://elda-skola.pages.dev` |
 
 `ELDA_DOWNLOAD_BASE` används inte längre — det fanns bara för att peka på en
 publik `downloads/`-mapp. Webbplatsstegen hoppas över så länge
 `CLOUDFLARE_API_TOKEN` saknas.
+
+### Länken till Elda-skola
+
+Hemsidans sektion **Elda-skola** och knappen *Öppna Elda-skola* styrs av
+`ELDA_SKOLA_URL`. Variabeln är frivillig och läses av `site/build.mjs`, som
+skriver adressen till `dist/config.json`; `site/app.js` visar knappen först när
+adressen finns där.
+
+- Bara **https**-adresser godkänns. En http-adress tappar sessionscookien, och
+  en lokal testadress (`localhost`/`127.0.0.1`) avvisas i skarpa byggen.
+- Är variabeln tom publiceras sidan utan knapp, och sektionen säger att
+  plattformen inte går att öppna ännu. Ingen påhittad adress används.
+- Sätts variabeln först när skolplattformen har en publicerad adress – då räcker
+  det med en ny tagg för att knappen ska komma med.
+- Lokal kontroll av flödet: bygg med
+  `ELDA_SKOLA_URL=http://127.0.0.1:8789 ELDA_ALLOW_LOCAL_SKOLA=1 node build.mjs`
+  (den andra variabeln tillåter loopback-adresser i ett lokalt bygge).
+
+Reglerna testas i `site/tests/skola-url.test.mjs`.
 
 `VITE_SUPABASE_URL` och `VITE_SUPABASE_ANON_KEY` behövs också för
 webbplatsen: registreringsboten på `/registrera.html` är den enda publika vägen

@@ -314,7 +314,8 @@ async function main() {
   //
   // Skoladressen sätts vid bygget och valideras: en lokal testadress eller en
   // http-adress får aldrig följa med till en publicerad sida.
-  const skolaRaw = (process.env.ELDA_SKOLA_URL || '').trim();
+  // Standard: Elda Skola ligger under samma domän på /skola (se release.yml).
+  const skolaRaw = (process.env.ELDA_SKOLA_URL || 'https://elda-6a9.pages.dev/skola').trim();
   const skolaUrl = normalizeSkolaUrl(skolaRaw, {
     allowLocal: process.env.ELDA_ALLOW_LOCAL_SKOLA === '1',
   });

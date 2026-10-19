@@ -1,0 +1,9 @@
+export { LarareOversikt } from './LarareOversikt';
+export { LarareUppgifter } from './LarareUppgifter';
+export { LarareAktiviteter } from './LarareAktiviteter';
+export { LarareMaterial } from './LarareMaterial';
+export { LarareKlasser } from './LarareKlasser';
+export { LarareKalender } from './LarareKalender';
+export { LarareMeddelanden } from './LarareMeddelanden';
+export { LarareInlamningar } from './LarareInlamningar';
+export { LarareAnpassningar } from './LarareAnpassningar';
