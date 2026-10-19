@@ -8,6 +8,7 @@
  * - Kopierar statiska filer till dist/, som är det enda som publiceras.
  */
 import { copyFile, cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { buildSiteConfig, normalizeSkolaUrl } from './skola-url.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -287,7 +288,11 @@ async function main() {
 
   for (const file of [
     'index.html',
-    'styles.css',
+    'elda.html',
+    'skola.html',
+    'versioner.html',
+    'feedback.html',
+    'site.css',
     'app.js',
     // Gamla direktlänkar till installationsfiler ska aldrig servera en fil.
     '_redirects',
@@ -301,19 +306,43 @@ async function main() {
   }
   await cp(join(HERE, 'assets'), join(DIST, 'assets'), { recursive: true });
 
-  // Registreringssidan behöver veta var servern finns. Saknas konfigurationen
-  // publiceras sidan ändå — nedladdningen och uppdateringarna ska aldrig
-  // blockeras av registreringen — men registreringssidan visar då ett tydligt
-  // besked i stället för att låtsas att den fungerar.
+  // Registreringssidan behöver veta var servern finns, och sektionen om
+  // Elda-skola behöver veta var skolplattformen ligger. Saknas
+  // konfigurationen publiceras sidan ändå — nedladdningen och uppdateringarna
+  // ska aldrig blockeras — men då visar sidan ett tydligt besked i stället för
+  // en knapp som inte fungerar.
+  //
+  // Skoladressen sätts vid bygget och valideras: en lokal testadress eller en
+  // http-adress får aldrig följa med till en publicerad sida.
+  const skolaRaw = (process.env.ELDA_SKOLA_URL || '').trim();
+  const skolaUrl = normalizeSkolaUrl(skolaRaw, {
+    allowLocal: process.env.ELDA_ALLOW_LOCAL_SKOLA === '1',
+  });
+  if (skolaRaw && !skolaUrl) {
+    console.warn(
+      '! ELDA_SKOLA_URL avvisades – bara https-adresser utan inloggning, fråga eller ankare publiceras. Sektionen visar att plattformen inte går att öppna ännu.',
+    );
+  }
+
   const configFile = join(DIST, 'config.json');
-  const config = await supabaseConfig();
-  if (config.supabaseUrl && config.supabaseAnonKey) {
+  const supabase = await supabaseConfig();
+  // Förslag skickas bara till en riktig https-mottagare. Saknas den visar
+  // feedbacksidan ett besked och knappen är inaktiv.
+  const feedbackRaw = (process.env.ELDA_FEEDBACK_URL || '').trim();
+  const feedbackUrl = /^https:\/\/[^\s]+$/.test(feedbackRaw) ? feedbackRaw : '';
+  const config = buildSiteConfig({ ...supabase, skolaUrl });
+  if (feedbackUrl) config.feedbackUrl = feedbackUrl;
+  if (Object.keys(config).length > 0) {
     await writeFile(configFile, JSON.stringify(config, null, 2) + '\n');
-    console.log('✓ config.json skriven – registreringen kan nå servern');
+    const delar = [
+      config.supabaseUrl ? 'registreringen kan nå servern' : '',
+      config.skolaUrl ? `länk till Elda-skola: ${config.skolaUrl}` : '',
+    ].filter(Boolean);
+    console.log(`✓ config.json skriven – ${delar.join(', ')}`);
   } else {
     await rm(configFile, { force: true });
     console.warn(
-      '! VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY saknas – registreringssidan publiceras utan serveradress och visar "inte tillgänglig".',
+      '! Ingen config.json – registreringssidan publiceras utan serveradress och skolsektionen utan länk (båda visar "inte tillgänglig").',
     );
   }
 

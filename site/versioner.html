@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Versionshistorik – Elda</title>
+<meta name="description" content="Alla publicerade versioner av Elda-appen, med ändringar och datum.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/png" href="./assets/elda-icon.png">
+<link rel="stylesheet" href="./site.css">
+<script>
+  (function () {
+    try {
+      var s = localStorage.getItem('elda-theme');
+      var t = s === 'ljus' || s === 'mork' ? s
+        : (matchMedia('(prefers-color-scheme: dark)').matches ? 'mork' : 'ljus');
+      document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Hoppa till innehållet</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="./index.html">
+      <img src="./assets/elda-icon.png" alt="" width="28" height="28">
+      <span>Elda</span>
+    </a>
+    <nav class="nav-links" id="navlinks" aria-label="Huvudmeny">
+      <a href="./index.html">Start</a>
+      <a href="./elda.html">Elda-appen</a>
+      <a href="./skola.html">Elda Skola</a>
+      <a href="./elda.html#nedladdning">Nedladdning</a>
+      <a href="./versioner.html" aria-current="page">Versionshistorik</a>
+      <a href="./elda.html#faq">Vanliga frågor</a>
+      <a href="./feedback.html">Förslag</a>
+      <a href="./registrera.html">Skapa konto</a>
+    </nav>
+    <div class="nav-actions">
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Växla mellan ljust och mörkt läge">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path class="i-sun" d="M12 4v2m0 12v2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>
+          <circle class="i-moon" cx="12" cy="12" r="4"/>
+        </svg>
+      </button>
+      <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-expanded="false" aria-controls="navlinks" aria-label="Öppna meny">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="wrap">
+      <p class="eyebrow">Versionshistorik</p>
+      <h1>Elda utvecklas vidare.</h1>
+      <p class="lede">Alla publicerade versioner av Elda-appen, i kronologisk ordning.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <ol class="timeline" id="timeline">
+        <li class="timeline-empty">Hämtar versionshistoriken…</li>
+      </ol>
+      <p class="reveal" style="margin-top: 24px"><a class="text-link" id="all-releases" href="https://github.com/appbuildersweden/v-xverket/releases" rel="noopener">Visa alla releaser på GitHub →</a></p>
+    </div>
+  </section>
+
+  <section class="section section-alt">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Uppdateringar</p>
+        <h2>Så fungerar uppdateringar.</h2>
+      </div>
+      <p class="update-status reveal" id="update-status" hidden></p>
+      <p class="reveal"><a class="text-link" href="./elda.html#nedladdning">Till nedladdningen →</a></p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="./index.html">
+        <img src="./assets/elda-icon.png" alt="" width="26" height="26">
+        <span>Elda</span>
+      </a>
+      <p>Elda och Elda Skola – två produkter för lärande och skolarbete.</p>
+    </div>
+    <nav class="footer-col" aria-label="Produkter">
+      <h2>Produkter</h2>
+      <a href="./elda.html">Elda-appen</a>
+      <a href="./elda.html#nedladdning">Nedladdning</a>
+      <a href="./skola.html">Elda Skola</a>
+    </nav>
+    <nav class="footer-col" aria-label="Hjälp">
+      <h2>Hjälp</h2>
+      <a href="./versioner.html">Versionshistorik</a>
+      <a href="./elda.html#faq">Vanliga frågor</a>
+      <a href="./feedback.html">Förslag och feedback</a>
+      <a href="./registrera.html">Skapa konto</a>
+    </nav>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>© <span id="year">2026</span> appbuildersweden. Alla rättigheter förbehållna.</p>
+  </div>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

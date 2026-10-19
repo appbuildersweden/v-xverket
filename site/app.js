@@ -1,5 +1,5 @@
-/* Elda – sidlogik. Ingen data hårdkodas här; allt versionsrelaterat
-   hämtas från releases.json som genereras av build.mjs.
+/* Elda – sidlogik för den publika webbplatsen. Varje del körs bara när dess
+   element finns på sidan, så samma fil fungerar på alla sidor.
 
    Nedladdningen går aldrig direkt till en fil. Knappen loggar in mot samma
    serverfunktion som appen använder och hämtar sedan en kortlivad signerad
@@ -7,46 +7,155 @@
 
 import { createSiteClient } from './bot.js';
 
-const RELEASES_URL = new URL('./releases.json', import.meta.url);
 const REPO_URL = 'https://github.com/appbuildersweden/v-xverket';
 
 const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const byId = (id) => document.getElementById(id);
+const setText = (id, text) => {
+  const node = byId(id);
+  if (node) node.textContent = text ?? '';
+};
+const setHidden = (id, hidden) => {
+  const node = byId(id);
+  if (node) node.hidden = hidden;
+};
 
-/* ---------------------- Nedladdning och inloggning ---------------------- */
+/* ------------------------------- Tema ---------------------------------- */
+const themeBtn = byId('theme-toggle');
+const storedTheme = () => {
+  try { return localStorage.getItem('elda-theme'); } catch { return null; }
+};
+const systemDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  themeBtn?.setAttribute(
+    'aria-label',
+    theme === 'mork' ? 'Växla till ljust läge' : 'Växla till mörkt läge',
+  );
+}
+applyTheme(document.documentElement.dataset.theme || (systemDark() ? 'mork' : 'ljus'));
+
+themeBtn?.addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'mork' ? 'ljus' : 'mork';
+  applyTheme(next);
+  try { localStorage.setItem('elda-theme', next); } catch { /* privat läge */ }
+});
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', (e) => {
+  if (storedTheme()) return;
+  applyTheme(e.matches ? 'mork' : 'ljus');
+});
+
+/* ----------------------------- Navigering ------------------------------ */
+const nav = byId('nav');
+const menuBtn = byId('menu-btn');
+const navLinks = byId('navlinks');
+
+const onScroll = () => nav?.classList.toggle('is-scrolled', window.scrollY > 8);
+onScroll();
+addEventListener('scroll', onScroll, { passive: true });
+
+function setMenu(open) {
+  navLinks?.setAttribute('data-open', String(open));
+  menuBtn?.setAttribute('aria-expanded', String(open));
+  menuBtn?.setAttribute('aria-label', open ? 'Stäng meny' : 'Öppna meny');
+}
+menuBtn?.addEventListener('click', () =>
+  setMenu(navLinks?.getAttribute('data-open') !== 'true'),
+);
+navLinks?.addEventListener('click', (e) => {
+  if (e.target.closest('a')) setMenu(false);
+});
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') setMenu(false);
+});
+addEventListener('click', (e) => {
+  if (!navLinks || navLinks.getAttribute('data-open') !== 'true') return;
+  if (!e.target.closest('#navlinks, #menu-btn')) setMenu(false);
+});
+
+/* ------------------------- Scrollanimationer --------------------------- */
+const revealables = [...document.querySelectorAll('.reveal')];
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add('is-visible');
+        io.unobserve(entry.target); // visas bara en gång
+      }
+    },
+    { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+  );
+  revealables.forEach((el) => io.observe(el));
+} else {
+  revealables.forEach((el) => el.classList.add('is-visible'));
+}
+
+setText('year', String(new Date().getFullYear()));
+
+/* ------------------------- Konfiguration ------------------------------- */
+/**
+ * Läser config.json en gång och delar resultatet mellan sidorna. Filen skrivs
+ * av build.mjs och innehåller bara publika värden.
+ */
+let configPromise = null;
+function loadSiteConfig() {
+  configPromise ??= (async () => {
+    try {
+      const res = await fetch('./config.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error(String(res.status));
+      return await res.json();
+    } catch (err) {
+      console.warn('Kunde inte läsa config.json', err);
+      return null;
+    }
+  })();
+  return configPromise;
+}
+
+/* ----------------------------- Hjälpare -------------------------------- */
+const fmtDate = (iso) => {
+  try {
+    return new Intl.DateTimeFormat('sv-SE', { dateStyle: 'long' }).format(new Date(iso));
+  } catch { return ''; }
+};
+const fmtSize = (bytes) => {
+  if (!bytes) return null;
+  const units = ['B', 'kB', 'MB', 'GB'];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+};
+
+/* ------------------------ Nedladdning och konto ------------------------- */
 let site = null;
 let downloadReady = false;
 let downloadBusy = false;
+let infoLoaded = false;
 
 function setDownloadStatus(message) {
-  const node = $('#dl-status');
-  if (!node) return;
-  node.textContent = message || '';
-  node.hidden = !message;
+  setText('dl-status', message || '');
+  setHidden('dl-status', !message);
 }
 
 function showLogin(message) {
-  const form = $('#dl-login');
-  const btn = $('#download-btn');
-  if (form) form.hidden = false;
-  if (btn) btn.textContent = 'Logga in för att ladda ner';
+  setHidden('dl-login', false);
+  setText('download-btn', 'Logga in för att ladda ner');
   setDownloadStatus(message || '');
 }
 
 function showLoggedIn(user) {
-  const form = $('#dl-login');
-  const btn = $('#download-btn');
-  if (form) form.hidden = true;
-  if (btn) btn.textContent = 'Ladda ner Elda för Windows';
-  setDownloadStatus(
-    user?.username ? `Inloggad som ${user.username}.` : '',
-  );
+  setHidden('dl-login', true);
+  setText('download-btn', 'Ladda ner Elda för Windows');
+  setDownloadStatus(user?.username ? `Inloggad som ${user.username}.` : '');
 }
 
 async function handleDownload() {
   if (!site || downloadBusy) return;
-  const user = site.peekUser();
-  if (!user) {
+  if (!site.peekUser()) {
     showLogin();
     return;
   }
@@ -80,14 +189,14 @@ async function handleDownload() {
 async function loginAndDownload(event) {
   event.preventDefault();
   if (!site) return;
-  const username = $('#dl-user')?.value.trim() ?? '';
-  const password = $('#dl-pass')?.value ?? '';
+  const username = byId('dl-user')?.value.trim() ?? '';
+  const password = byId('dl-pass')?.value ?? '';
   if (!username || !password) {
     setDownloadStatus('Fyll i både användarnamn och lösenord.');
     return;
   }
 
-  const button = $('#dl-login-btn');
+  const button = byId('dl-login-btn');
   if (button) button.disabled = true;
   setDownloadStatus('Loggar in…');
   const res = await site.login(username, password);
@@ -98,167 +207,34 @@ async function loginAndDownload(event) {
     return;
   }
 
-  const pass = $('#dl-pass');
+  const pass = byId('dl-pass');
   if (pass) pass.value = '';
   showLoggedIn(res.user);
   await handleDownload();
 }
 
-async function setupDownload() {
-  const btn = $('#download-btn');
-  const form = $('#dl-login');
-  let config = null;
-
-  try {
-    const res = await fetch('./config.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error(String(res.status));
-    config = await res.json();
-    site = createSiteClient({
-      supabaseUrl: config.supabaseUrl,
-      anonKey: config.supabaseAnonKey,
-    });
-  } catch (err) {
-    console.warn('Nedladdningen: kunde inte läsa konfigurationen', err);
-    site = null;
-  }
-
-  btn?.addEventListener('click', (event) => {
-    event.preventDefault();
-    if (!downloadReady) return;
-    if (!site) {
-      setDownloadStatus(
-        'Nedladdningen kan inte nås just nu. Försök igen om en stund eller kontakta skolan.',
-      );
-      return;
-    }
-    if (!site.peekUser()) showLogin();
-    else void handleDownload();
-  });
-
-  form?.addEventListener('submit', (event) => void loginAndDownload(event));
-
-  const user = site?.peekUser() ?? null;
-  if (user) showLoggedIn(user);
-  // Konfigurationen skickas med i stället för att läsas från en delad variabel:
-  // då kan versionsrutan aldrig hamna i ett tillstånd där den saknar adress.
-  await loadDownloadInfo(config);
-}
-
-/* ------------------------------- Tema ---------------------------------- */
-const themeBtn = $('#theme-toggle');
-const storedTheme = () => {
-  try { return localStorage.getItem('elda-theme'); } catch { return null; }
-};
-const systemDark = () => matchMedia('(prefers-color-scheme: dark)').matches;
-
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  if (themeBtn) {
-    themeBtn.setAttribute(
-      'aria-label',
-      theme === 'mork' ? 'Växla till ljust läge' : 'Växla till mörkt läge',
-    );
-  }
-}
-applyTheme(document.documentElement.dataset.theme || (systemDark() ? 'mork' : 'ljus'));
-
-themeBtn?.addEventListener('click', () => {
-  const next = document.documentElement.dataset.theme === 'mork' ? 'ljus' : 'mork';
-  applyTheme(next);
-  try { localStorage.setItem('elda-theme', next); } catch { /* privat läge */ }
-});
-
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', (e) => {
-  if (storedTheme()) return;
-  applyTheme(e.matches ? 'mork' : 'ljus');
-});
-
-/* ----------------------------- Navigering ------------------------------ */
-const nav = $('#nav');
-const menuBtn = $('#menu-btn');
-const navLinks = $('#navlinks');
-
-const onScroll = () => nav?.classList.toggle('is-scrolled', window.scrollY > 8);
-onScroll();
-addEventListener('scroll', onScroll, { passive: true });
-
-function setMenu(open) {
-  navLinks?.setAttribute('data-open', String(open));
-  menuBtn?.setAttribute('aria-expanded', String(open));
-  menuBtn?.setAttribute('aria-label', open ? 'Stäng meny' : 'Öppna meny');
-}
-menuBtn?.addEventListener('click', () =>
-  setMenu(navLinks?.getAttribute('data-open') !== 'true'),
-);
-navLinks?.addEventListener('click', (e) => {
-  if (e.target.closest('a')) setMenu(false);
-});
-addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') setMenu(false);
-});
-addEventListener('click', (e) => {
-  if (!navLinks || navLinks.getAttribute('data-open') !== 'true') return;
-  if (!e.target.closest('#navlinks, #menu-btn')) setMenu(false);
-});
-
-/* ------------------------- Scrollanimationer --------------------------- */
-const revealables = $$('.reveal');
-if ('IntersectionObserver' in window) {
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        entry.target.classList.add('is-visible');
-        io.unobserve(entry.target); // visas bara en gång
-      }
-    },
-    { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
-  );
-  revealables.forEach((el) => io.observe(el));
-} else {
-  revealables.forEach((el) => el.classList.add('is-visible'));
-}
-
-/* --------------------------- Versionsdata ------------------------------ */
-const fmtDate = (iso) => {
-  try {
-    return new Intl.DateTimeFormat('sv-SE', { dateStyle: 'long' }).format(new Date(iso));
-  } catch { return ''; }
-};
-const fmtSize = (bytes) => {
-  if (!bytes) return null;
-  const units = ['B', 'kB', 'MB', 'GB'];
-  let i = 0; let n = bytes;
-  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
-  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
-};
-let infoLoaded = false;
-
-function renderEmpty() {
+function renderDownloadEmpty() {
   if (infoLoaded) return;
   downloadReady = false;
-  $('#download-note').hidden = false;
-  $('#download-btn').hidden = true;
-  $('#dl-login').hidden = true;
+  setHidden('download-note', false);
+  setHidden('download-btn', true);
+  setHidden('dl-login', true);
   setDownloadStatus('');
-  $('#download-facts').hidden = true;
-  $('#download-sub').textContent = 'Ingen stabil version publicerad ännu.';
-  $('#hero-version').textContent = '';
-  $('#hero-meta').hidden = true;
+  setHidden('download-facts', true);
+  setText('download-sub', 'Ingen stabil version publicerad ännu.');
+  setHidden('hero-meta', true);
 }
 
 /**
- * Versionen hämtas från den skyddade funktionens publika info-läge — aldrig
- * från en publik filadress. Ingen länk lämnas ut här, bara siffrorna.
+ * Versionen hämtas från den skyddade funktionens publika info-läge. Ingen
+ * filadress lämnas ut här, bara siffrorna.
  */
 async function loadDownloadInfo(config) {
-  // config.json använder samma namn som appens bygge (supabaseUrl /
-  // supabaseAnonKey) — inte klientens interna anonKey.
   const url = config?.supabaseUrl;
   const anonKey = config?.supabaseAnonKey;
   if (!url || !anonKey) {
     console.warn('Nedladdningen: serverkonfigurationen saknas');
-    renderEmpty();
+    renderDownloadEmpty();
     return;
   }
 
@@ -276,41 +252,133 @@ async function loadDownloadInfo(config) {
     if (!res.ok) throw new Error(String(res.status));
     const info = await res.json();
     if (!info.available) {
-      renderEmpty();
+      renderDownloadEmpty();
       return;
     }
 
     infoLoaded = true;
     const size = fmtSize(info.size);
+    const fileLine = size ? `${info.fileName} · ${size}` : info.fileName;
 
-    $('#download-sub').textContent = 'Kräver ett godkänt Elda-konto · Windows 10/11';
-    $('#hero-version').textContent = ` · VERSION ${info.version}`;
-    $('#hero-meta').hidden = false;
-    $('#meta-version').textContent = info.version;
-    $('#meta-file').textContent = size ? `${info.fileName} · ${size}` : info.fileName;
-    $('#meta-os').textContent = 'Windows 10/11 · 64-bit';
+    setText('download-sub', 'Kräver ett godkänt Elda-konto · Windows 10/11');
+    setHidden('hero-meta', false);
+    setText('meta-version', info.version);
+    setText('meta-file', fileLine);
+    setText('meta-os', 'Windows 10/11 · 64-bit');
 
-    $('#dl-version').textContent = info.version;
-    $('#dl-date').textContent = info.updatedAt ? fmtDate(info.updatedAt) : '–';
-    $('#dl-arch').textContent = 'Windows';
-    $('#dl-file').textContent = size ? `${info.fileName} · ${size}` : info.fileName;
-    $('#download-facts').hidden = false;
+    setText('dl-version', info.version);
+    setText('dl-date', info.updatedAt ? fmtDate(info.updatedAt) : '–');
+    setText('dl-arch', 'Windows');
+    setText('dl-file', fileLine);
+    setHidden('download-facts', false);
 
     downloadReady = true;
-    const btn = $('#download-btn');
-    btn.hidden = false;
-    btn.textContent = site?.peekUser() ? 'Ladda ner Elda för Windows' : 'Logga in för att ladda ner';
-    $('#download-note').hidden = true;
-    $('#step-ext').textContent = '.exe';
+    setHidden('download-btn', false);
+    setText(
+      'download-btn',
+      site?.peekUser() ? 'Ladda ner Elda för Windows' : 'Logga in för att ladda ner',
+    );
+    setHidden('download-note', true);
+    setText('step-ext', '.exe');
   } catch (err) {
     console.warn('Nedladdningen: kunde inte läsa versionen', err);
-    renderEmpty();
+    renderDownloadEmpty();
   }
 }
 
+async function setupDownload(config) {
+  const btn = byId('download-btn');
+  const form = byId('dl-login');
+  if (!btn) return; // inte nedladdningssidan
+
+  // Registreringen är frivillig: utan serveradress visar knappen ett besked.
+  if (config?.supabaseUrl && config?.supabaseAnonKey) {
+    site = createSiteClient({
+      supabaseUrl: config.supabaseUrl,
+      anonKey: config.supabaseAnonKey,
+    });
+  } else {
+    site = null;
+  }
+
+  btn.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (!downloadReady) return;
+    if (!site) {
+      setDownloadStatus(
+        'Nedladdningen kan inte nås just nu. Försök igen om en stund eller kontakta skolan.',
+      );
+      return;
+    }
+    if (!site.peekUser()) showLogin();
+    else void handleDownload();
+  });
+
+  form?.addEventListener('submit', (event) => void loginAndDownload(event));
+
+  const user = site?.peekUser() ?? null;
+  if (user) showLoggedIn(user);
+  await loadDownloadInfo(config);
+}
+
+/* --------------------------- Versionsdata ------------------------------ */
+function setTimelineMessage(message) {
+  const list = byId('timeline');
+  if (!list) return;
+  list.innerHTML = '';
+  const li = document.createElement('li');
+  li.className = 'timeline-empty';
+  li.textContent = message;
+  list.appendChild(li);
+}
+
+function renderUpdater(active) {
+  const status = byId('update-status');
+  if (status) {
+    status.hidden = active;
+    status.textContent =
+      'Status: automatiska uppdateringar är ännu inte aktiva i appen. ' +
+      'Stegen ovan beskriver hur uppdateringar kommer att fungera när funktionen är på plats.';
+  }
+  setText(
+    'faq-update',
+    active
+      ? 'Appen jämför sin version med den publicerade och hämtar en signerad uppdatering när en ny finns. Innan något installeras verifieras att paketet kommer från Elda och inte har ändrats.'
+      : 'När funktionen är på plats jämför appen sin version med den publicerade och laddar ner en signerad uppdatering. Signaturen verifieras innan något installeras. Är funktionen ännu inte aktiverad laddar du ner den senaste filen manuellt från nedladdningssidan.',
+  );
+}
+
+/** Visar senaste stabila version på startsidan, eller ett ärligt besked. */
+function renderHomeLatest(releases, errorMessage) {
+  if (!byId('home-latest-version')) return;
+  const stable = releases.find((r) => !r.prerelease);
+  if (stable) {
+    setText('home-latest-version', stable.tag || stable.name || '');
+    setText('home-latest-date', stable.publishedAt ? fmtDate(stable.publishedAt) : '');
+    setText('home-latest-summary', stable.summary || '');
+    setHidden('home-latest-summary', !stable.summary);
+    setHidden('home-latest-note', true);
+    setHidden('home-latest-date', !stable.publishedAt);
+    return;
+  }
+  setText('home-latest-version', '–');
+  setText('home-latest-date', '');
+  setText('home-latest-summary', '');
+  setHidden('home-latest-summary', true);
+  setText(
+    'home-latest-note',
+    errorMessage || 'Ingen stabil version är publicerad ännu.',
+  );
+  setHidden('home-latest-note', false);
+}
+
 function renderTimeline(releases, sourceUrl) {
-  const list = $('#timeline');
-  if (!releases.length) return;
+  const list = byId('timeline');
+  if (!list) return;
+  if (!releases.length) {
+    setTimelineMessage('Inga versioner publicerade ännu. Den första versionen visas här så snart den är ute.');
+    return;
+  }
 
   const latestStable = releases.find((r) => !r.prerelease);
   list.innerHTML = '';
@@ -321,12 +389,16 @@ function renderTimeline(releases, sourceUrl) {
 
     const head = document.createElement('div');
     head.className = 'rel-head';
-    head.innerHTML = `
-      <span class="rel-version"></span>
-      <span class="rel-tag">${rel === latestStable ? 'Senaste stabila' : rel.prerelease ? 'Förhandsversion' : 'Tidigare version'}</span>
-      <span class="rel-date"></span>`;
-    $('.rel-version', head).textContent = rel.tag || rel.name || 'Okänd version';
-    $('.rel-date', head).textContent = rel.publishedAt ? fmtDate(rel.publishedAt) : '';
+    const version = document.createElement('span');
+    version.className = 'rel-version';
+    version.textContent = rel.tag || rel.name || 'Okänd version';
+    const tag = document.createElement('span');
+    tag.className = 'rel-tag';
+    tag.textContent = rel === latestStable ? 'Senaste stabila' : rel.prerelease ? 'Förhandsversion' : 'Tidigare version';
+    const date = document.createElement('span');
+    date.className = 'rel-date';
+    date.textContent = rel.publishedAt ? fmtDate(rel.publishedAt) : '';
+    head.append(version, tag, date);
     li.appendChild(head);
 
     if (rel.summary) {
@@ -357,54 +429,145 @@ function renderTimeline(releases, sourceUrl) {
       li.appendChild(groups);
     }
 
-    const link = document.createElement('p');
-    link.style.marginTop = '13px';
-    link.innerHTML = `<a class="text-link" rel="noopener">Visa release →</a>`;
-    link.querySelector('a').href = rel.url || sourceUrl;
-    li.appendChild(link);
+    const linkWrap = document.createElement('p');
+    linkWrap.style.marginTop = '13px';
+    const link = document.createElement('a');
+    link.className = 'text-link';
+    link.rel = 'noopener';
+    link.href = rel.url || sourceUrl;
+    link.textContent = 'Visa release →';
+    linkWrap.appendChild(link);
+    li.appendChild(linkWrap);
 
     list.appendChild(li);
   }
 }
 
-function renderUpdater(active) {
-  const status = $('#update-status');
-  if (active) {
-    status.hidden = true;
-    return;
-  }
-  status.hidden = false;
-  status.textContent =
-    'Status: automatiska uppdateringar är ännu inte aktiva i appen. ' +
-    'Stegen ovan beskriver hur uppdateringar kommer att fungera när funktionen är på plats.';
-  $('#faq-update').textContent =
-    'När funktionen är på plats jämför appen sin version med den publicerade och ' +
-    'laddar ner en signerad uppdatering. Signaturen verifieras innan något installeras. ' +
-    'Är funktionen ännu inte aktiverad laddar du ner den senaste filen manuellt här från sidan.';
-}
-
 async function loadReleases() {
+  const hasReleasePage = Boolean(byId('timeline') || byId('home-latest-version') || byId('update-status'));
+  if (!hasReleasePage) return;
   try {
-    const res = await fetch(RELEASES_URL, { cache: 'no-cache' });
+    const res = await fetch(new URL('./releases.json', import.meta.url), { cache: 'no-cache' });
     if (!res.ok) throw new Error(String(res.status));
     const data = await res.json();
     const releases = Array.isArray(data.releases) ? data.releases : [];
+    const source = data.source || `${REPO_URL}/releases`;
 
     renderUpdater(data.updater === true);
-    if (!releases.length) { renderEmpty(); return; }
-
-    // Versionsrutan ritas av loadDownloadInfo (den skyddade funktionen). Här
-    // visas bara historiken — aldrig en publik filadress.
-    renderTimeline(releases, data.source || REPO_URL + '/releases');
-    if (data.source) $('#all-releases').href = data.source;
-  } catch {
-    // Ingen data tillgänglig – visa ärligt tomtilstånd i stället för att gissa.
-    renderEmpty();
+    renderHomeLatest(releases);
+    renderTimeline(releases, source);
+    const all = byId('all-releases');
+    if (all) all.href = source;
+  } catch (err) {
+    console.warn('Versionsdata kunde inte läsas', err);
     renderUpdater(false);
+    renderHomeLatest([], 'Versionsinformationen kan inte hämtas just nu.');
+    setTimelineMessage('Versionshistoriken kan inte hämtas just nu. Försök igen senare.');
   }
 }
-loadReleases();
 
-$('#year').textContent = String(new Date().getFullYear());
+/* ------------------------------ Elda Skola ------------------------------ */
+/**
+ * Adressen kommer från config.json, som build.mjs skriver från ELDA_SKOLA_URL
+ * och bara när adressen är godkänd. Saknas den visas ett ärligt besked, aldrig
+ * en knapp som ser ut att fungera.
+ */
+async function setupSkola(config) {
+  const url = typeof config?.skolaUrl === 'string' ? config.skolaUrl : '';
+  const ok = /^https:\/\//i.test(url);
 
-void setupDownload();
+  for (const id of ['skola-open', 'home-skola-open']) {
+    const cta = byId(id);
+    if (!cta) continue;
+    if (ok) {
+      cta.href = url;
+      cta.rel = 'noopener';
+      cta.hidden = false;
+    } else {
+      cta.hidden = true;
+    }
+  }
+  setHidden('skola-status', ok);
+}
+
+/* ------------------------------ Feedback -------------------------------- */
+/**
+ * Förslag skickas bara till en riktig mottagare (config.feedbackUrl, satt via
+ * ELDA_FEEDBACK_URL vid bygget). Saknas den visar formuläret ett besked och
+ * knappen är inaktiv — inget påstås vara sparat när det inte är det.
+ */
+function setupFeedback(config) {
+  const form = byId('feedback-form');
+  if (!form) return;
+  const submit = byId('fb-submit');
+  const url = typeof config?.feedbackUrl === 'string' ? config.feedbackUrl : '';
+  const ready = /^https:\/\//i.test(url);
+
+  const showStatus = (message, kind) => {
+    const node = byId('fb-status');
+    if (!node) return;
+    node.textContent = message;
+    node.dataset.kind = kind;
+    node.hidden = false;
+  };
+
+  if (!ready) {
+    if (submit) submit.disabled = true;
+    showStatus(
+      'Förslag kan inte tas emot just nu. Formuläret aktiveras när en mottagare är konfigurerad.',
+      'info',
+    );
+    return;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const product = String(data.get('product') || '');
+    const message = String(data.get('message') || '').trim();
+
+    if (product !== 'elda' && product !== 'skola') {
+      showStatus('Välj vilken produkt förslaget gäller.', 'error');
+      return;
+    }
+    if (message.length < 10) {
+      showStatus('Beskriv ditt förslag med minst 10 tecken.', 'error');
+      return;
+    }
+    if (message.length > 2000) {
+      showStatus('Förslaget får vara högst 2000 tecken.', 'error');
+      return;
+    }
+
+    if (submit) submit.disabled = true;
+    showStatus('Skickar…', 'info');
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, message }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      form.reset();
+      showStatus('Tack! Ditt förslag är skickat.', 'ok');
+    } catch (err) {
+      console.warn('Förslaget kunde inte skickas', err);
+      showStatus('Förslaget kunde inte skickas. Försök igen om en stund.', 'error');
+    } finally {
+      if (submit) submit.disabled = false;
+    }
+  });
+}
+
+/* ------------------------------- Start ---------------------------------- */
+async function init() {
+  const config = await loadSiteConfig();
+  await Promise.all([
+    setupDownload(config),
+    setupSkola(config),
+    loadReleases(),
+  ]);
+  setupFeedback(config);
+}
+
+void init();

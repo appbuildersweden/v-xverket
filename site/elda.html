@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elda-appen – ladda ner för Windows</title>
+<meta name="description" content="Elda för Windows: AI-studiehjälp, planering och uppgifter, belöningar och dokument. Ladda ner den senaste stabila versionen.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/png" href="./assets/elda-icon.png">
+<link rel="stylesheet" href="./site.css">
+<script>
+  (function () {
+    try {
+      var s = localStorage.getItem('elda-theme');
+      var t = s === 'ljus' || s === 'mork' ? s
+        : (matchMedia('(prefers-color-scheme: dark)').matches ? 'mork' : 'ljus');
+      document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Hoppa till innehållet</a>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="./index.html">
+      <img src="./assets/elda-icon.png" alt="" width="28" height="28">
+      <span>Elda</span>
+    </a>
+    <nav class="nav-links" id="navlinks" aria-label="Huvudmeny">
+      <a href="./index.html">Start</a>
+      <a href="./elda.html" aria-current="page">Elda-appen</a>
+      <a href="./skola.html">Elda Skola</a>
+      <a href="./elda.html#nedladdning">Nedladdning</a>
+      <a href="./versioner.html">Versionshistorik</a>
+      <a href="./elda.html#faq">Vanliga frågor</a>
+      <a href="./feedback.html">Förslag</a>
+      <a href="./registrera.html">Skapa konto</a>
+    </nav>
+    <div class="nav-actions">
+      <button type="button" class="icon-btn" id="theme-toggle" aria-label="Växla mellan ljust och mörkt läge">
+        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path class="i-sun" d="M12 4v2m0 12v2M4 12H2m20 0h-2M6.3 6.3 4.9 4.9m14.2 14.2-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>
+          <circle class="i-moon" cx="12" cy="12" r="4"/>
+        </svg>
+      </button>
+      <button type="button" class="icon-btn menu-btn" id="menu-btn" aria-expanded="false" aria-controls="navlinks" aria-label="Öppna meny">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- PRESENTATION -->
+  <section class="page-hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Elda-appen · Windows</p>
+        <h1>Ett personligt studieverktyg för vardagen.</h1>
+        <p class="lede">
+          Elda-appen hjälper dig att planera skolarbetet, få förklaringar steg för steg och ta fram
+          studieunderlag. Den installeras på din Windows-dator.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#nedladdning">Till nedladdning</a>
+          <a class="btn btn-ghost" href="#funktioner">Se funktionerna</a>
+        </div>
+        <dl class="hero-meta" id="hero-meta" hidden>
+          <div><dt>Stabil version</dt><dd id="meta-version">–</dd></div>
+          <div><dt>System</dt><dd id="meta-os">Windows 10/11 · 64-bit</dd></div>
+          <div><dt>Fil</dt><dd id="meta-file">–</dd></div>
+        </dl>
+      </div>
+
+      <div class="hero-visual">
+        <div class="window" role="img" aria-label="Förhandsvisning av Eldas gränssnitt med sidomeny och samtalsvy">
+          <div class="window-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="window-title">Elda</span>
+          </div>
+          <div class="window-body">
+            <div class="window-rail" aria-hidden="true">
+              <span class="rail-mark"></span>
+              <span class="rail-row"></span><span class="rail-row"></span>
+              <span class="rail-row"></span><span class="rail-row short"></span>
+            </div>
+            <div class="window-main" aria-hidden="true">
+              <span class="line w-40"></span>
+              <span class="bubble bubble-me"></span>
+              <span class="bubble bubble-ai w-70"></span>
+              <span class="bubble bubble-ai w-55"></span>
+              <span class="line w-30 dim"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNKTIONER -->
+  <section class="section section-alt" id="funktioner">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Funktioner</p>
+        <h2>Det Elda faktiskt innehåller idag.</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature reveal">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></svg>
+          </span>
+          <h3>AI-studiehjälp</h3>
+          <p>Ställ frågor i chatten och få förklaringar steg för steg. Följdfrågor fungerar som i ett pågående samtal.</p>
+        </article>
+        <article class="feature reveal" style="--d:80ms">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 3v3M16 3v3M7.5 14l2 2 4-4"/></svg>
+          </span>
+          <h3>Planering och uppgifter</h3>
+          <p>Skapa, sortera och följ upp uppgifter med prioritet, förfallodatum och status. Listan finns kvar när du loggar in igen.</p>
+        </article>
+        <article class="feature reveal" style="--d:160ms">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8L6.7 20l1-6L3.4 9.9 9.4 9Z"/></svg>
+          </span>
+          <h3>Belöningar och framsteg</h3>
+          <p>Slutförda uppgifter ger XP. Följ nivåer, belöningar och din egen utveckling över tid.</p>
+        </article>
+        <article class="feature reveal" style="--d:240ms">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          </span>
+          <h3>Dokument på beställning</h3>
+          <p>Be AI:n ta fram arbetsblad, sammanfattningar och instruktioner och ladda ner dem som färdiga Word-filer.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEDLADDNING -->
+  <section class="section" id="nedladdning">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Nedladdning</p>
+        <h2>Ladda ner Elda för Windows.</h2>
+        <p class="section-lede">Nedladdningen kräver ett godkänt Elda-konto.</p>
+      </div>
+
+      <div class="download-card reveal">
+        <div class="download-top">
+          <img class="download-icon" src="./assets/elda-icon.png" alt="Eldas ikon" width="56" height="56">
+          <div class="download-id">
+            <p class="download-name">Elda för Windows</p>
+            <p class="download-sub" id="download-sub">Hämtar uppgifter om senaste versionen…</p>
+          </div>
+          <dl class="download-facts" id="download-facts" hidden>
+            <div><dt>Version</dt><dd id="dl-version">–</dd></div>
+            <div><dt>Publicerad</dt><dd id="dl-date">–</dd></div>
+            <div><dt>Arkitektur</dt><dd id="dl-arch">–</dd></div>
+            <div><dt>Fil</dt><dd id="dl-file">–</dd></div>
+          </dl>
+        </div>
+
+        <div class="download-action">
+          <a class="btn btn-primary btn-lg" id="download-btn" hidden href="#">Ladda ner Elda för Windows</a>
+          <p class="download-note" id="download-note" hidden>
+            Nedladdningen är inte tillgänglig ännu. Den dyker upp här så snart en
+            stabil version har publicerats.
+          </p>
+
+          <form class="dl-login" id="dl-login" hidden>
+            <p class="download-note">
+              Logga in med kontot du skapade i registreringen. Har du inget konto?
+              <a class="text-link" href="./registrera.html">Registrera dig här</a>.
+            </p>
+            <label class="dl-label" for="dl-user">Användarnamn</label>
+            <input class="dl-input" id="dl-user" autocomplete="username" spellcheck="false">
+            <label class="dl-label" for="dl-pass">Lösenord</label>
+            <input class="dl-input" id="dl-pass" type="password" autocomplete="current-password">
+            <button type="submit" class="btn btn-primary" id="dl-login-btn">Logga in och ladda ner</button>
+          </form>
+
+          <p class="download-note" id="dl-status" hidden></p>
+        </div>
+      </div>
+
+      <ol class="steps reveal">
+        <li><span class="step-n">1</span><div><h3>Ladda ner installationsfilen</h3><p>Filen hämtas via knappen ovan när du är inloggad.</p></div></li>
+        <li><span class="step-n">2</span><div><h3>Öppna filen</h3><p>Dubbelklicka på <code id="step-ext">.exe</code>-filen och följ anvisningarna på skärmen.</p></div></li>
+        <li><span class="step-n">3</span><div><h3>Starta Elda</h3><p>När installationen är klar startar du appen från genvägen eller startmenyn.</p></div></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- UPPDATERINGAR -->
+  <section class="section section-alt" id="uppdateringar">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Uppdateringar</p>
+        <h2>Alltid redo för nästa version.</h2>
+        <p class="section-lede">
+          När en ny version publiceras kan appen kontrollera om en uppdatering finns och hjälpa dig att installera den.
+        </p>
+      </div>
+      <ol class="update-steps">
+        <li class="reveal"><span class="update-n" aria-hidden="true">1</span><h3>En ny version publiceras</h3><p>Versionen publiceras som en release med signerade filer.</p></li>
+        <li class="reveal" style="--d:100ms"><span class="update-n" aria-hidden="true">2</span><h3>Elda upptäcker uppdateringen</h3><p>Appen jämför den installerade versionen med den publicerade.</p></li>
+        <li class="reveal" style="--d:200ms"><span class="update-n" aria-hidden="true">3</span><h3>Uppdateringen installeras säkert</h3><p>Signaturen verifieras innan något installeras.</p></li>
+      </ol>
+      <p class="update-status reveal" id="update-status" hidden></p>
+      <p class="reveal"><a class="text-link" href="./versioner.html">Se versionshistoriken →</a></p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="wrap wrap-narrow">
+      <div class="section-head reveal">
+        <p class="eyebrow">Vanliga frågor</p>
+        <h2>Bra att veta</h2>
+      </div>
+
+      <div class="faq reveal">
+        <details>
+          <summary>Hur skapar jag ett konto?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Konton skapas här på webbplatsen med <a href="./registrera.html">registreringsboten</a>. Boten ställer frågorna steg för steg och servern kontrollerar varje svar. I appen loggar du sedan in med användarnamnet och lösenordet du valde.</p></div>
+        </details>
+        <details>
+          <summary>Hur laddar jag ner Elda?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Logga in i nedladdningssektionen och tryck på <strong>Ladda ner Elda för Windows</strong>. Om ingen stabil version har publicerats ännu visas det tydligt på sidan.</p></div>
+        </details>
+        <details>
+          <summary>Vilka Windows-versioner stöds?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Appen byggs för 64-bitars Windows. Systemkraven visas tillsammans med nedladdningsknappen när en version är publicerad.</p></div>
+        </details>
+        <details>
+          <summary>Hur installerar jag appen?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Öppna den nedladdade installationsfilen och följ anvisningarna. När installationen är klar startar du Elda från genvägen eller startmenyn. Normal användning kräver inga administratörsrättigheter.</p></div>
+        </details>
+        <details>
+          <summary>Hur fungerar automatiska uppdateringar?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p id="faq-update">Appen jämför sin version med den publicerade och hämtar en signerad uppdatering när en ny finns. Innan något installeras verifieras att paketet kommer från Elda och inte har ändrats.</p></div>
+        </details>
+        <details>
+          <summary>Vad gör jag om en uppdatering misslyckas?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Den installerade versionen påverkas inte av ett misslyckat uppdateringsförsök. Kontrollera anslutningen och försök igen, eller ladda ner installationsfilen manuellt från nedladdningssektionen.</p></div>
+        </details>
+        <details>
+          <summary>Var hittar jag den senaste versionen?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Alltid i nedladdningssektionen på den här sidan. Fullständig information finns under <a href="./versioner.html">versionshistoriken</a>.</p></div>
+        </details>
+        <details>
+          <summary>Vad är skillnaden mot Elda Skola?<span class="chev" aria-hidden="true"></span></summary>
+          <div class="faq-body"><p>Elda-appen är ett personligt verktyg som du installerar på din dator. <a href="./skola.html">Elda Skola</a> är skolplattformen med egna konton som skapas av skolan. Inloggningarna är separata.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="brand" href="./index.html">
+        <img src="./assets/elda-icon.png" alt="" width="26" height="26">
+        <span>Elda</span>
+      </a>
+      <p>Elda och Elda Skola – två produkter för lärande och skolarbete.</p>
+    </div>
+    <nav class="footer-col" aria-label="Produkter">
+      <h2>Produkter</h2>
+      <a href="./elda.html">Elda-appen</a>
+      <a href="./elda.html#nedladdning">Nedladdning</a>
+      <a href="./skola.html">Elda Skola</a>
+    </nav>
+    <nav class="footer-col" aria-label="Hjälp">
+      <h2>Hjälp</h2>
+      <a href="./versioner.html">Versionshistorik</a>
+      <a href="./elda.html#faq">Vanliga frågor</a>
+      <a href="./feedback.html">Förslag och feedback</a>
+      <a href="./registrera.html">Skapa konto</a>
+    </nav>
+  </div>
+  <div class="wrap footer-bottom">
+    <p>© <span id="year">2026</span> appbuildersweden. Alla rättigheter förbehållna.</p>
+  </div>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
