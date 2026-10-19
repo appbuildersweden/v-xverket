@@ -5,6 +5,7 @@ import { listAnnouncements, listClasses, markAnnouncementRead } from '../../lib/
 import { dateTime, truncate } from '../../lib/format';
 import type { Announcement } from '../../lib/types';
 import { Alert, Badge, Button, Card, EmptyState, Modal, PageIntro, Spinner } from '../../components/ui';
+import { InboxMessages } from '../../components/InboxMessages';
 
 export const ElevMeddelanden: React.FC = () => {
   const state = useAsync(async () => {
@@ -61,6 +62,10 @@ export const ElevMeddelanden: React.FC = () => {
         }
       />
       {error && <Alert>{error}</Alert>}
+
+      <div style={{ marginBottom: 16 }}>
+        <InboxMessages />
+      </div>
 
       <Card>
         {rows.length === 0 ? (

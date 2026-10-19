@@ -13,6 +13,13 @@ import type {
   SchoolEvent,
   SchoolSettings,
   AdaptationStats,
+  AdminAdaptation,
+  AdminClass,
+  AdminClassMember,
+  AdminEvent,
+  InboxMessage,
+  MessageAudience,
+  SentMessage,
   StudentRow,
   Submission,
   Task,
@@ -732,6 +739,164 @@ export async function saveAdaptation(input: {
 
 export async function deleteAdaptation(id: string): Promise<void> {
   const { error } = await supabase.rpc('elda_skola_delete_adaptation', { p_id: id });
+  if (error) fail(error);
+}
+
+// ------------------------------------------------------------ admin: klasser
+
+export async function listAdminClasses(): Promise<AdminClass[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_classes');
+  if (error) fail(error);
+  return (data ?? []) as AdminClass[];
+}
+
+export async function listAdminClassMembers(): Promise<AdminClassMember[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_class_members');
+  if (error) fail(error);
+  return (data ?? []) as AdminClassMember[];
+}
+
+export async function setClassArchived(classId: string, archived: boolean): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_set_class_archived', {
+    p_class: classId,
+    p_archived: archived,
+  });
+  if (error) fail(error);
+}
+
+export async function addClassMember(
+  classId: string,
+  userId: string,
+  memberRole: 'elev' | 'larare',
+): Promise<void> {
+  const { error } = await supabase.rpc('add_class_member', {
+    p_class: classId,
+    p_user: userId,
+    p_member_role: memberRole,
+  });
+  if (error) fail(error);
+}
+
+export async function removeClassMember(classId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('remove_class_member', {
+    p_class: classId,
+    p_user: userId,
+  });
+  if (error) fail(error);
+}
+
+// -------------------------------------------------------- admin: meddelanden
+
+export async function sendSchoolMessage(input: {
+  subject: string;
+  body: string;
+  audience: MessageAudience;
+  classId: string | null;
+  userIds: string[];
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('elda_skola_send_message', {
+    p_subject: input.subject.trim(),
+    p_body: input.body.trim(),
+    p_audience: input.audience,
+    p_class: input.classId || null,
+    p_user_ids: input.userIds.length ? input.userIds : null,
+  });
+  if (error) fail(error);
+  return Number(data ?? 0);
+}
+
+export async function listSentMessages(): Promise<SentMessage[]> {
+  const { data, error } = await supabase.rpc('elda_skola_sent_messages');
+  if (error) fail(error);
+  return (data ?? []) as SentMessage[];
+}
+
+export async function listMyMessages(): Promise<InboxMessage[]> {
+  const { data, error } = await supabase.rpc('elda_skola_my_messages');
+  if (error) fail(error);
+  return (data ?? []) as InboxMessage[];
+}
+
+export async function markMessageRead(messageId: string): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_mark_message_read', { p_message: messageId });
+  if (error) fail(error);
+}
+
+// ---------------------------------------------------------- admin: planering
+
+export async function listAdminEvents(): Promise<AdminEvent[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_events');
+  if (error) fail(error);
+  return (data ?? []) as AdminEvent[];
+}
+
+export async function saveAdminEvent(input: {
+  id?: string | null;
+  classId: string;
+  title: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  allDay: boolean;
+  published: boolean;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_save_event', {
+    p_id: input.id ?? null,
+    p_class: input.classId || null,
+    p_title: input.title.trim(),
+    p_description: input.description.trim() || null,
+    p_starts: input.startsAt,
+    p_ends: input.endsAt || null,
+    p_all_day: input.allDay,
+    p_published: input.published,
+  });
+  if (error) fail(error);
+  return String(data ?? '');
+}
+
+export async function deleteAdminEvent(id: string): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_delete_event', { p_id: id });
+  if (error) fail(error);
+}
+
+// -------------------------------------------------------- admin: elevstöd
+
+export async function listAdminAdaptations(): Promise<AdminAdaptation[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_adaptations');
+  if (error) fail(error);
+  return (data ?? []) as AdminAdaptation[];
+}
+
+export async function saveAdminAdaptation(input: {
+  id?: string | null;
+  studentId: string;
+  classId: string;
+  subject: string;
+  title: string;
+  description: string;
+  measures: string;
+  status: 'aktiv' | 'avslutad';
+  followUpAt: string;
+  followUpBy: string;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_save_adaptation', {
+    p_id: input.id ?? null,
+    p_student: input.studentId,
+    p_class: input.classId || null,
+    p_subject: input.subject.trim() || null,
+    p_title: input.title.trim(),
+    p_description: input.description.trim() || null,
+    p_measures: input.measures.trim() || null,
+    p_status: input.status,
+    p_follow_up_at: input.followUpAt || null,
+    p_follow_up_by: input.followUpBy || null,
+  });
+  if (error) fail(error);
+  return String(data ?? '');
+}
+
+export async function deleteAdminAdaptation(id: string): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_delete_adaptation', { p_id: id });
   if (error) fail(error);
 }
 

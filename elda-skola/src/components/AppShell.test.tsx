@@ -86,7 +86,8 @@ describe('AppShell', () => {
     expect(navFor('elev')).toBe(ELEV_NAV);
     expect(navFor('larare')).toBe(LARARE_NAV);
     expect(navFor('admin')).toBe(ADMIN_NAV);
-    expect(ADMIN_NAV.map((row) => row.id)).toContain('roller');
+    expect(ADMIN_NAV.map((row) => row.id)).toContain('larare');
+    expect(ADMIN_NAV.map((row) => row.id)).toContain('klasser');
     expect(ELEV_NAV.map((row) => row.id)).not.toContain('anpassningar');
   });
 

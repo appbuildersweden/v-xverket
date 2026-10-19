@@ -4,6 +4,7 @@ import { useAsync } from '../../lib/useAsync';
 import { createAnnouncement, listAnnouncements, listClasses } from '../../lib/api';
 import { dateTime, truncate } from '../../lib/format';
 import { Alert, Badge, Button, Card, EmptyState, Field, Modal, PageIntro, Spinner } from '../../components/ui';
+import { InboxMessages } from '../../components/InboxMessages';
 
 export const LarareMeddelanden: React.FC = () => {
   const state = useAsync(async () => {
@@ -46,6 +47,10 @@ export const LarareMeddelanden: React.FC = () => {
       />
 
       {message && <Alert tone="success">{message}</Alert>}
+
+      <div style={{ marginBottom: 16 }}>
+        <InboxMessages />
+      </div>
 
       {rows.length === 0 ? (
         <Card>

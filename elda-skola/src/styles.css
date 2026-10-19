@@ -2017,6 +2017,40 @@ textarea.input {
    inte som ett aktivt val. */
 
 /* XP-popup efter godkänd inlämning */
+/* Meddelanderader i inkorgen (delas av elev- och lärarpanelen). */
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 13px 2px;
+  color: inherit;
+}
+
+.message-row:last-child {
+  border-bottom: 0;
+}
+
+.message-row:hover {
+  background: var(--surface-2);
+}
+
+.message-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-top: 6px;
+  flex: 0 0 8px;
+}
+
+.message-dot.read {
+  background: var(--border-strong);
+}
+
 .xp-popup-backdrop {
   position: fixed;
   inset: 0;

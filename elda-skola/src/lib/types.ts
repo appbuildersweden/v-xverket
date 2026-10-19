@@ -222,6 +222,73 @@ export interface AdaptationStats {
   last_updated: string | null;
 }
 
+/** Klassöversikt för administratören. */
+export interface AdminClass {
+  id: string;
+  name: string;
+  subject: string | null;
+  description: string | null;
+  archived: boolean;
+  join_code: string | null;
+  created_at: string;
+  member_count: number;
+  student_count: number;
+  teacher_count: number;
+  teacher_names: string;
+}
+
+export interface AdminClassMember {
+  class_id: string;
+  class_name: string;
+  user_id: string;
+  username: string;
+  display_name: string;
+  role: SchoolRole;
+  member_role: 'elev' | 'larare';
+}
+
+export type MessageAudience = 'klass' | 'larare' | 'elever' | 'anvandare';
+
+export interface SentMessage {
+  id: string;
+  subject: string;
+  audience: MessageAudience;
+  class_name: string | null;
+  created_at: string;
+  recipient_count: number;
+  read_count: number;
+}
+
+export interface InboxMessage {
+  id: string;
+  subject: string;
+  body: string;
+  sender_name: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+export interface AdminEvent {
+  id: string;
+  class_id: string | null;
+  class_name: string | null;
+  title: string;
+  description: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  published: boolean;
+  created_by: string;
+  creator_name: string | null;
+  created_at: string;
+}
+
+export interface AdminAdaptation extends Adaptation {
+  follow_up_at: string | null;
+  follow_up_by: string | null;
+  follow_up_name: string | null;
+}
+
 export interface RosterRow {
   id: string;
   username: string;
