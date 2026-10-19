@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { AppShell, ELEV_NAV, LARARE_NAV } from './AppShell';
+import { ADMIN_NAV, AppShell, ELEV_NAV, LARARE_NAV, groupNav, navFor } from './AppShell';
 import type { Identity, Profile } from '../lib/types';
 
 const identity: Identity = {
@@ -57,16 +57,43 @@ describe('AppShell', () => {
   it('har tio lärarkategorier i rätt ordning', () => {
     expect(LARARE_NAV.map((row) => row.id)).toEqual([
       'oversikt',
-      'uppgifter',
-      'aktiviteter',
-      'material',
       'klasser',
+      'uppgifter',
       'kalender',
-      'meddelanden',
       'inlamningar',
+      'material',
+      'aktiviteter',
       'anpassningar',
+      'meddelanden',
       'profil',
     ]);
+  });
+
+  it('grupperar lärarmenyn i logiska avsnitt', () => {
+    expect(groupNav(LARARE_NAV).map((group) => group.title)).toEqual([
+      'Start',
+      'Klasser och elever',
+      'Uppgifter och planering',
+      'Inlämningar och bedömning',
+      'Läromaterial och aktiviteter',
+      'Elevstöd',
+      'Kommunikation',
+      'Konto',
+    ]);
+  });
+
+  it('ger varje roll sin egen meny', () => {
+    expect(navFor('elev')).toBe(ELEV_NAV);
+    expect(navFor('larare')).toBe(LARARE_NAV);
+    expect(navFor('admin')).toBe(ADMIN_NAV);
+    expect(ADMIN_NAV.map((row) => row.id)).toContain('roller');
+    expect(ELEV_NAV.map((row) => row.id)).not.toContain('anpassningar');
+  });
+
+  it('visar grupprubriker i menyn', () => {
+    renderShell('larare');
+    expect(screen.getByText('Klasser och elever')).toBeTruthy();
+    expect(screen.getByText('Inlämningar och bedömning')).toBeTruthy();
   });
 
   it('visar lärarmenyn och markerar aktiv kategori', () => {
@@ -85,9 +112,29 @@ describe('AppShell', () => {
   it('fäller ihop sidopanelen', () => {
     renderShell('larare');
     const shell = document.querySelector('.shell');
-    fireEvent.click(screen.getByLabelText('Fäll ihop sidopanelen'));
+    const toggle = screen.getByLabelText('Fäll ihop sidopanelen');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(toggle);
     expect(shell?.className).toContain('shell-collapsed');
-    fireEvent.click(screen.getByLabelText('Fäll ut sidopanelen'));
+    const expand = screen.getByLabelText('Fäll ut sidopanelen');
+    expect(expand.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(expand);
     expect(shell?.className).not.toContain('shell-collapsed');
+  });
+
+  it('kommer ihåg ihopfällt läge mellan sidladdningar', () => {
+    window.localStorage.clear();
+    const first = renderShell('elev');
+    fireEvent.click(screen.getByLabelText('Fäll ihop sidopanelen'));
+    expect(window.localStorage.getItem('elda-skola-sidebar')).toBe('collapsed');
+    first.unmount();
+    renderShell('elev');
+    expect(document.querySelector('.shell')?.className).toContain('shell-collapsed');
+    window.localStorage.clear();
+  });
+
+  it('visar sidans namn i toppfältet', () => {
+    renderShell('larare');
+    expect(document.querySelector('.topbar-title')?.textContent).toContain('Översikt');
   });
 });

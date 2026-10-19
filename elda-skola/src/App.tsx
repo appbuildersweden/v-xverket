@@ -109,7 +109,8 @@ function SchoolApp() {
       setRoute(next);
       const hash = `#/${next.panel}/${next.page}`;
       if (window.location.hash !== hash) {
-        window.history.replaceState(null, '', hash);
+        // pushState ger fungerande bakåt- och framåtnavigering mellan sidorna.
+        window.history.pushState(null, '', hash);
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
@@ -119,7 +120,11 @@ function SchoolApp() {
   useEffect(() => {
     const apply = () => {
       const parsed = parseRoute(window.location.hash);
-      if (!parsed) return;
+      if (!parsed) {
+        // Tom eller okänd adress: tillbaka till rollens startsida.
+        setRoute({ panel, page: defaultStartPage(panel) });
+        return;
+      }
       if (parsed.panel !== panel) {
         navigate(defaultStartPage(panel));
         return;

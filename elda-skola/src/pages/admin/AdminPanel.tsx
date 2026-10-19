@@ -1,30 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Activity, BookOpen, CalendarDays, ClipboardList, FileText, KeyRound,
-  LayoutDashboard, LogOut, MessageSquare, Search, Settings, ShieldCheck,
-  UserRound, Users,
-} from 'lucide-react';
+import { KeyRound, LogOut, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
 import type { SchoolRole } from '../../lib/types';
 import { Alert, Badge, Button, Card, EmptyState, Modal, PageIntro, Spinner, Stat } from '../../components/ui';
-import type { NavItem } from '../../components/AppShell';
-
-const NAV: NavItem[] = [
-  { id: 'oversikt', label: 'Översikt', icon: <LayoutDashboard size={19} /> },
-  { id: 'anvandare', label: 'Användare och konton', icon: <Users size={19} /> },
-  { id: 'roller', label: 'Roller och behörigheter', icon: <ShieldCheck size={19} /> },
-  { id: 'klasser', label: 'Klasser och grupper', icon: <BookOpen size={19} /> },
-  { id: 'amnen', label: 'Ämnen och undervisning', icon: <BookOpen size={19} /> },
-  { id: 'material', label: 'Material och innehåll', icon: <FileText size={19} /> },
-  { id: 'uppgifter', label: 'Uppgifter och inlämningar', icon: <ClipboardList size={19} /> },
-  { id: 'kalender', label: 'Kalender och planering', icon: <CalendarDays size={19} /> },
-  { id: 'stod', label: 'Anpassningar och elevstöd', icon: <UserRound size={19} /> },
-  { id: 'logg', label: 'Aktivitetslogg', icon: <Activity size={19} /> },
-  { id: 'meddelanden', label: 'Meddelanden', icon: <MessageSquare size={19} /> },
-  { id: 'installningar', label: 'Systeminställningar', icon: <Settings size={19} /> },
-  { id: 'profil', label: 'Min administratörsprofil', icon: <Settings size={19} /> },
-];
+import { ADMIN_NAV } from '../../components/AppShell';
 
 interface Account {
   id: string;
@@ -54,8 +34,6 @@ interface OverviewCounts {
 const roleLabel: Record<string, string> = {
   admin: 'Administratör', lärare: 'Lärare', speciallärare: 'Speciallärare', elev: 'Elev', okand: 'Okänd',
 };
-
-export const ADMIN_NAV = NAV;
 
 export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: string) => void }> = ({ activePage }) => {
   const { identity, profile, logout } = useAuth();
@@ -103,6 +81,13 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  /** Rollfördelning för "Roller och behörigheter" – räknas ur samma lista. */
+  const roleCounts = useMemo(() => {
+    const counts: Record<string, number> = { admin: 0, lärare: 0, speciallärare: 0, elev: 0 };
+    for (const account of accounts) counts[account.role] = (counts[account.role] ?? 0) + 1;
+    return counts;
+  }, [accounts]);
+
   const visibleAccounts = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('sv');
     return accounts.filter((account) =>
@@ -139,7 +124,7 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
     }
   };
 
-  const title = NAV.find((item) => item.id === activePage)?.label ?? 'Översikt';
+  const title = ADMIN_NAV.find((item) => item.id === activePage)?.label ?? 'Översikt';
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || identity?.username || 'Administratör';
 
   if (loading && !counts && !error) return <Spinner label="Hämtar administrationen…" />;
@@ -171,8 +156,17 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
         </div>
       )}
 
+      {activePage === 'roller' && !loading && (
+        <div className="grid-4" style={{ marginBottom: 16 }}>
+          <Stat label="Administratörer" value={roleCounts.admin ?? 0} />
+          <Stat label="Lärare" value={roleCounts['lärare'] ?? 0} />
+          <Stat label="Speciallärare" value={roleCounts['speciallärare'] ?? 0} />
+          <Stat label="Elever" value={roleCounts.elev ?? 0} />
+        </div>
+      )}
+
       {(activePage === 'anvandare' || activePage === 'roller') && (
-        <Card title="Användare" subtitle={`${visibleAccounts.length} av ${accounts.length} konton`} action={<Button size="sm" variant="ghost" onClick={() => void refresh()}>Uppdatera</Button>}>
+        <Card title={activePage === 'roller' ? 'Roller och behörigheter' : 'Användare'} subtitle={`${visibleAccounts.length} av ${accounts.length} konton`} action={<Button size="sm" variant="ghost" onClick={() => void refresh()}>Uppdatera</Button>}>
           <div className="filter-bar">
             <label className="admin-search"><Search size={16} aria-hidden="true" /><input className="input" aria-label="Sök användare" placeholder="Sök namn, användarnamn eller roll" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
           </div>
@@ -230,54 +224,297 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
   );
 };
 
+interface AdminColumn {
+  key: string;
+  label: string;
+  format?: (value: unknown) => string;
+}
+
+const visaDatum = (value: unknown) => (value ? new Date(String(value)).toLocaleDateString('sv-SE') : '—');
+const visaTid = (value: unknown) => (value ? new Date(String(value)).toLocaleString('sv-SE') : '—');
+const visaJaNej = (value: unknown) => (value === true ? 'Ja' : value === false ? 'Nej' : '—');
+const visaText = (value: unknown) => (value == null || value === '' ? '—' : String(value));
+
+/**
+ * De adminvyer som läser en befintlig tabell. Kolumnerna är namngivna på
+ * svenska i stället för att råa fältnamn visas, och varje vy kan laddas om.
+ */
+const ADMIN_TABELLER: Record<
+  string,
+  { title: string; description: string; table: string; columns: AdminColumn[] }
+> = {
+  klasser: {
+    title: 'Klasser och grupper',
+    description: 'Klasserna som lärarna arbetar i. Behörigheten styrs av RLS-policyerna på classes.',
+    table: 'classes',
+    columns: [
+      { key: 'name', label: 'Klass', format: visaText },
+      { key: 'subject', label: 'Ämne', format: visaText },
+      { key: 'archived', label: 'Arkiverad', format: visaJaNej },
+      { key: 'created_at', label: 'Skapad', format: visaDatum },
+    ],
+  },
+  material: {
+    title: 'Material och innehåll',
+    description: 'Dokument och material som lärarna har lagt upp.',
+    table: 'documents',
+    columns: [
+      { key: 'title', label: 'Titel', format: visaText },
+      { key: 'subject', label: 'Ämne', format: visaText },
+      { key: 'created_at', label: 'Upplagt', format: visaDatum },
+    ],
+  },
+  uppgifter: {
+    title: 'Uppgifter och inlämningar',
+    description: 'Uppgifterna som finns i skolan. Elevsvar visas aldrig här.',
+    table: 'student_tasks',
+    columns: [
+      { key: 'title', label: 'Uppgift', format: visaText },
+      { key: 'subject', label: 'Ämne', format: visaText },
+      { key: 'published', label: 'Publicerad', format: visaJaNej },
+      { key: 'due_date', label: 'Deadline', format: visaDatum },
+      { key: 'created_at', label: 'Skapad', format: visaDatum },
+    ],
+  },
+  kalender: {
+    title: 'Kalender och planering',
+    description: 'Schemahändelser för skolan.',
+    table: 'school_events',
+    columns: [
+      { key: 'title', label: 'Händelse', format: visaText },
+      { key: 'starts_at', label: 'Start', format: visaTid },
+      { key: 'all_day', label: 'Heldag', format: visaJaNej },
+    ],
+  },
+  meddelanden: {
+    title: 'Meddelanden',
+    description: 'Skolans gemensamma meddelanden.',
+    table: 'school_announcements',
+    columns: [
+      { key: 'title', label: 'Rubrik', format: visaText },
+      { key: 'created_at', label: 'Publicerad', format: visaTid },
+    ],
+  },
+};
+
 const AdminUnavailable: React.FC<{ page: string }> = ({ page }) => {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
-  const cfg: Record<string, { title: string; table: string; columns: string }> = {
-    klasser: { title: 'Klasser och grupper', table: 'classes', columns: 'id, name, subject, archived, created_at' },
-    amnen: { title: 'Ämnen och undervisning', table: 'classes', columns: 'id, name, subject, archived, created_at' },
-    material: { title: 'Material och innehåll', table: 'documents', columns: 'id, title, subject, created_at' },
-    uppgifter: { title: 'Uppgifter och inlämningar', table: 'student_tasks', columns: 'id, title, subject, published, due_date, created_at' },
-    kalender: { title: 'Kalender och planering', table: 'school_events', columns: 'id, title, starts_at, all_day' },
-    stod: { title: 'Anpassningar och elevstöd', table: '', columns: '' },
-    logg: { title: 'Aktivitetslogg', table: '', columns: '' },
-    meddelanden: { title: 'Meddelanden', table: 'school_announcements', columns: 'id, title, created_at' },
-    installningar: { title: 'Systeminställningar', table: '', columns: '' },
-  };
-  const pageInfo = cfg[page];
+  const [reloadKey, setReloadKey] = useState(0);
+  const pageInfo = ADMIN_TABELLER[page];
 
   useEffect(() => {
     let live = true;
     void (async () => {
-      if (!pageInfo?.table) {
+      if (!pageInfo) {
         setLoading(false);
         return;
       }
       setLoading(true);
-      const result = await (supabase.from(pageInfo.table) as any).select(pageInfo.columns).limit(100);
+      setError(null);
+      const select = ['id', ...pageInfo.columns.map((column) => column.key)].join(', ');
+      const result = await (supabase.from(pageInfo.table) as any)
+        .select(select)
+        .limit(100);
       if (!live) return;
       if (result.error) {
         setRows([]);
-        setError('Du saknar behörighet eller innehållet kunde inte hämtas. Privata elevsvar och anpassningar visas inte i adminlistan.');
+        setError(
+          'Innehållet kunde inte hämtas med din behörighet. Privata elevsvar och anpassningar visas aldrig i adminlistan.',
+        );
       } else {
         setRows((result.data ?? []) as unknown as Array<Record<string, unknown>>);
         setError(null);
       }
       setLoading(false);
     })();
-    return () => { live = false; };
-  }, [pageInfo?.table, pageInfo?.columns]);
+    return () => {
+      live = false;
+    };
+  }, [pageInfo, reloadKey]);
 
   if (page === 'logg') return <AdminAuditLog />;
-  if (page === 'stod') return <Card title={pageInfo?.title ?? 'Anpassningar och elevstöd'}><EmptyState title="Skyddat elevinnehåll" description="Anpassningar och individuellt stöd kräver uttryckligt lärarbehörighetsflöde. Adminpanelen visar inte känsliga elevuppgifter." /></Card>;
-  if (page === 'installningar') return <Card title={pageInfo?.title ?? 'Systeminställningar'}><EmptyState title="Inga systeminställningar har konfigurerats" description="Skolinställningar kräver en separat backendmodell och ska inte visas som fungerande innan den finns." /></Card>;
-  return <Card title={pageInfo?.title ?? 'Administration'} subtitle="Endast information som din aktuella roll får läsa visas.">
-    {error && <Alert>{error}</Alert>}
-    {loading ? <Spinner label="Hämtar skolans data…" /> : rows.length === 0 ? <EmptyState title="Inget innehåll att visa" description="Det finns inga synliga poster, eller så har du inte åtkomst till den här datan." /> : (
-      <div className="table-wrap"><table className="table"><thead><tr>{Object.keys(rows[0]).map((key) => <th key={key}>{key.replace(/_/g, ' ')}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={String(row.id ?? i)}>{Object.entries(row).map(([key, value]) => <td key={key}>{value == null ? '—' : typeof value === 'boolean' ? value ? 'Ja' : 'Nej' : String(value)}</td>)}</tr>)}</tbody></table></div>
-    )}
-  </Card>;
+  if (page === 'amnen') return <AdminSubjects />;
+
+  if (page === 'stod') {
+    return (
+      <Card title="Anpassningar och elevstöd">
+        <EmptyState
+          title="Skyddat elevinnehåll"
+          description="Anpassningar och individuellt stöd kräver ett uttryckligt lärarbehörighetsflöde. Adminpanelen visar därför inga känsliga elevuppgifter."
+        />
+      </Card>
+    );
+  }
+
+  if (page === 'installningar') {
+    return (
+      <Card title="Systeminställningar">
+        <EmptyState
+          title="Inga systeminställningar har konfigurerats"
+          description="Skolinställningar kräver en separat backendmodell. Vyn visas därför ärligt som tom i stället för att låtsas spara värden."
+        />
+      </Card>
+    );
+  }
+
+  if (!pageInfo) {
+    return (
+      <Card title="Administration">
+        <EmptyState title="Sidan finns inte" description="Välj en kategori i menyn." />
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      title={pageInfo.title}
+      subtitle={`${pageInfo.description} ${rows.length ? `${rows.length} poster visas.` : ''}`.trim()}
+      action={
+        <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+          Uppdatera
+        </Button>
+      }
+    >
+      {error && (
+        <Alert>
+          {error}
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+              Försök igen
+            </Button>
+          </div>
+        </Alert>
+      )}
+      {loading ? (
+        <Spinner label="Hämtar skolans data…" />
+      ) : rows.length === 0 ? (
+        !error && (
+          <EmptyState
+            title="Inget innehåll att visa"
+            description="Det finns inga synliga poster, eller så har du inte åtkomst till den här datan."
+          />
+        )
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                {pageInfo.columns.map((column) => (
+                  <th key={column.key}>{column.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={String(row.id ?? index)}>
+                  {pageInfo.columns.map((column) => (
+                    <td key={column.key}>{(column.format ?? visaText)(row[column.key])}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+};
+
+/**
+ * Ämnen finns inte som egen tabell – de lagras på klasser, uppgifter och
+ * material. Vyn sammanställer därför de ämnen som faktiskt används i stället
+ * för att visa klasslistan en gång till.
+ */
+const AdminSubjects: React.FC = () => {
+  const [rows, setRows] = useState<Array<{ subject: string | null; name: string | null }>>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      const result = await (supabase.from('classes') as any)
+        .select('id, name, subject, archived')
+        .order('subject', { ascending: true })
+        .limit(200);
+      if (!live) return;
+      if (result.error) {
+        setRows([]);
+        setError('Ämnena kunde inte hämtas med din behörighet.');
+      } else {
+        setRows((result.data ?? []) as Array<{ subject: string | null; name: string | null }>);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [reloadKey]);
+
+  const subjects = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const row of rows) {
+      const subject = (row.subject ?? '').trim() || 'Ämne saknas';
+      const list = map.get(subject) ?? [];
+      if (row.name) list.push(row.name);
+      map.set(subject, list);
+    }
+    return [...map.entries()]
+      .map(([subject, classes]) => ({ subject, classes: [...new Set(classes)] }))
+      .sort((a, b) => a.subject.localeCompare(b.subject, 'sv'));
+  }, [rows]);
+
+  return (
+    <Card
+      title="Ämnen och undervisning"
+      subtitle="Ämnena som används på skolans klasser. Ämnet sätts på klassen och följer med uppgifterna."
+      action={
+        <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+          Uppdatera
+        </Button>
+      }
+    >
+      {error && (
+        <Alert>
+          {error}
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
+              Försök igen
+            </Button>
+          </div>
+        </Alert>
+      )}
+      {loading ? (
+        <Spinner label="Hämtar ämnen…" />
+      ) : subjects.length === 0 ? (
+        !error && (
+          <EmptyState
+            title="Inga ämnen ännu"
+            description="När lärare skapar klasser med ämne visas sammanställningen här."
+          />
+        )
+      ) : (
+        <div className="list">
+          {subjects.map((row) => (
+            <div className="list-row" key={row.subject}>
+              <div className="list-main">
+                <p className="list-title">{row.subject}</p>
+                <p className="list-sub">
+                  {row.classes.length ? row.classes.join(', ') : 'Ingen klass angiven'}
+                </p>
+              </div>
+              <Badge tone="neutral">{row.classes.length} klasser</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
 };
 
 const AdminAuditLog: React.FC = () => {
