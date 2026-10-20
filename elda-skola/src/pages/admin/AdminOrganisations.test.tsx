@@ -211,6 +211,29 @@ describe('AdminOrganisations', () => {
     expect(screen.queryByText('Sara Sara')).toBeNull();
   });
 
+  it('sidnumrerar en lång kontolista', async () => {
+    const many: AdminMembership[] = Array.from({ length: 30 }, (_, index) => ({
+      user_id: `user-${index}`,
+      username: `elev${index}`,
+      display_name: `Elev ${String(index).padStart(2, '0')}`,
+      role: 'elev' as const,
+      active: true,
+      organisation_id: 'org-1',
+      organisation_name: 'Ronneby Skola',
+    }));
+    listMemberships.mockResolvedValue(many);
+
+    render(<AdminOrganisations />);
+    await screen.findByText('Elev 00');
+    expect(screen.queryByText('Elev 12')).toBeNull();
+    expect(screen.getByText('Visar 12 av 30 konton')).toBeTruthy();
+    expect(screen.getByText('Sida 1 av 3')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Nästa sida'));
+    expect(await screen.findByText('Elev 12')).toBeTruthy();
+    expect(screen.getByText('Sida 2 av 3')).toBeTruthy();
+  });
+
   it('byter skolkoppling i en dialog med sökning och bekräftelse', async () => {
     render(<AdminOrganisations />);
     const button = await screen.findByRole('button', {
