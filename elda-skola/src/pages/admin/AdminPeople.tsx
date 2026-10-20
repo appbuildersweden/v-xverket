@@ -2,8 +2,21 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyRound, Pencil, Plus, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import { addStudentByUsername, listAdminClassMembers, listAdminClasses } from '../../lib/api';
-import type { AdminClass, AdminClassMember, SchoolRole } from '../../lib/types';
+import {
+  addStudentByUsername,
+  assignMembership,
+  listAdminClassMembers,
+  listAdminClasses,
+  listOrganisations,
+  saveOrganisation,
+} from '../../lib/api';
+import type {
+  AdminClass,
+  AdminClassMember,
+  SchoolOrganisation,
+  SchoolRole,
+} from '../../lib/types';
+import { MunicipalityPicker } from '../../components/MunicipalityPicker';
 import { Alert, Badge, Button, Card, EmptyState, Field, Modal, Spinner } from '../../components/ui';
 
 interface Account {
@@ -413,12 +426,36 @@ const CreateAccount: React.FC<{
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<SchoolRole>('elev');
   const [classId, setClassId] = useState('');
+  const [organisations, setOrganisations] = useState<SchoolOrganisation[]>([]);
+  const [orgId, setOrgId] = useState('');
+  const [municipality, setMunicipality] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Skolorna behövs för att kunna koppla kontot direkt och för att fylla i
+  // kommunen som eleven eller läraren hör till.
+  useEffect(() => {
+    let alive = true;
+    void listOrganisations()
+      .then((rows) => {
+        if (alive) setOrganisations(rows.filter((row) => row.active));
+      })
+      .catch(() => {
+        // Går det inte att läsa skolorna kan kontot ändå skapas – kopplingen
+        // görs då i efterhand under Skolor och medlemskap.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const save = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       setError('Ange förnamn och efternamn.');
+      return;
+    }
+    if (orgId && municipality.trim().length < 2) {
+      setError('Ange vilken kommun skolan ligger i.');
       return;
     }
     setBusy(true);
@@ -431,11 +468,33 @@ const CreateAccount: React.FC<{
         setError('Kontot kunde inte skapas. Kontrollera uppgifterna och försök igen.');
         return;
       }
-      const payload = data as { username?: string; initialPassword?: string | null };
+      const payload = data as {
+        id?: string;
+        username?: string;
+        initialPassword?: string | null;
+      };
       if (!payload.username) {
         setError('Kontot skapades men svaret kunde inte läsas.');
         return;
       }
+
+      // Skolan först: kommunen sparas på organisationen, så att alla konton i
+      // skolan ser samma ort. Sedan kopplas kontot till skolan.
+      if (orgId) {
+        const org = organisations.find((row) => row.id === orgId);
+        if (org && (org.municipality ?? '') !== municipality.trim()) {
+          await saveOrganisation({
+            id: org.id,
+            name: org.name,
+            slug: org.slug,
+            municipality,
+            contactEmail: org.contact_email ?? '',
+            active: org.active,
+          });
+        }
+        if (payload.id) await assignMembership(payload.id, orgId);
+      }
+
       let className: string | undefined;
       if (role === 'elev' && classId) {
         await addStudentByUsername(classId, payload.username);
@@ -499,6 +558,31 @@ const CreateAccount: React.FC<{
             ))}
           </select>
         </Field>
+        <Field
+          label="Skola"
+          htmlFor="new-org"
+          hint="Kontot kopplas direkt till skolan. Utan skola kan eleven inte använda interna meddelanden."
+        >
+          <select
+            id="new-org"
+            className="input"
+            value={orgId}
+            onChange={(event) => {
+              const next = event.target.value;
+              setOrgId(next);
+              const org = organisations.find((row) => row.id === next);
+              setMunicipality(org?.municipality ?? '');
+            }}
+          >
+            <option value="">Ingen skola ännu</option>
+            {organisations.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+                {row.municipality ? ` – ${row.municipality}` : ''}
+              </option>
+            ))}
+          </select>
+        </Field>
         {role === 'elev' && (
           <Field
             label="Klass"
@@ -523,6 +607,16 @@ const CreateAccount: React.FC<{
           </Field>
         )}
       </div>
+      {orgId && (
+        <MunicipalityPicker
+          id="new-municipality"
+          value={municipality}
+          onChange={setMunicipality}
+          required
+          label="Kommunen skolan ligger i"
+          hint="Sparas på skolan och syns för alla som är kopplade till den."
+        />
+      )}
       <p className="small muted" style={{ marginBottom: 0 }}>
         Användarnamnet skapas automatiskt av skolans namnregel. Ett tillfälligt lösenord visas en gång.
       </p>

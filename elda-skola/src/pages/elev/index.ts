@@ -1,4 +1,5 @@
 export { ElevHem } from './ElevHem';
+export { ElevButik } from './ElevButik';
 export { ElevUppgifter } from './ElevUppgifter';
 export { ElevAmnen } from './ElevAmnen';
 export { ElevKalender } from './ElevKalender';

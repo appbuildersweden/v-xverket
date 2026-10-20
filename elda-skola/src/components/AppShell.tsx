@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Coins,
   FolderOpen,
   Ghost,
   GraduationCap,
@@ -20,6 +21,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  ShoppingBag,
   Sparkles,
   Users,
   UserRound,
@@ -34,7 +36,8 @@ import {
 } from '../lib/school-settings';
 import { useMessageRealtime, useUnreadTotal } from '../lib/unread';
 import { NotificationBell } from './NotificationBell';
-import type { Identity, Profile } from '../lib/types';
+import { getMyOrganisation } from '../lib/api';
+import type { Identity, MyOrganisation, Profile } from '../lib/types';
 
 export type PanelKind = 'elev' | 'larare' | 'speciallarare' | 'admin';
 
@@ -71,6 +74,13 @@ export const ELEV_NAV: NavItem[] = [
     label: 'Meddelanden',
     icon: <MessageSquare size={19} />,
     group: 'Min klass',
+  },
+  { id: 'information', label: 'Information', icon: <Megaphone size={19} />, group: 'Min klass' },
+  {
+    id: 'butik',
+    label: 'Butiken',
+    icon: <ShoppingBag size={19} />,
+    group: 'Min utveckling',
   },
   { id: 'framsteg', label: 'Mina framsteg', icon: <ActivityIcon size={19} />, group: 'Min utveckling' },
   { id: 'halloween', label: 'Halloween', icon: <Ghost size={19} />, group: 'Min utveckling' },
@@ -121,8 +131,14 @@ export const LARARE_NAV: NavItem[] = [
   { id: 'anpassningar', label: 'Anpassningar', icon: <UserRound size={19} />, group: 'Elevstöd' },
   {
     id: 'meddelanden',
-    label: 'Meddelanden och information',
+    label: 'Meddelanden',
     icon: <MessageSquare size={19} />,
+    group: 'Kommunikation',
+  },
+  {
+    id: 'information',
+    label: 'Information',
+    icon: <Megaphone size={19} />,
     group: 'Kommunikation',
   },
   { id: 'profil', label: 'Profil och inställningar', icon: <Settings size={19} />, group: 'Konto' },
@@ -146,6 +162,12 @@ export const SPECIAL_NAV: NavItem[] = [
     icon: <MessageSquare size={19} />,
     group: 'Kommunikation',
   },
+  {
+    id: 'information',
+    label: 'Information',
+    icon: <Megaphone size={19} />,
+    group: 'Kommunikation',
+  },
   { id: 'profil', label: 'Profil och inställningar', icon: <Settings size={19} />, group: 'Konto' },
 ];
 
@@ -165,6 +187,12 @@ export const ADMIN_NAV: NavItem[] = [
     id: 'publiceringar',
     label: 'Nyheter och uppdateringar',
     icon: <Newspaper size={19} />,
+    group: 'Publiceringar',
+  },
+  {
+    id: 'information',
+    label: 'Information till klasser',
+    icon: <Megaphone size={19} />,
     group: 'Publiceringar',
   },
   {
@@ -190,6 +218,18 @@ export const ADMIN_NAV: NavItem[] = [
     label: 'Systemutskick',
     icon: <Megaphone size={19} />,
     group: 'Meddelanden',
+  },
+  {
+    id: 'xp',
+    label: 'XP och belöningar',
+    icon: <Coins size={19} />,
+    group: 'Belöningar',
+  },
+  {
+    id: 'butik',
+    label: 'Butiken',
+    icon: <ShoppingBag size={19} />,
+    group: 'Belöningar',
   },
   {
     id: 'stod',
@@ -289,6 +329,23 @@ export const AppShell: React.FC<Props> = ({
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [school, setSchool] = useState(cachedSchoolSettings);
+  // Den egna skolorganisationen. Den visas under Elda Skola i sidopanelen så
+  // att personal och elever ser vilken skola de arbetar i.
+  const [organisation, setOrganisation] = useState<MyOrganisation | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void getMyOrganisation()
+      .then((row) => {
+        if (alive) setOrganisation(row);
+      })
+      .catch(() => {
+        // Sidopanelen fungerar utan skolnamnet – visa då bara Elda Skola.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Skolans namn kommer från skolinställningarna och uppdateras direkt när en
   // administratör sparar nya värden – utan omladdning.
@@ -359,6 +416,12 @@ export const AppShell: React.FC<Props> = ({
             <img src="elda-icon.png" alt="" />
             <span className="brand-text">
               <strong>Elda Skola</strong>
+              {organisation && (
+                <small className="brand-school" title={organisation.name}>
+                  {organisation.name}
+                  {organisation.municipality ? ` · ${organisation.municipality}` : ''}
+                </small>
+              )}
             </span>
           </button>
           <button
@@ -466,6 +529,17 @@ export const AppShell: React.FC<Props> = ({
           <div className="topbar-meta">
             <span className="topbar-date">{longDate()}</span>
             <span className="week-chip">Vecka {isoWeek()}</span>
+            {nav.some((item) => item.id === 'butik') && (
+              <button
+                type="button"
+                className="icon-btn shop-nav-btn"
+                onClick={() => onNavigate('butik')}
+                aria-label="Öppna butiken"
+                title="Butiken"
+              >
+                <ShoppingBag size={18} />
+              </button>
+            )}
             <NotificationBell pages={nav.map((item) => item.id)} onNavigate={onNavigate} />
           </div>
         </header>

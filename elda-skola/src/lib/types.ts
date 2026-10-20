@@ -117,13 +117,25 @@ export interface SchoolDocument {
   created_at: string;
 }
 
+/** Bilaga som följer med ett informationsutskick. */
+export interface InformationAttachment {
+  file_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number;
+}
+
 export interface Announcement {
   id: string;
   class_id: string;
+  class_name: string | null;
   author_id: string;
   author_name: string;
   title: string;
   body: string;
+  /** Sanerad HTML från rich text-redigeraren. Null när texten skrevs som ren text. */
+  body_html: string | null;
+  attachments: InformationAttachment[];
   created_at: string;
   read_at: string | null;
   /** Antal elever som har läst meddelandet. */
@@ -301,6 +313,7 @@ export interface SchoolOrganisation {
   id: string;
   name: string;
   slug: string;
+  municipality: string | null;
   contact_email: string | null;
   active: boolean;
   members: number;
@@ -315,6 +328,7 @@ export interface SchoolOrganisation {
 export interface MyOrganisation {
   id: string;
   name: string;
+  municipality: string | null;
   contact_email: string | null;
 }
 

@@ -324,6 +324,9 @@ Deno.serve(async (req) => {
       // kan lämna det vidare — efteråt finns det inte i klartext någonstans.
       return json(
         {
+          // Kontots id behövs för att kunna koppla det till en skola direkt
+          // efter skapandet, utan en extra läsning av kontolistan.
+          id: created.user.id,
           username,
           role,
           mustChangePassword: mustChange,

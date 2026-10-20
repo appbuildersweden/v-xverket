@@ -9,6 +9,8 @@ import {
   setPublicationStatus,
 } from '../../lib/api';
 import { dateTime } from '../../lib/format';
+import { RichTextEditor } from '../../components/RichTextEditor';
+import { hasFormatting, sanitizeHtml } from '../../lib/sanitize';
 import type {
   AdminPublication,
   PublicationKind,
@@ -236,7 +238,12 @@ export const AdminPublications: React.FC = () => {
             <span className="small muted">{dateTime(preview.publish_at)}</span>
           </div>
           {preview.summary && <p className="news-summary">{preview.summary}</p>}
-          {preview.body ? (
+          {preview.body && hasFormatting(preview.body) ? (
+            <div
+              className="rich-text-body"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(preview.body) }}
+            />
+          ) : preview.body ? (
             <p style={{ whiteSpace: 'pre-wrap' }}>{preview.body}</p>
           ) : (
             <p className="small muted">Ingen längre text.</p>
@@ -303,7 +310,9 @@ const PublicationForm: React.FC<{
   const [body, setBody] = useState(row?.body ?? '');
   const [linkUrl, setLinkUrl] = useState(row?.link_url ?? '');
   const [linkLabel, setLinkLabel] = useState(row?.link_label ?? '');
-  const [status, setStatus] = useState<PublicationStatus>(row?.status ?? 'utkast');
+  // En ny publicering publiceras direkt – annars ligger den kvar som utkast och
+  // når ingen, vilket är det vanligaste felet när en nyhet "inte kommer fram".
+  const [status, setStatus] = useState<PublicationStatus>(row?.status ?? 'publicerad');
   const [orgIds, setOrgIds] = useState<string[]>(row?.audience_organisation_ids ?? []);
   const [roles, setRoles] = useState<string[]>(row?.audience_roles ?? []);
   const [userIds, setUserIds] = useState<string[]>(row?.audience_user_ids ?? []);
@@ -413,16 +422,14 @@ const PublicationForm: React.FC<{
           onChange={(event) => setSummary(event.target.value)}
         />
       </Field>
-      <Field label="Innehåll" htmlFor="pub-body">
-        <textarea
-          id="pub-body"
-          className="input"
-          rows={6}
-          maxLength={20000}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-        />
-      </Field>
+      <RichTextEditor
+        id="pub-body"
+        label="Innehåll"
+        hint="Formateringen följer med ut i elevernas informationsflöde."
+        placeholder="Skriv nyheten eller informationen…"
+        value={body}
+        onChange={setBody}
+      />
 
       <div className="grid-2">
         <Field label="Länk" htmlFor="pub-link" hint="Måste börja med http:// eller https://">

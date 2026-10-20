@@ -10,6 +10,7 @@ import { Button } from './components/ui';
 import { defaultStartPage } from './lib/settings';
 import {
   ElevAmnen,
+  ElevButik,
   ElevFramsteg,
   ElevHem,
   ElevKalender,
@@ -30,6 +31,7 @@ import {
   LarareUppgifter,
 } from './pages/larare';
 import { Profil } from './pages/Profil';
+import { Information } from './pages/Information';
 import { HalloweenProvider } from './lib/halloween-context';
 
 interface Route {
@@ -181,7 +183,9 @@ function SchoolApp() {
         case 'kalender':
           return <LarareKalender />;
         case 'meddelanden':
-          return <LarareMeddelanden />;
+          return <LarareMeddelanden onNavigate={navigate} />;
+        case 'information':
+          return <Information mode="larare" />;
         case 'inlamningar':
           return <LarareInlamningar />;
         case 'anpassningar':
@@ -202,7 +206,11 @@ function SchoolApp() {
       case 'klass':
         return <ElevKlass />;
       case 'meddelanden':
-        return <ElevMeddelanden />;
+        return <ElevMeddelanden onNavigate={navigate} />;
+      case 'information':
+        return <Information mode="elev" />;
+      case 'butik':
+        return <ElevButik />;
       case 'framsteg':
         return <ElevFramsteg />;
       case 'halloween':

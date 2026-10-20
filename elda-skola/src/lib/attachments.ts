@@ -1,5 +1,5 @@
 import { supabase, errorMessage } from './supabase';
-import type { PendingAttachment } from './types';
+import type { InformationAttachment, PendingAttachment } from './types';
 
 /**
  * Bilagor till meddelanden.
@@ -151,6 +151,43 @@ export async function deletePendingAttachment(
     .is('message_id', null);
   if (error) throw new Error(errorMessage(error, 'Bilagan kunde inte tas bort.'));
   await supabase.storage.from('elda-meddelanden').remove([attachment.storage_path]);
+}
+
+/**
+ * Laddar upp en bilaga till ett informationsutskick. Filen hamnar i den egna
+ * mappen i samma privata bucket; läsrätten följer utskicket via
+ * Storage-policyn, så bara klassens elever och personalen kan öppna den.
+ */
+export async function uploadInformationAttachment(file: File): Promise<InformationAttachment> {
+  const problem = validateAttachment(file);
+  if (problem) throw new Error(problem);
+
+  const userId = await uid();
+  const path = `${userId}/${crypto.randomUUID()}-${safeName(file.name)}`;
+
+  const { error } = await supabase.storage
+    .from('elda-meddelanden')
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (error) {
+    if (/bucket|not found/i.test(error.message)) {
+      throw new Error(
+        'Fillagringen är inte konfigurerad. Skapa den privata bucketen elda-meddelanden i Supabase och försök igen.',
+      );
+    }
+    throw new Error(errorMessage(error, 'Filen kunde inte laddas upp.'));
+  }
+
+  return {
+    file_name: file.name.slice(0, 200),
+    storage_path: path,
+    mime_type: file.type || null,
+    size_bytes: file.size,
+  };
+}
+
+/** Tar bort en bilaga som aldrig skickades iväg. */
+export async function removeInformationAttachment(storagePath: string): Promise<void> {
+  await supabase.storage.from('elda-meddelanden').remove([storagePath]);
 }
 
 /** Kortlivad signerad länk till en bilaga. Åtkomsten kontrolleras av Storage. */

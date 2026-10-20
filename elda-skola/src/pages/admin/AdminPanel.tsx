@@ -13,6 +13,9 @@ import { AdminPublications } from './AdminPublications';
 import { AdminSystemMessages } from './AdminSystemMessages';
 import { AdminPlanning } from './AdminPlanning';
 import { AdminAdaptations } from './AdminAdaptations';
+import { AdminXp } from './AdminXp';
+import { AdminShop } from './AdminShop';
+import { Information } from '../Information';
 
 interface OverviewCounts {
   accounts: number;
@@ -127,9 +130,12 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
 
       {activePage === 'organisationer' && <AdminOrganisations />}
       {activePage === 'publiceringar' && <AdminPublications />}
+      {activePage === 'information' && <Information mode="admin" />}
       {activePage === 'anvandare' && <AdminPeople filter="alla" />}
       {activePage === 'larare' && <AdminPeople filter="lärare" />}
       {activePage === 'klasser' && <AdminClasses />}
+      {activePage === 'xp' && <AdminXp />}
+      {activePage === 'butik' && <AdminShop />}
       {activePage === 'meddelanden' && <AdminSystemMessages />}
       {activePage === 'stod' && <AdminAdaptations />}
       {activePage === 'kalender' && <AdminPlanning />}

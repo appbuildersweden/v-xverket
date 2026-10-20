@@ -49,7 +49,7 @@ function renderShell(panel: 'larare' | 'elev') {
 }
 
 describe('AppShell', () => {
-  it('har nio elevkategorier i rätt ordning', () => {
+  it('har elva elevkategorier i rätt ordning', () => {
     expect(ELEV_NAV.map((row) => row.id)).toEqual([
       'hem',
       'uppgifter',
@@ -57,13 +57,25 @@ describe('AppShell', () => {
       'kalender',
       'klass',
       'meddelanden',
+      'information',
+      'butik',
       'framsteg',
       'halloween',
       'profil',
     ]);
   });
 
-  it('har tio lärarkategorier i rätt ordning', () => {
+  it('ger eleven butiken och administratören XP- och butiksverktygen', () => {
+    expect(navFor('elev').map((row) => row.id)).toContain('butik');
+    expect(ADMIN_NAV.map((row) => row.id)).toEqual(
+      expect.arrayContaining(['xp', 'butik']),
+    );
+    // Lärar- och speciallärarmenyn ska inte få butiken.
+    expect(LARARE_NAV.map((row) => row.id)).not.toContain('butik');
+    expect(SPECIAL_NAV.map((row) => row.id)).not.toContain('butik');
+  });
+
+  it('har elva lärarkategorier i rätt ordning', () => {
     expect(LARARE_NAV.map((row) => row.id)).toEqual([
       'oversikt',
       'klasser',
@@ -74,6 +86,7 @@ describe('AppShell', () => {
       'aktiviteter',
       'anpassningar',
       'meddelanden',
+      'information',
       'profil',
     ]);
   });
@@ -102,7 +115,13 @@ describe('AppShell', () => {
   });
 
   it('har en egen speciallärarmeny utan administrativa sidor', () => {
-    expect(SPECIAL_NAV.map((row) => row.id)).toEqual(['hem', 'elever', 'meddelanden', 'profil']);
+    expect(SPECIAL_NAV.map((row) => row.id)).toEqual([
+      'hem',
+      'elever',
+      'meddelanden',
+      'information',
+      'profil',
+    ]);
     expect(SPECIAL_NAV.map((row) => row.id)).not.toContain('anvandare');
     expect(SPECIAL_NAV.map((row) => row.id)).not.toContain('organisationer');
   });
@@ -112,6 +131,20 @@ describe('AppShell', () => {
     expect(ids).toContain('organisationer');
     expect(ids).toContain('publiceringar');
     expect(ids).toContain('meddelanden');
+    expect(ids).toContain('information');
+  });
+
+  it('har information som egen kategori skild från meddelanden', () => {
+    for (const nav of [ELEV_NAV, LARARE_NAV, SPECIAL_NAV]) {
+      const ids = nav.map((row) => row.id);
+      expect(ids).toContain('information');
+      expect(ids.indexOf('information')).toBeGreaterThan(ids.indexOf('meddelanden'));
+    }
+    // Admin skickar information under Publiceringar, skilt från systemutskicken.
+    expect(ADMIN_NAV.find((row) => row.id === 'information')?.group).toBe('Publiceringar');
+    expect(ADMIN_NAV.find((row) => row.id === 'meddelanden')?.group).toBe('Meddelanden');
+    expect(LARARE_NAV.find((row) => row.id === 'meddelanden')?.label).toBe('Meddelanden');
+    expect(LARARE_NAV.find((row) => row.id === 'information')?.label).toBe('Information');
   });
 
   it('visar inte skoladministration för lärare eller elev', () => {

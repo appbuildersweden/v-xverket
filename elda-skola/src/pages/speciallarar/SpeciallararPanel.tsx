@@ -2,6 +2,7 @@ import React from 'react';
 import { SpeciallararElever } from './SpeciallararElever';
 import { SpeciallararHem } from './SpeciallararHem';
 import { SpeciallararMeddelanden } from './SpeciallararMeddelanden';
+import { Information } from '../Information';
 
 interface Props {
   activePage: string;
@@ -18,6 +19,7 @@ export const SpeciallararPanel: React.FC<Props> = ({ activePage, onNavigate }) =
     <div data-testid="panel-speciallarare">
       {activePage === 'elever' && <SpeciallararElever />}
       {activePage === 'meddelanden' && <SpeciallararMeddelanden />}
+      {activePage === 'information' && <Information mode="speciallarare" />}
       {activePage === 'hem' && <SpeciallararHem onNavigate={onNavigate} />}
     </div>
   );

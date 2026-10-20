@@ -22,6 +22,7 @@ import type {
   ChatMessage,
   Conversation,
   InboxMessage,
+  InformationAttachment,
   SentConversation,
   MessageAudience,
   MessageContact,
@@ -592,22 +593,36 @@ export async function listAnnouncements(classIds: string[]): Promise<Announcemen
   if (error) fail(error);
   const rows = (data ?? []) as Announcement[];
   const allowed = new Set(classIds);
-  return rows.filter((row) => allowed.size === 0 || allowed.has(row.class_id));
+  return rows
+    .filter((row) => allowed.size === 0 || allowed.has(row.class_id))
+    .map((row) => ({
+      ...row,
+      // Äldre rader saknar bilagor; vyn ska aldrig behöva tolka null.
+      attachments: Array.isArray(row.attachments) ? row.attachments : [],
+    }));
 }
 
-export async function createAnnouncement(input: {
-  classId: string;
+/**
+ * Skickar information till en eller flera klasser. Formaterat innehåll saneras
+ * i klienten före sändning och kontrolleras igen av servern, som också sparar
+ * bilagorna på utskicket. Lärare når sina egna klasser, admin alla klasser.
+ */
+export async function sendInformation(input: {
   title: string;
   body: string;
-}): Promise<void> {
-  const userId = await uid();
-  const { error } = await supabase.from('school_announcements').insert({
-    class_id: input.classId,
-    author_id: userId,
-    title: input.title.trim(),
-    body: input.body.trim(),
+  bodyHtml?: string;
+  classIds: string[];
+  attachments?: InformationAttachment[];
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('elda_skola_send_information', {
+    p_title: input.title.trim(),
+    p_body: input.body.trim(),
+    p_body_html: input.bodyHtml?.trim() ? input.bodyHtml : null,
+    p_class_ids: input.classIds,
+    p_attachments: input.attachments ?? [],
   });
   if (error) fail(error);
+  return Number(data ?? 0);
 }
 
 export async function markAnnouncementRead(id: string): Promise<void> {
@@ -973,6 +988,7 @@ export async function getMyOrganisation(): Promise<MyOrganisation | null> {
   return {
     id: String(row.id ?? ''),
     name: row.name,
+    municipality: typeof row.municipality === 'string' ? row.municipality : null,
     contact_email: typeof row.contact_email === 'string' ? row.contact_email : null,
   };
 }
@@ -987,6 +1003,7 @@ export async function saveOrganisation(input: {
   id?: string | null;
   name: string;
   slug: string;
+  municipality: string;
   contactEmail: string;
   active: boolean;
 }): Promise<string> {
@@ -996,6 +1013,7 @@ export async function saveOrganisation(input: {
     p_slug: input.slug.trim().toLowerCase(),
     p_contact_email: input.contactEmail.trim() || null,
     p_active: input.active,
+    p_municipality: input.municipality.trim() || null,
   });
   if (error) fail(error);
   return String(data ?? '');
