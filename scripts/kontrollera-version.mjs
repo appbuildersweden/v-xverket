@@ -57,9 +57,12 @@ const version = rows[0][1];
 console.log(`✓ version ${version} i package.json, tauri.conf.json och Cargo.toml`);
 
 // En taggkörning publicerar det som taggen pekar på. Stämmer inte siffrorna
-// blir releasen märkt med en version som appen inte har.
+// blir releasen märkt med en version som appen inte har. En manuell körning
+// från en gren (workflow_dispatch) har grennamnet som ref och ska inte
+// jämföras med versionen.
 const ref = process.env.GITHUB_REF_NAME || '';
-if (ref) {
+const isTag = process.env.GITHUB_REF_TYPE === 'tag';
+if (isTag) {
   if (!/^v\d+\.\d+\.\d+$/.test(ref)) {
     fail(`taggen "${ref}" ser inte ut som v<major>.<minor>.<patch>`);
   }
