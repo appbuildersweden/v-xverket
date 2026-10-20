@@ -4,3 +4,12 @@
 /elev/* /skola/ 302
 /personal /skola/ 302
 /personal/* /skola/ 302
+
+# Skolappen använder hash-routing (#/elev/hem, #/larare/hem). Utan de här
+# reglerna serveras hemsidans index.html på /skola/elev – den sidan laddar sina
+# relativa filer från /skola/, får HTML tillbaka och blir ostylad, och
+# skolappen syns inte alls. Direktadresserna skickas därför till appen.
+/skola/elev /skola/#/elev/hem 302
+/skola/elev/* /skola/#/elev/hem 302
+/skola/personal /skola/#/larare/hem 302
+/skola/personal/* /skola/#/larare/hem 302
