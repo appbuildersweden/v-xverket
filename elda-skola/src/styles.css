@@ -2109,3 +2109,2536 @@ textarea.input {
 @media (prefers-reduced-motion: reduce) {
   .xp-popup { animation: none; }
 }
+
+/* ============================================================
+   Skolorganisationer, meddelanden och nyheter
+   ============================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+}
+
+.search-field svg {
+  color: var(--text-3);
+  flex: 0 0 auto;
+}
+
+.search-field .input {
+  border: 0;
+  padding-left: 0;
+  background: transparent;
+}
+
+.search-field .input:focus {
+  outline: none;
+}
+
+.message-center {
+  display: grid;
+  gap: 16px;
+}
+
+.conversation-list,
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.conversation-item,
+.contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.conversation-item:last-child,
+.contact-item:last-child {
+  border-bottom: 0;
+}
+
+.conversation-item:hover,
+.contact-item:hover,
+.conversation-item.is-active,
+.contact-item.is-active {
+  background: var(--green-soft);
+}
+
+.conversation-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.conversation-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.conversation-sub,
+.conversation-preview {
+  display: block;
+  color: var(--text-3);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 6px 2px 12px;
+}
+
+.bubble-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.bubble-row.mine {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: min(78%, 560px);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+}
+
+.bubble-row.mine .bubble {
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+
+.bubble p {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble-meta {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.news-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.news-icon {
+  display: inline-flex;
+  color: var(--green);
+}
+
+.news-important {
+  border-color: var(--green-line);
+}
+
+.news-row {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  align-items: flex-start;
+}
+
+.news-row:last-child {
+  border-bottom: 0;
+}
+
+.news-row:hover {
+  background: var(--surface-2);
+}
+
+.news-summary {
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+/* ============================================================
+   Meddelandevyer, redigerare och bilagor
+   ============================================================ */
+
+.nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.shell-collapsed .nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
+  padding: 0 4px;
+}
+
+.side-nav .nav-item {
+  position: relative;
+}
+
+.message-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.message-tab {
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-bottom: 2px solid transparent;
+}
+
+.message-tab:hover {
+  background: var(--surface-2);
+}
+
+.message-tab.is-active {
+  color: var(--green-deep);
+  border-bottom-color: var(--green);
+  background: var(--green-soft);
+}
+
+.message-tab-count {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--surface-3);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* ---------------------------------------------------------- redigerare */
+
+.rte-shell {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.rte-shell.is-disabled {
+  opacity: 0.7;
+}
+
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  padding: 5px 6px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.rte-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rte-btn:hover:not(:disabled) {
+  background: var(--green-soft);
+  color: var(--green-deep);
+}
+
+.rte-btn.is-active {
+  background: var(--green-active);
+  color: var(--green-deep);
+}
+
+.rte-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rte-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-strong);
+  margin: 0 4px;
+}
+
+.rte-spacer {
+  flex: 1;
+}
+
+.rte-select {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  font-size: 12.5px;
+  padding: 3px 4px;
+  color: var(--text-2);
+  max-width: 104px;
+}
+
+.rte-colors {
+  position: relative;
+  display: inline-flex;
+}
+
+.rte-swatches {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+
+.rte-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+
+.rte-content {
+  padding: 10px 12px;
+  outline: none;
+  overflow-y: auto;
+  max-height: 320px;
+  line-height: 1.55;
+}
+
+.rte-content:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.rte-content h2,
+.rte-preview h2 {
+  font-size: 19px;
+  margin: 10px 0 6px;
+}
+
+.rte-content h3,
+.rte-preview h3 {
+  font-size: 16.5px;
+  margin: 8px 0 4px;
+}
+
+.rte-content h4,
+.rte-preview h4 {
+  font-size: 15px;
+  margin: 8px 0 4px;
+}
+
+.rte-content p,
+.rte-preview p {
+  margin: 0 0 8px;
+}
+
+.rte-content ul,
+.rte-content ol,
+.rte-preview ul,
+.rte-preview ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+
+.rte-content a,
+.rte-preview a {
+  color: var(--green-deep);
+  text-decoration: underline;
+}
+
+.rte-preview {
+  padding: 10px 12px;
+  background: var(--green-soft);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  overflow-y: auto;
+  max-height: 320px;
+}
+
+.rte-preview:empty::before {
+  content: 'Inget att förhandsgranska ännu.';
+  color: var(--text-3);
+}
+
+/* -------------------------------------------------------- meddelandetext */
+
+.bubble-html p {
+  margin: 0 0 6px;
+}
+
+.bubble-html p:last-child {
+  margin-bottom: 0;
+}
+
+.bubble-html ul,
+.bubble-html ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.bubble-html a {
+  color: var(--green-deep);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.bubble-html h2,
+.bubble-html h3 {
+  font-size: 15.5px;
+  margin: 6px 0 4px;
+}
+
+/* ------------------------------------------------------------- bilagor */
+
+.attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+  max-width: 100%;
+}
+
+.attachment-chip span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.attachment-chip.is-link {
+  cursor: pointer;
+  text-align: left;
+}
+
+.attachment-chip.is-link:hover {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+
+.attachment-chip .icon-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+/* ================================================================
+   Halloween
+   ================================================================
+   Säsongstemat sätts som data-ui-tema på <html> och byter bara appens
+   designtokens – komponenterna är desamma som resten av året. Det fria
+   säsongstemat (halloween) värmer accenter och detaljer och lämnar appens ljusa
+   gröna ytor orörda; de fem köpta temana byter hela paletten. Kontrasten är
+   kontrollerad mot både ljusa och mörka ytor, och all rörelse stängs av
+   automatiskt när användaren föredrar reducerad rörelse. */
+
+/* Accenterna finns även utan säsongstema, så att Halloween-ytan går att läsa
+   mot den ljusa skolbakgrunden när eleven har slagit av temat. */
+:root {
+  --halloween-accent: #a35a12;
+  --halloween-accent-2: #8a4b0f;
+  --halloween-glow: rgba(163, 90, 18, 0.25);
+}
+
+/* Det fria säsongstemat värmer bara accenter och detaljer. Appens vanliga
+   färger – ljus bakgrund, gröna ytor och samma typografi – ligger kvar, så att
+   resten av skolplattformen ser ut som den alltid har gjort. Bara de köpta
+   temana byter hela paletten. */
+[data-ui-tema="halloween"] {
+  --halloween-accent: #b0630f;
+  --halloween-accent-2: #8a4b0f;
+  --halloween-glow: rgba(176, 99, 15, 0.22);
+}
+
+/* Köpta teman är mörka och delar de allmänna statusfärgerna. */
+[data-ui-tema]:not([data-ui-tema="halloween"]) {
+  --danger: #ff9d9d;
+  --danger-bg: #3b1e28;
+  --amber: #ffcb80;
+  --amber-bg: #3a2d18;
+  --blue: #a8cbff;
+  --blue-bg: #1b2a44;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+/* Hero är alltid mörk, även när det fria temat är avstängt. */
+.halloween-hero .halloween-eyebrow,
+.halloween-hero .halloween-theme-title {
+  color: #ffc370;
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .btn-primary {
+  background: var(--halloween-accent);
+  border-color: var(--halloween-accent);
+  color: #1a1024;
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .btn-primary:hover {
+  background: var(--halloween-accent-2);
+  border-color: var(--halloween-accent-2);
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .btn-secondary {
+  background: rgba(242, 164, 69, 0.12);
+  color: var(--halloween-accent-2);
+  border-color: rgba(242, 164, 69, 0.4);
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .btn-secondary:hover {
+  background: rgba(242, 164, 69, 0.2);
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .badge-green {
+  background: rgba(242, 164, 69, 0.14);
+  color: var(--halloween-accent-2);
+  border-color: rgba(242, 164, 69, 0.35);
+}
+
+/* I säsongstemat ligger sidomenyn på en mörk yta: de ljusa genomskinliga
+   hover-ytorna från ljustemat skulle göra texten oläslig. */
+[data-ui-tema]:not([data-ui-tema="halloween"]) .nav-item:hover,
+[data-ui-tema]:not([data-ui-tema="halloween"]) .collapse-btn,
+[data-ui-tema]:not([data-ui-tema="halloween"]) .user-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .nav-item-active {
+  background: var(--green-active);
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .cal-day.today {
+  background: var(--halloween-accent);
+  color: #1a1024;
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .cal-day.today .dot {
+  background: #1a1024;
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .xp-popup-backdrop {
+  background: rgba(8, 5, 14, 0.72);
+}
+
+[data-ui-tema="pumpa"] {
+  --surface: #1b1410;
+  --surface-2: #251a14;
+  --surface-3: #33241a;
+  --text: #fff3e6;
+  --text-2: #e6cdb6;
+  --text-3: #bfa48c;
+  --border: #3a2a20;
+  --border-strong: #5c4231;
+  --green: #ef8a35;
+  --green-deep: #ffb167;
+  --green-soft: #2c1e15;
+  --green-line: #6b4730;
+  --green-panel: #201610;
+  --green-active: #39261a;
+  --halloween-accent: #f08a34;
+  --halloween-accent-2: #ffb361;
+}
+
+[data-ui-tema="spokhus"] {
+  --surface: #0e1522;
+  --surface-2: #152034;
+  --surface-3: #1d2c46;
+  --text: #eef4ff;
+  --text-2: #c3d2e8;
+  --text-3: #94a5be;
+  --border: #22314a;
+  --border-strong: #3b5273;
+  --green: #8fb8e8;
+  --green-deep: #bcd6f7;
+  --green-soft: #182742;
+  --green-line: #3a5b85;
+  --green-panel: #101a2b;
+  --green-active: #22395c;
+  --halloween-accent: #9cc4f0;
+  --halloween-accent-2: #cbe2ff;
+  --halloween-glow: rgba(143, 184, 232, 0.35);
+}
+
+[data-ui-tema="haxkonst"] {
+  --surface: #17130e;
+  --surface-2: #211a12;
+  --surface-3: #2e251a;
+  --text: #fbf4e6;
+  --text-2: #ded0b8;
+  --text-3: #b5a68c;
+  --border: #332a1e;
+  --border-strong: #55452f;
+  --green: #cfa855;
+  --green-deep: #f0cf8d;
+  --green-soft: #281f14;
+  --green-line: #5f4a2c;
+  --green-panel: #1b160f;
+  --green-active: #342817;
+  --halloween-accent: #d9b26a;
+  --halloween-accent-2: #f6d79a;
+  --halloween-glow: rgba(217, 178, 106, 0.3);
+}
+
+[data-ui-tema="haunted-forest"] {
+  --surface: #0f1a18;
+  --surface-2: #16261f;
+  --surface-3: #1e342b;
+  --text: #eafaf3;
+  --text-2: #c2ded2;
+  --text-3: #93b3a5;
+  --border: #213a30;
+  --border-strong: #3a5f4f;
+  --green: #5fd1b4;
+  --green-deep: #8ff0d5;
+  --green-soft: #152a23;
+  --green-line: #376555;
+  --green-panel: #101f1b;
+  --green-active: #1f3d33;
+  --halloween-accent: #6fdcc0;
+  --halloween-accent-2: #a5f5e2;
+  --halloween-glow: rgba(95, 209, 180, 0.3);
+}
+
+[data-ui-tema="midnight"] {
+  --surface: #120e1e;
+  --surface-2: #1a132c;
+  --surface-3: #251a3d;
+  --text: #f7efff;
+  --text-2: #d6c8ec;
+  --text-3: #ab9cc6;
+  --border: #2c2144;
+  --border-strong: #4a3468;
+  --green: #c65cff;
+  --green-deep: #e3a6ff;
+  --green-soft: #261835;
+  --green-line: #5b3a7d;
+  --green-panel: #160f24;
+  --green-active: #301e4b;
+  --halloween-accent: #c971ff;
+  --halloween-accent-2: #e8bcff;
+  --halloween-glow: rgba(198, 92, 255, 0.35);
+}
+
+/* ------------------------------------------------------------- ytan */
+
+.halloween-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+}
+
+.halloween-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius) + 6px);
+  border: 1px solid rgba(242, 164, 69, 0.22);
+  background:
+    radial-gradient(120% 140% at 12% 0%, rgba(242, 164, 69, 0.18), transparent 55%),
+    radial-gradient(90% 120% at 88% 10%, rgba(96, 78, 52, 0.22), transparent 62%),
+    linear-gradient(150deg, #1c1813 0%, #14110d 55%, #0b0a08 100%);
+  box-shadow: var(--shadow-md);
+  color: #f7f2e8;
+}
+
+.halloween-hero-glow {
+  position: absolute;
+  inset: -40% 40% 40% -20%;
+  background: radial-gradient(circle, rgba(242, 164, 69, 0.35), transparent 65%);
+  filter: blur(12px);
+  pointer-events: none;
+  opacity: 0.6;
+  animation: halloween-glow 10s ease-in-out infinite;
+}
+
+.halloween-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr) 236px;
+  gap: 22px;
+  align-items: center;
+  padding: 24px;
+}
+
+.halloween-hero-avatar {
+  position: relative;
+  justify-self: center;
+}
+
+.halloween-avatar-frame {
+  position: relative;
+  width: 196px;
+  aspect-ratio: 1;
+  border-radius: 22px;
+  padding: 4px;
+  background: #1c1712;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.halloween-avatar-frame.has-frame {
+  border-color: rgba(255, 195, 112, 0.55);
+}
+
+.halloween-avatar-frame .avatar-art {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  display: block;
+}
+
+.halloween-avatar-ornament {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #352b1e, #17120c);
+  border: 1px solid rgba(242, 164, 69, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+}
+
+.halloween-hero-companion {
+  position: absolute;
+  right: -22px;
+  bottom: -8px;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: rgba(22, 17, 12, 0.85);
+  border: 1px solid rgba(242, 164, 69, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+.halloween-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--halloween-accent-2, #ffc370);
+}
+
+.halloween-hero-text h1 {
+  margin: 6px 0 10px;
+  font-size: clamp(24px, 3.2vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.halloween-hero-name {
+  display: block;
+  font-size: 0.58em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #ded3c0;
+  margin-top: 6px;
+}
+
+.halloween-hero-text > p {
+  margin: 0 0 14px;
+  color: #cfc3ae;
+  max-width: 54ch;
+}
+
+.halloween-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.halloween-hero-badges .badge {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f6efe2;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.halloween-hero-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 11.5px;
+  color: #f6efe2;
+}
+
+.halloween-level {
+  max-width: 420px;
+}
+
+.halloween-level-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #f0e6d4;
+  margin-bottom: 6px;
+}
+
+.halloween-level-top .small.muted {
+  color: #b6a993;
+}
+
+.halloween-level-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.halloween-level-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f2a445, #ffd18a);
+  box-shadow: 0 0 14px rgba(242, 164, 69, 0.6);
+  transition: width 320ms ease;
+}
+
+.halloween-hero-theme {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(14, 11, 8, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.halloween-hero-theme p.small {
+  color: #b9ab95;
+  margin: 0;
+}
+
+/* Hero-panelen är mörk även i det ljusa standardtemat, så reglagen inuti den
+   behöver ljus text i stället för appens mörka textfärg. */
+.halloween-hero-theme .halloween-switch {
+  color: #eadfcc;
+}
+
+.halloween-hero-theme .btn-secondary {
+  color: #f0d9b6;
+  border-color: rgba(242, 164, 69, 0.4);
+  background: rgba(242, 164, 69, 0.12);
+}
+
+.halloween-theme-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--halloween-accent-2, #ffc370);
+  font-weight: 750;
+}
+
+.halloween-hero-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.halloween-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 211, 153, 0.8);
+  box-shadow: 0 0 8px rgba(255, 190, 110, 0.8);
+  animation: halloween-drift 12s linear infinite;
+}
+
+.halloween-particle.particle-0 { left: 12%; top: 70%; animation-delay: 0s; }
+.halloween-particle.particle-1 { left: 24%; top: 40%; animation-delay: 1.4s; }
+.halloween-particle.particle-2 { left: 38%; top: 80%; animation-delay: 2.8s; }
+.halloween-particle.particle-3 { left: 52%; top: 30%; animation-delay: 4.2s; }
+.halloween-particle.particle-4 { left: 64%; top: 74%; animation-delay: 0.7s; }
+.halloween-particle.particle-5 { left: 73%; top: 22%; animation-delay: 3.5s; }
+.halloween-particle.particle-6 { left: 82%; top: 62%; animation-delay: 5.1s; }
+.halloween-particle.particle-7 { left: 91%; top: 38%; animation-delay: 2.1s; }
+.halloween-particle.particle-8 { left: 46%; top: 12%; animation-delay: 6.3s; }
+
+@keyframes halloween-drift {
+  0% { transform: translate3d(0, 10px, 0) scale(0.7); opacity: 0; }
+  20% { opacity: 0.9; }
+  80% { opacity: 0.6; }
+  100% { transform: translate3d(14px, -90px, 0) scale(1.1); opacity: 0; }
+}
+
+@keyframes halloween-glow {
+  0%, 100% { opacity: 0.55; transform: translate3d(0, 0, 0); }
+  50% { opacity: 0.9; transform: translate3d(10px, 8px, 0); }
+}
+
+/* ------------------------------------------------------------- flikar */
+
+.halloween-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.halloween-tab {
+  flex: 1;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 650;
+  font-size: 13.5px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.halloween-tab:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.halloween-tab.is-active {
+  background: linear-gradient(140deg, rgba(242, 164, 69, 0.22), rgba(96, 78, 52, 0.18));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(242, 164, 69, 0.35);
+}
+
+.halloween-tab-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(242, 164, 69, 0.18);
+  color: var(--halloween-accent-2, #ffc370);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------ notiser */
+
+.halloween-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.halloween-notice.is-success {
+  border-color: var(--green-line);
+  border-left: 3px solid var(--green);
+  background: var(--green-soft);
+  color: var(--text);
+}
+
+.halloween-notice.is-error {
+  border-color: var(--danger-bg);
+  border-left: 3px solid var(--danger);
+  background: var(--danger-bg);
+  color: var(--text);
+}
+
+.halloween-notice.is-info {
+  border-color: var(--blue-bg);
+  border-left: 3px solid var(--blue);
+  background: var(--blue-bg);
+  color: var(--text);
+}
+
+.halloween-notice span:first-of-type {
+  flex: 1;
+}
+
+.halloween-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.halloween-link:hover {
+  color: var(--halloween-accent-2, #ffc370);
+}
+
+/* --------------------------------------------------------- shoptoppen */
+
+.halloween-shop,
+.halloween-studio,
+.halloween-collection,
+.halloween-room {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.halloween-shop-top,
+.halloween-collection-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.halloween-wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(140deg, rgba(242, 164, 69, 0.18), rgba(96, 78, 52, 0.16));
+  border: 1px solid rgba(242, 164, 69, 0.32);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.halloween-wallet-chip span {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.halloween-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-3);
+}
+
+.halloween-search .input {
+  border: 0;
+  background: transparent;
+  padding-left: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.halloween-search .input:focus {
+  outline: none;
+}
+
+.halloween-search:focus-within {
+  border-color: var(--halloween-accent, #f2a445);
+  box-shadow: 0 0 0 3px rgba(242, 164, 69, 0.18);
+}
+
+.halloween-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.halloween-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.halloween-chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12.5px;
+  font-weight: 650;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.halloween-chip:hover {
+  border-color: var(--halloween-accent, #f2a445);
+  color: var(--text);
+}
+
+.halloween-chip.is-active {
+  background: rgba(242, 164, 69, 0.16);
+  border-color: rgba(242, 164, 69, 0.5);
+  color: var(--halloween-accent-2, #ffc370);
+}
+
+.halloween-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.halloween-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+}
+
+.halloween-select .input {
+  width: auto;
+  min-width: 150px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+}
+
+/* -------------------------------------------------------------- korten */
+
+.halloween-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+  gap: 14px;
+}
+
+.halloween-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(242, 164, 69, 0.09), transparent 60%),
+    var(--surface);
+  overflow: hidden;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.halloween-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(242, 164, 69, 0.4);
+  box-shadow: var(--shadow-md);
+}
+
+.halloween-card.is-owned {
+  border-color: rgba(110, 200, 150, 0.32);
+}
+
+.halloween-card-art {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  border: 0;
+  padding: 16px;
+  background: linear-gradient(160deg, rgba(46, 35, 24, 0.92), rgba(22, 18, 14, 0.94));
+  cursor: pointer;
+}
+
+.halloween-card.is-owned .halloween-card-art {
+  background: linear-gradient(160deg, rgba(28, 40, 34, 0.75), rgba(14, 20, 20, 0.9));
+}
+
+.halloween-art {
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(126, 100, 62, 0.12);
+  border: 1px solid rgba(96, 74, 44, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.halloween-art img {
+  object-fit: contain;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.halloween-art.rarity-ovanlig { border-color: rgba(95, 191, 138, 0.4); }
+.halloween-art.rarity-sallsynt { border-color: rgba(111, 168, 255, 0.45); }
+.halloween-art.rarity-episk { border-color: rgba(176, 124, 255, 0.5); }
+.halloween-art.rarity-legendarisk {
+  border-color: rgba(255, 179, 71, 0.6);
+  box-shadow: 0 0 22px rgba(255, 179, 71, 0.18);
+}
+
+.halloween-art-theme {
+  position: relative;
+  display: block;
+}
+
+.halloween-art-theme span {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.halloween-art-theme span:nth-child(1) {
+  width: 46%;
+  height: 46%;
+  left: 16%;
+  top: 18%;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.45);
+}
+
+.halloween-art-theme span:nth-child(2) {
+  width: 30%;
+  height: 30%;
+  right: 14%;
+  bottom: 16%;
+  opacity: 0.9;
+}
+
+.halloween-art-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--halloween-accent, #f2a445);
+}
+
+.halloween-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px 14px;
+  flex: 1;
+}
+
+.halloween-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.halloween-card-title h3 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.1px;
+  flex: 1;
+}
+
+.halloween-card-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+.halloween-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.halloween-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--halloween-accent-2, #ffc370);
+}
+
+.halloween-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.rarity-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 9px;
+  background: #9b93ad;
+}
+
+.rarity-dot.rarity-ovanlig { background: #5fbf8a; }
+.rarity-dot.rarity-sallsynt { background: #6fa8ff; }
+.rarity-dot.rarity-episk { background: #b07cff; }
+.rarity-dot.rarity-legendarisk {
+  background: #ffb347;
+  box-shadow: 0 0 8px rgba(255, 179, 71, 0.7);
+}
+
+/* --------------------------------------------------------- prova på */
+
+.halloween-tryon-body {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.halloween-tryon-stage {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+}
+
+.halloween-tryon-stage .avatar-art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.halloween-tryon-text p {
+  margin: 0 0 10px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.halloween-part-thumb {
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(96, 74, 44, 0.1);
+}
+
+.halloween-part-thumb .avatar-art {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.avatar-art-mini {
+  border-radius: 12px;
+}
+
+.halloween-swatch {
+  display: inline-block;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* ------------------------------------------------------------- detalj */
+
+.halloween-detail {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.halloween-detail-art {
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  padding: 14px;
+  background: radial-gradient(circle at 40% 30%, rgba(242, 164, 69, 0.16), rgba(18, 14, 10, 0.94));
+  border: 1px solid var(--border);
+}
+
+.halloween-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.halloween-detail-list div {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.halloween-detail-list dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+.halloween-detail-list dd {
+  margin: 3px 0 0;
+  font-weight: 650;
+  font-size: 13px;
+}
+
+.halloween-shop-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.halloween-shop-footer p {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- studio */
+
+.halloween-studio-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.92fr) minmax(0, 1.08fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.halloween-studio-stage {
+  position: sticky;
+  top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.halloween-stage-frame {
+  position: relative;
+  border-radius: 20px;
+  padding: 5px;
+  background: #1a1510;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
+}
+
+.halloween-stage-frame .avatar-art {
+  width: 100%;
+  display: block;
+  border-radius: 15px;
+}
+
+.halloween-preview-flag {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(14, 11, 8, 0.85);
+  border: 1px solid rgba(242, 164, 69, 0.45);
+  color: #ffe0b7;
+  font-size: 11.5px;
+  text-align: center;
+  backdrop-filter: blur(4px);
+}
+
+.halloween-studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.halloween-studio-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.halloween-studio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.halloween-slot-group-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
+
+.halloween-slot-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.halloween-slot-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  border-radius: 9px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.halloween-slot-tab:hover {
+  border-color: var(--halloween-accent, #f2a445);
+  color: var(--text);
+}
+
+.halloween-slot-tab.is-active {
+  background: rgba(242, 164, 69, 0.16);
+  border-color: rgba(242, 164, 69, 0.5);
+  color: var(--halloween-accent-2, #ffc370);
+}
+
+.halloween-slot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+
+.halloween-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 8px;
+}
+
+.halloween-option {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.halloween-option:hover {
+  border-color: rgba(242, 164, 69, 0.4);
+}
+
+.halloween-option.is-selected {
+  border-color: rgba(242, 164, 69, 0.6);
+  background: rgba(242, 164, 69, 0.08);
+}
+
+.halloween-option.is-preview {
+  border-style: dashed;
+  border-color: rgba(242, 164, 69, 0.7);
+}
+
+.halloween-option.is-locked {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.halloween-option-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.halloween-option-art {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.halloween-option-art .halloween-swatch {
+  width: 40px;
+  height: 40px;
+}
+
+.halloween-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.halloween-option-text strong {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.halloween-option-text .small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.halloween-option-check {
+  margin-left: auto;
+  color: var(--halloween-accent-2, #ffc370);
+  flex: 0 0 auto;
+}
+
+.halloween-option-buy {
+  display: flex;
+  gap: 6px;
+  padding: 0 7px 7px;
+}
+
+.halloween-studio-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ----------------------------------------------------------- samlingen */
+
+.halloween-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.halloween-stats strong {
+  color: var(--text);
+  font-size: 15px;
+  margin-right: 3px;
+}
+
+.halloween-collection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.halloween-grid-collection .halloween-card-body {
+  gap: 6px;
+}
+
+.halloween-locked-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.halloween-locked-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.halloween-locked-list li:last-child {
+  border-bottom: 0;
+}
+
+.halloween-locked-req {
+  color: var(--amber);
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.halloween-all-unlocked {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: var(--green-deep);
+}
+
+.halloween-all-unlocked p {
+  margin: 2px 0 0;
+}
+
+/* -------------------------------------------------------------- rummet */
+
+.halloween-room-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  aspect-ratio: 16 / 9;
+  min-height: 300px;
+  background: #0b0d14;
+}
+
+.halloween-room-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.halloween-room-grid {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 62%;
+  bottom: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 0.88fr) minmax(0, 1fr);
+  gap: 2px;
+}
+
+.halloween-room-slot {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: end;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #f2ebdd;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.halloween-room-item {
+  align-self: end;
+}
+
+.halloween-room-slot.slot-0, .halloween-room-slot.slot-1, .halloween-room-slot.slot-2 {
+  grid-row: 2;
+}
+.halloween-room-slot.slot-3, .halloween-room-slot.slot-4, .halloween-room-slot.slot-5 {
+  grid-row: 1;
+}
+.halloween-room-slot.slot-0, .halloween-room-slot.slot-3 { grid-column: 1; }
+.halloween-room-slot.slot-1, .halloween-room-slot.slot-4 { grid-column: 2; }
+.halloween-room-slot.slot-2, .halloween-room-slot.slot-5 { grid-column: 3; }
+
+.halloween-room-slot.is-filled {
+  border-color: transparent;
+  background: transparent;
+}
+
+.halloween-room-slot:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.halloween-room-slot.is-selected {
+  border-color: rgba(242, 164, 69, 0.7);
+  background: rgba(242, 164, 69, 0.07);
+}
+
+.halloween-room-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+
+/* En mjuk markskugga förankrar dekorationen i gräset. */
+.halloween-room-item::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: -1px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 72%);
+  pointer-events: none;
+}
+
+.halloween-room-slot.slot-0 .decor-art,
+.halloween-room-slot.slot-1 .decor-art,
+.halloween-room-slot.slot-2 .decor-art {
+  width: 80px;
+  height: auto;
+}
+
+.halloween-room-slot.slot-3 .decor-art,
+.halloween-room-slot.slot-4 .decor-art,
+.halloween-room-slot.slot-5 .decor-art {
+  width: 58px;
+  height: auto;
+  opacity: 0.94;
+}
+
+.halloween-room-slot-name {
+  font-size: 11px;
+  color: #e6ddcd;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(10, 9, 7, 0.55);
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.halloween-room-empty {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.halloween-room-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.halloween-decor-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.halloween-decor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.halloween-decor.is-here {
+  border-color: rgba(242, 164, 69, 0.5);
+  background: rgba(242, 164, 69, 0.08);
+}
+
+.halloween-decor-art {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.halloween-decor-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.halloween-decor-text strong {
+  font-size: 13px;
+}
+
+.halloween-decor-text .small {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------- inbjudan */
+
+.halloween-invite {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(242, 164, 69, 0.28);
+  background:
+    radial-gradient(120% 140% at 8% 0%, rgba(242, 164, 69, 0.16), transparent 55%),
+    linear-gradient(140deg, #1d1812, #120f0b);
+  color: #f7f2e8;
+  margin-bottom: 18px;
+}
+
+.halloween-invite-avatar {
+  width: 84px;
+  flex: 0 0 84px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(242, 164, 69, 0.4);
+}
+
+.halloween-invite-avatar .avatar-art {
+  width: 100%;
+  display: block;
+}
+
+.halloween-invite-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.halloween-invite-text h2 {
+  margin: 0;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.halloween-invite-text p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #cfc3ae;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.halloween-invite-card {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.halloween-invite-card .halloween-invite-avatar {
+  width: 108px;
+  flex-basis: 108px;
+}
+
+.halloween-invite-card .halloween-invite-text {
+  gap: 8px;
+}
+
+.halloween-invite-card .halloween-switch {
+  color: #e8dfcd;
+}
+
+.halloween-invite-card .btn {
+  align-self: flex-start;
+}
+
+/* ---------------------------------------------------------------- reglage */
+
+.halloween-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--text-2);
+}
+
+.halloween-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.halloween-switch-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: background 160ms ease, border-color 160ms ease;
+  flex: 0 0 36px;
+}
+
+.halloween-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f7f2e8;
+  transition: transform 160ms ease;
+}
+
+.halloween-switch input:checked + .halloween-switch-track {
+  background: rgba(242, 164, 69, 0.55);
+  border-color: rgba(242, 164, 69, 0.8);
+}
+
+.halloween-switch input:checked + .halloween-switch-track::after {
+  transform: translateX(16px);
+  background: #1a1024;
+}
+
+.halloween-switch input:focus-visible + .halloween-switch-track {
+  outline: 2px solid var(--halloween-accent, #f2a445);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- tips */
+
+.halloween-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.halloween-steps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--halloween-accent, #f2a445);
+}
+
+.halloween-steps strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.halloween-steps p {
+  margin: 2px 0 0;
+}
+
+/* --------------------------------------------------------- avatar-rörelse */
+
+.avatar-ember {
+  animation: avatar-rise 5s ease-in-out infinite;
+}
+
+.avatar-ember-1 { animation-delay: 1.4s; }
+.avatar-ember-2 { animation-delay: 2.8s; }
+
+@keyframes avatar-rise {
+  0% { transform: translateY(6px); opacity: 0.2; }
+  50% { opacity: 0.9; }
+  100% { transform: translateY(-8px); opacity: 0.15; }
+}
+
+.avatar-star {
+  animation: avatar-twinkle 4s ease-in-out infinite;
+}
+
+.avatar-star:nth-child(2) { animation-delay: 1.3s; }
+.avatar-star:nth-child(3) { animation-delay: 2.6s; }
+
+@keyframes avatar-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.95; }
+}
+
+.avatar-bats {
+  animation: avatar-bats 9s ease-in-out infinite;
+}
+
+@keyframes avatar-bats {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+
+.avatar-spoke-pet {
+  animation: avatar-float 6s ease-in-out infinite;
+  transform: translate(188px, 150px);
+}
+
+@keyframes avatar-float {
+  0%, 100% { transform: translate(188px, 150px); }
+  50% { transform: translate(188px, 144px); }
+}
+
+.decor-art {
+  display: block;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* ------------------------------------------------------------ responsivt */
+
+@media (max-width: 1120px) {
+  .halloween-hero-inner {
+    grid-template-columns: 176px minmax(0, 1fr);
+  }
+  .halloween-hero-theme {
+    grid-column: 1 / -1;
+  }
+  .halloween-studio-grid {
+    grid-template-columns: 1fr;
+  }
+  .halloween-studio-stage {
+    position: static;
+  }
+  .halloween-stage-frame {
+    max-width: 420px;
+  }
+}
+
+@media (max-width: 900px) {
+  .halloween-hero-inner {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+  .halloween-hero-avatar {
+    justify-self: start;
+  }
+  .halloween-avatar-frame {
+    width: 156px;
+  }
+  .halloween-steps {
+    grid-template-columns: 1fr;
+  }
+  .halloween-detail {
+    grid-template-columns: 1fr;
+  }
+  .halloween-tryon-body {
+    grid-template-columns: 1fr;
+  }
+  .halloween-tryon-stage {
+    max-width: 220px;
+  }
+  .halloween-room-stage {
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+  }
+  .halloween-room-grid {
+    left: 10px;
+    right: 10px;
+    top: 56%;
+    bottom: 8px;
+    padding: 0;
+    gap: 2px;
+    grid-template-rows: minmax(0, 0.88fr) minmax(0, 1fr);
+  }
+  .halloween-room-slot.slot-0 .decor-art,
+  .halloween-room-slot.slot-1 .decor-art,
+  .halloween-room-slot.slot-2 .decor-art {
+    width: 64px;
+  }
+  .halloween-room-slot.slot-3 .decor-art,
+  .halloween-room-slot.slot-4 .decor-art,
+  .halloween-room-slot.slot-5 .decor-art {
+    width: 46px;
+  }
+  .halloween-room-slot-name {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+  .halloween-decor {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .halloween-invite {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .halloween-invite .btn {
+    width: 100%;
+  }
+  .halloween-hero {
+    border-radius: 16px;
+  }
+  .halloween-hero-inner {
+    padding: 18px;
+    gap: 16px;
+  }
+  .halloween-tabs {
+    border-radius: 12px;
+  }
+  .halloween-grid {
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+    gap: 10px;
+  }
+  .halloween-card-art {
+    padding: 10px;
+  }
+  .halloween-card-body {
+    padding: 10px;
+  }
+  .halloween-options {
+    grid-template-columns: 1fr;
+  }
+  .halloween-detail-list {
+    grid-template-columns: 1fr;
+  }
+  .halloween-collection-head,
+  .halloween-collection-tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .halloween-search {
+    max-width: none;
+  }
+  .halloween-locked-list li {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .halloween-locked-req {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halloween-particle,
+  .halloween-hero-glow,
+  .avatar-ember,
+  .avatar-star,
+  .avatar-bats,
+  .avatar-spoke-pet {
+    animation: none !important;
+  }
+  .halloween-card:hover {
+    transform: none;
+  }
+  .halloween-room-slot:hover {
+    transform: none;
+  }
+}
+
+/* Notifikationsklocka i topbaren */
+.notify-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.notify-btn {
+  position: relative;
+}
+.notify-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #c0392b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 17px;
+  text-align: center;
+  border: 2px solid var(--surface, #fff);
+  box-sizing: content-box;
+}
+.notify-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(16, 33, 22, 0.18);
+  padding: 12px;
+}
+.notify-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.notify-head > div:first-child {
+  display: flex;
+  flex-direction: column;
+}
+.notify-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.notify-error {
+  color: #a4281d;
+  font-size: 12.5px;
+  margin: 6px 0;
+}
+.notify-empty {
+  padding: 16px 4px;
+  text-align: center;
+}
+.notify-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.notify-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+.notify-item.notify-unread {
+  background: rgba(46, 125, 80, 0.08);
+  border-color: rgba(46, 125, 80, 0.22);
+}
+.notify-item-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 8px 10px 4px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.notify-kind {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--green-deep);
+}
+.notify-title {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.notify-item.notify-unread .notify-title::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2e7d50;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.notify-body {
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+.notify-mark {
+  margin: 0 6px 6px;
+}
+@media (max-width: 600px) {
+  .notify-panel {
+    position: fixed;
+    top: 64px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+}
+
+/* Större startsidesbanner och Dagens skratt */
+.hero {
+  min-height: 300px;
+}
+.hero-content {
+  padding: 36px 40px;
+  max-width: 760px;
+}
+.hero-content h2 {
+  font-size: 40px;
+  line-height: 1.12;
+  margin-bottom: 10px;
+}
+.hero-content p {
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: 680px;
+}
+.hero-meta span {
+  font-size: 13px;
+  padding: 5px 12px;
+}
+.joke-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(192, 57, 43, 0.18);
+  background: linear-gradient(135deg, #fff7ec 0%, #fdeedd 100%);
+  box-shadow: 0 6px 18px rgba(80, 40, 20, 0.08);
+}
+.joke-icon {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #e67e22;
+  color: #fff;
+}
+.joke-body {
+  min-width: 0;
+}
+.joke-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a04000;
+}
+.joke-text {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #2c1810;
+}
+@media (max-width: 700px) {
+  .hero {
+    min-height: 240px;
+  }
+  .hero-content {
+    padding: 24px 20px;
+  }
+  .hero-content h2 {
+    font-size: 28px;
+  }
+  .hero-content p {
+    font-size: 15px;
+  }
+  .joke-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .joke-text {
+    font-size: 16px;
+  }
+}

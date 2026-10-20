@@ -20,7 +20,6 @@ import {
 } from './auth-types';
 import { createAuthBackend } from './auth';
 import { getOrCreateSupabaseClient, mapUser } from './auth-supabase';
-import { demoActive } from './demo-mode';
 
 export interface AuthContextValue {
   /** Om appen har hämtat session */
@@ -182,8 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const logout = useCallback(async () => {
-    // I demoläget finns ingen riktig session att avsluta. Klientens signOut går
-    // tillbaka till inloggningssidan, vilket är samma sak som att lämna läget.
     const backend = createAuthBackend();
     try {
       await backend.logout();
@@ -272,13 +269,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // är kvar och visa lösenordssidan igen.
   const changePassword = useCallback(
     async (newPassword: string): Promise<LoginResult> => {
-      if (import.meta.env.DEV && demoActive()) {
-        return {
-          ok: false,
-          error: 'Demoläget sparar inget. Byt lösenord i den riktiga appen i stället.',
-        };
-      }
-
       const backend = createAuthBackend();
       const result = await backend.changePassword('', newPassword);
       if (!result.ok) return result;

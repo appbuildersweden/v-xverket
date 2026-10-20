@@ -295,3 +295,138 @@ export interface RosterRow {
   display_name: string;
   member_role: 'elev' | 'larare';
 }
+
+/** En skolorganisation. Systemadministratören ser alla. */
+export interface SchoolOrganisation {
+  id: string;
+  name: string;
+  slug: string;
+  contact_email: string | null;
+  active: boolean;
+  members: number;
+  students: number;
+  teachers: number;
+  special_teachers: number;
+  classes: number;
+  created_at: string;
+}
+
+/** Den egna skolan, som appen visar i sidopanelen. */
+export interface MyOrganisation {
+  id: string;
+  name: string;
+  contact_email: string | null;
+}
+
+/** Ett konto och dess aktiva skolkoppling. */
+export interface AdminMembership {
+  user_id: string;
+  username: string;
+  display_name: string;
+  role: SchoolRole;
+  active: boolean;
+  organisation_id: string | null;
+  organisation_name: string | null;
+}
+
+export type PublicationKind = 'nyhet' | 'uppdatering' | 'viktig';
+export type PublicationStatus = 'utkast' | 'publicerad' | 'arkiverad';
+
+/** En publicering som läsaren får se på startsidan. */
+export interface Publication {
+  id: string;
+  kind: PublicationKind;
+  title: string;
+  summary: string | null;
+  body: string | null;
+  link_url: string | null;
+  link_label: string | null;
+  publish_at: string;
+  author_name: string;
+}
+
+/** Publicering som systemadministratören redigerar. */
+export interface AdminPublication extends Omit<Publication, 'author_name'> {
+  status: PublicationStatus;
+  audience_organisation_ids: string[] | null;
+  audience_roles: string[] | null;
+  audience_user_ids: string[] | null;
+  updated_at: string;
+}
+
+/** En tillåten mottagare i den egna skolan. */
+export interface MessageContact {
+  user_id: string;
+  username: string;
+  display_name: string;
+  role: SchoolRole;
+  organisation_name: string;
+}
+
+/** En bilaga till ett meddelande. */
+export interface MessageAttachment {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number;
+}
+
+/** Bilaga som laddats upp men ännu inte skickats. */
+export interface PendingAttachment {
+  id: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number;
+  created_at: string;
+  storage_path: string;
+}
+
+/** En direktkonversation i den gemensamma meddelandevyn. */
+export interface Conversation {
+  channel_id: string;
+  other_id: string;
+  other_username: string;
+  other_name: string;
+  other_role: SchoolRole;
+  last_body: string | null;
+  last_at: string | null;
+  last_sender_id: string | null;
+  last_from_me: boolean;
+  unread_count: number;
+  archived: boolean;
+}
+
+/** En konversation i skickat-vyn. */
+export interface SentConversation {
+  channel_id: string;
+  other_id: string;
+  other_username: string;
+  other_name: string;
+  other_role: SchoolRole;
+  last_sent_body: string | null;
+  last_sent_at: string;
+  sent_count: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender_id: string;
+  sender_username: string;
+  sender_name: string;
+  body: string | null;
+  body_html: string | null;
+  created_at: string;
+  attachments: MessageAttachment[];
+}
+
+/** Elev som specialläraren arbetar med. */
+export interface SpecialStudent {
+  id: string;
+  username: string;
+  display_name: string;
+  class_name: string;
+  adaptations: number;
+  open_adaptations: number;
+  last_activity: string | null;
+}

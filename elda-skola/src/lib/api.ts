@@ -17,9 +17,22 @@ import type {
   AdminClass,
   AdminClassMember,
   AdminEvent,
+  AdminMembership,
+  AdminPublication,
+  ChatMessage,
+  Conversation,
   InboxMessage,
+  SentConversation,
   MessageAudience,
+  MessageContact,
+  MyOrganisation,
+  PendingAttachment,
+  Publication,
+  PublicationKind,
+  PublicationStatus,
+  SchoolOrganisation,
   SentMessage,
+  SpecialStudent,
   StudentRow,
   Submission,
   Task,
@@ -947,6 +960,268 @@ export async function getAdaptationStats(): Promise<AdaptationStats | null> {
     students: Number(row.students ?? 0),
     last_updated: typeof row.last_updated === 'string' ? row.last_updated : null,
   };
+}
+
+// ---------------------------------------------------------- organisationer
+
+/** Den inloggades skolorganisation, eller null om kontot saknar skola. */
+export async function getMyOrganisation(): Promise<MyOrganisation | null> {
+  const { data, error } = await supabase.rpc('elda_skola_my_organisation');
+  if (error) return null;
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null | undefined;
+  if (!row || typeof row.name !== 'string') return null;
+  return {
+    id: String(row.id ?? ''),
+    name: row.name,
+    contact_email: typeof row.contact_email === 'string' ? row.contact_email : null,
+  };
+}
+
+export async function listOrganisations(): Promise<SchoolOrganisation[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_organisations');
+  if (error) fail(error);
+  return (data ?? []) as SchoolOrganisation[];
+}
+
+export async function saveOrganisation(input: {
+  id?: string | null;
+  name: string;
+  slug: string;
+  contactEmail: string;
+  active: boolean;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_save_organisation', {
+    p_id: input.id ?? null,
+    p_name: input.name.trim(),
+    p_slug: input.slug.trim().toLowerCase(),
+    p_contact_email: input.contactEmail.trim() || null,
+    p_active: input.active,
+  });
+  if (error) fail(error);
+  return String(data ?? '');
+}
+
+export async function setOrganisationActive(id: string, active: boolean): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_set_organisation_active', {
+    p_id: id,
+    p_active: active,
+  });
+  if (error) fail(error);
+}
+
+export async function listMemberships(): Promise<AdminMembership[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_memberships');
+  if (error) fail(error);
+  return (data ?? []) as AdminMembership[];
+}
+
+/** Kopplar ett konto till en skola. null tar bort kopplingen utan att radera kontot. */
+export async function assignMembership(userId: string, organisationId: string | null): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_assign_membership', {
+    p_user: userId,
+    p_org: organisationId,
+  });
+  if (error) fail(error);
+}
+
+// ----------------------------------------------------------- publiceringar
+
+export async function listPublications(): Promise<Publication[]> {
+  const { data, error } = await supabase.rpc('elda_skola_list_publications');
+  if (error) fail(error);
+  return (data ?? []) as Publication[];
+}
+
+export async function listAdminPublications(): Promise<AdminPublication[]> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_publications');
+  if (error) fail(error);
+  return (data ?? []) as AdminPublication[];
+}
+
+export async function savePublication(input: {
+  id?: string | null;
+  kind: PublicationKind;
+  title: string;
+  summary: string;
+  body: string;
+  linkUrl: string;
+  linkLabel: string;
+  status: PublicationStatus;
+  organisationIds: string[] | null;
+  roles: string[] | null;
+  userIds: string[] | null;
+  publishAt: string | null;
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('elda_skola_admin_save_publication', {
+    p_id: input.id ?? null,
+    p_kind: input.kind,
+    p_title: input.title.trim(),
+    p_summary: input.summary.trim() || null,
+    p_body: input.body.trim() || null,
+    p_link_url: input.linkUrl.trim() || null,
+    p_link_label: input.linkLabel.trim() || null,
+    p_status: input.status,
+    p_organisation_ids: input.organisationIds?.length ? input.organisationIds : null,
+    p_roles: input.roles?.length ? input.roles : null,
+    p_user_ids: input.userIds?.length ? input.userIds : null,
+    p_publish_at: input.publishAt,
+  });
+  if (error) fail(error);
+  return String(data ?? '');
+}
+
+export async function setPublicationStatus(
+  id: string,
+  status: PublicationStatus,
+): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_admin_set_publication_status', {
+    p_id: id,
+    p_status: status,
+  });
+  if (error) fail(error);
+}
+
+// ------------------------------------------------------ systemmeddelanden
+
+export async function sendSystemMessage(input: {
+  subject: string;
+  body: string;
+  organisationIds: string[];
+  roles: string[];
+  userIds: string[];
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('elda_skola_send_system_message', {
+    p_subject: input.subject.trim(),
+    p_body: input.body.trim(),
+    p_organisation_ids: input.organisationIds.length ? input.organisationIds : null,
+    p_roles: input.roles.length ? input.roles : null,
+    p_user_ids: input.userIds.length ? input.userIds : null,
+  });
+  if (error) fail(error);
+  return Number(data ?? 0);
+}
+
+export interface AudienceRow {
+  user_id: string;
+  display_name: string;
+  username: string;
+  role: string;
+  organisation_name: string;
+}
+
+/** Vilka som skulle få ett systemutskick. Endast systemadministratören. */
+export async function systemMessageAudience(input: {
+  organisationIds: string[];
+  roles: string[];
+  userIds: string[];
+}): Promise<AudienceRow[]> {
+  const { data, error } = await supabase.rpc('elda_skola_system_message_audience', {
+    p_organisation_ids: input.organisationIds.length ? input.organisationIds : null,
+    p_roles: input.roles.length ? input.roles : null,
+    p_user_ids: input.userIds.length ? input.userIds : null,
+  });
+  if (error) fail(error);
+  return (data ?? []) as AudienceRow[];
+}
+
+// ---------------------------------------------------- gemensamma meddelanden
+
+export async function listMessageContacts(): Promise<MessageContact[]> {
+  const { data, error } = await supabase.rpc('list_message_contacts');
+  if (error) fail(error);
+  return (data ?? []) as MessageContact[];
+}
+
+/** Alla mina konversationer med oläst antal och arkivstatus. */
+export async function listConversations(): Promise<Conversation[]> {
+  const { data, error } = await supabase.rpc('elda_skola_conversations');
+  if (error) fail(error);
+  return (data ?? []) as Conversation[];
+}
+
+/** Konversationer där jag har skickat minst ett meddelande. */
+export async function listSentConversations(): Promise<SentConversation[]> {
+  const { data, error } = await supabase.rpc('elda_skola_sent_conversations');
+  if (error) fail(error);
+  return (data ?? []) as SentConversation[];
+}
+
+export async function listChannelMessages(channelId: string): Promise<ChatMessage[]> {
+  const { data, error } = await supabase.rpc('elda_skola_list_channel_messages', {
+    p_channel: channelId,
+  });
+  if (error) fail(error);
+  return ((data ?? []) as ChatMessage[]).map((row) => ({
+    ...row,
+    attachments: Array.isArray(row.attachments) ? row.attachments : [],
+  }));
+}
+
+/**
+ * Skickar ett meddelande. Formaterat innehåll saneras i klienten före sändning
+ * och kontrolleras igen av servern, som också kopplar bilagorna till meddelandet.
+ */
+export async function sendChannelMessage(
+  channelId: string,
+  body: string,
+  options: { bodyHtml?: string; attachmentIds?: string[] } = {},
+): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_send_rich_message', {
+    p_channel: channelId,
+    p_body: body,
+    p_body_html: options.bodyHtml?.trim() ? options.bodyHtml : null,
+    p_attachment_ids: options.attachmentIds?.length ? options.attachmentIds : null,
+  });
+  if (error) fail(error);
+}
+
+/** Arkiverad-markering per användare. */
+export async function archiveChannel(channelId: string, archived: boolean): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_archive_channel', {
+    p_channel: channelId,
+    p_archived: archived,
+  });
+  if (error) fail(error);
+}
+
+/** Totalt antal olästa meddelanden, för menyns badge. */
+export async function unreadTotal(): Promise<number> {
+  const { data, error } = await supabase.rpc('elda_skola_unread_total');
+  if (error) fail(error);
+  return Number(data ?? 0);
+}
+
+/** Oskickade bilagor i den egna kladden för en konversation. */
+export async function pendingAttachments(channelId: string): Promise<PendingAttachment[]> {
+  const { data, error } = await supabase.rpc('elda_skola_pending_attachments', {
+    p_channel: channelId,
+  });
+  if (error) fail(error);
+  return (data ?? []) as PendingAttachment[];
+}
+
+export async function openDirectChannel(otherId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('open_direct_channel', { p_other: otherId });
+  if (error) fail(error);
+  return String(data ?? '');
+}
+
+export async function markChannelRead(channelId: string): Promise<void> {
+  const { error } = await supabase.rpc('mark_channel_read', { p_channel: channelId });
+  if (error) fail(error);
+}
+
+// --------------------------------------------------------- speciallärare
+
+export async function listSpecialStudents(): Promise<SpecialStudent[]> {
+  const { data, error } = await supabase.rpc('elda_skola_my_special_students');
+  if (error) fail(error);
+  return (data ?? []) as SpecialStudent[];
+}
+
+export async function linkSpecialStudent(studentId: string): Promise<void> {
+  const { error } = await supabase.rpc('elda_skola_link_student', { p_student: studentId });
+  if (error) fail(error);
 }
 
 // --------------------------------------------------------------- kalenderhjälp

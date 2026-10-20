@@ -5,3 +5,4 @@ export { ElevKalender } from './ElevKalender';
 export { ElevKlass } from './ElevKlass';
 export { ElevMeddelanden } from './ElevMeddelanden';
 export { ElevFramsteg } from './ElevFramsteg';
+export { Halloween } from './Halloween';

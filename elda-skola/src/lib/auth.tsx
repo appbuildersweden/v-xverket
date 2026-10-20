@@ -13,7 +13,11 @@ import type { Identity, Profile, SchoolRole } from './types';
 
 const ROLES: readonly SchoolRole[] = ['admin', 'lärare', 'speciallärare', 'elev', 'okand'];
 
-export type Access = 'teacher' | 'student' | 'denied';
+/**
+ * Vilken panel kontot får. Systemadministratören är den enda administrativa
+ * nivån – det finns ingen skolchefsroll.
+ */
+export type Access = 'teacher' | 'specialteacher' | 'student' | 'admin' | 'denied';
 
 export interface LoginResult {
   ok: boolean;
@@ -74,6 +78,8 @@ export function schoolAccess(identity: Identity | null): {
     return { access: 'denied', reason: 'Kontot är inaktiverat.' };
   }
   if (identity.role === 'lärare') return { access: 'teacher', reason: null };
+  if (identity.role === 'speciallärare') return { access: 'specialteacher', reason: null };
+  if (identity.role === 'admin') return { access: 'admin', reason: null };
   if (identity.role === 'elev') {
     if (identity.accountType === 'privat') {
       return {
@@ -83,13 +89,6 @@ export function schoolAccess(identity: Identity | null): {
       };
     }
     return { access: 'student', reason: null };
-  }
-  if (identity.role === 'admin' || identity.role === 'speciallärare') {
-    return {
-      access: 'denied',
-      reason:
-        'Elda Skola är i den här fasen byggt för lärare och skolelever. Administratörs- och speciallärarpaneler finns i den vanliga Elda-appen.',
-    };
   }
   return {
     access: 'denied',

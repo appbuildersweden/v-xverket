@@ -1,6 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { ADMIN_NAV, AppShell, ELEV_NAV, LARARE_NAV, groupNav, navFor } from './AppShell';
+import {
+  ADMIN_NAV,
+  AppShell,
+  ELEV_NAV,
+  LARARE_NAV,
+  SPECIAL_NAV,
+  groupNav,
+  navFor,
+} from './AppShell';
 import type { Identity, Profile } from '../lib/types';
 
 const identity: Identity = {
@@ -41,7 +49,7 @@ function renderShell(panel: 'larare' | 'elev') {
 }
 
 describe('AppShell', () => {
-  it('har åtta elevkategorier i rätt ordning', () => {
+  it('har nio elevkategorier i rätt ordning', () => {
     expect(ELEV_NAV.map((row) => row.id)).toEqual([
       'hem',
       'uppgifter',
@@ -50,6 +58,7 @@ describe('AppShell', () => {
       'klass',
       'meddelanden',
       'framsteg',
+      'halloween',
       'profil',
     ]);
   });
@@ -86,9 +95,28 @@ describe('AppShell', () => {
     expect(navFor('elev')).toBe(ELEV_NAV);
     expect(navFor('larare')).toBe(LARARE_NAV);
     expect(navFor('admin')).toBe(ADMIN_NAV);
+    expect(navFor('speciallarare')).toBe(SPECIAL_NAV);
     expect(ADMIN_NAV.map((row) => row.id)).toContain('larare');
     expect(ADMIN_NAV.map((row) => row.id)).toContain('klasser');
     expect(ELEV_NAV.map((row) => row.id)).not.toContain('anpassningar');
+  });
+
+  it('har en egen speciallärarmeny utan administrativa sidor', () => {
+    expect(SPECIAL_NAV.map((row) => row.id)).toEqual(['hem', 'elever', 'meddelanden', 'profil']);
+    expect(SPECIAL_NAV.map((row) => row.id)).not.toContain('anvandare');
+    expect(SPECIAL_NAV.map((row) => row.id)).not.toContain('organisationer');
+  });
+
+  it('ger systemadministratören skolor, publiceringar och systemutskick', () => {
+    const ids = ADMIN_NAV.map((row) => row.id);
+    expect(ids).toContain('organisationer');
+    expect(ids).toContain('publiceringar');
+    expect(ids).toContain('meddelanden');
+  });
+
+  it('visar inte skoladministration för lärare eller elev', () => {
+    expect(LARARE_NAV.map((row) => row.id)).not.toContain('organisationer');
+    expect(ELEV_NAV.map((row) => row.id)).not.toContain('publiceringar');
   });
 
   it('visar grupprubriker i menyn', () => {

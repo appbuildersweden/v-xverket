@@ -15,6 +15,7 @@ import { deadlineLabel, shortDate, displayName } from '../../lib/format';
 import { countSubmissions } from '../../lib/submissions';
 import type { Task } from '../../lib/types';
 import { Badge, Button, Card, EmptyState, PageIntro, Spinner, Stat } from '../../components/ui';
+import { SchoolNews } from '../../components/SchoolNews';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -110,6 +111,10 @@ export const LarareOversikt: React.FC<Props> = ({ onNavigate }) => {
         <Stat label="Elever" value={uniqueStudents} tone={uniqueStudents ? 'green' : 'neutral'} hint="Unika konton" />
         <Stat label="Öppna uppgifter" value={openTasks.length} hint="För dina klasser och elever" />
         <Stat label="Väntar på återkoppling" value={waiting.length} tone={waiting.length ? 'amber' : 'green'} hint="Inlämnade svar" />
+      </div>
+
+      <div style={{ marginBottom: 18 }}>
+        <SchoolNews />
       </div>
 
       <div className="dashboard-grid">

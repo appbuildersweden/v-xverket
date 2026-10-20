@@ -3,8 +3,9 @@ import { LogOut } from 'lucide-react';
 import { AuthProvider, useAuth } from './lib/auth';
 import { Login } from './components/Login';
 import { ForcePassword } from './components/ForcePassword';
-import { ADMIN_NAV, AppShell, ELEV_NAV, LARARE_NAV, type PanelKind } from './components/AppShell';
+import { AppShell, navFor, type PanelKind } from './components/AppShell';
 import { AdminPanel } from './pages/admin/AdminPanel';
+import { SpeciallararPanel } from './pages/speciallarar/SpeciallararPanel';
 import { Button } from './components/ui';
 import { defaultStartPage } from './lib/settings';
 import {
@@ -15,6 +16,7 @@ import {
   ElevKlass,
   ElevMeddelanden,
   ElevUppgifter,
+  Halloween,
 } from './pages/elev';
 import {
   LarareAktiviteter,
@@ -28,6 +30,7 @@ import {
   LarareUppgifter,
 } from './pages/larare';
 import { Profil } from './pages/Profil';
+import { HalloweenProvider } from './lib/halloween-context';
 
 interface Route {
   panel: PanelKind;
@@ -35,7 +38,7 @@ interface Route {
 }
 
 function parseRoute(hash: string): Route | null {
-  const match = /^#\/(elev|larare|admin)\/([a-z-]+)$/.exec(hash);
+  const match = /^#\/(elev|larare|speciallarare|admin)\/([a-z-]+)$/.exec(hash);
   if (!match) return null;
   return { panel: match[1] as PanelKind, page: match[2] };
 }
@@ -82,7 +85,16 @@ function Denied({ reason }: { reason: string | null }) {
 
 function SchoolApp() {
   const { access, identity, profile, logout } = useAuth();
-  const panel: PanelKind = access === 'teacher' ? 'larare' : identity?.role === 'admin' ? 'admin' : 'elev';
+  // Rollen avgör panelen. En elev kan inte nå lärar-, speciallärar- eller
+  // adminpanelen genom att ändra adressen.
+  const panel: PanelKind =
+    access === 'admin'
+      ? 'admin'
+      : access === 'teacher'
+        ? 'larare'
+        : access === 'specialteacher'
+          ? 'speciallarare'
+          : 'elev';
 
   const [route, setRoute] = useState<Route>(() => {
     const parsed = typeof window === 'undefined' ? null : parseRoute(window.location.hash);
@@ -92,10 +104,10 @@ function SchoolApp() {
 
   // Rollen äger panelen. En elev kan aldrig nå lärarpanelen genom att ändra
   // adressen, och tvärtom.
-  const validPage = useMemo(() => {
-    const nav = route.panel === 'larare' ? LARARE_NAV : route.panel === 'admin' ? ADMIN_NAV : ELEV_NAV;
-    return nav.some((item) => item.id === route.page);
-  }, [route]);
+  const validPage = useMemo(
+    () => navFor(route.panel).some((item) => item.id === route.page),
+    [route],
+  );
 
   useEffect(() => {
     if (route.panel !== panel || !validPage) {
@@ -129,8 +141,7 @@ function SchoolApp() {
         navigate(defaultStartPage(panel));
         return;
       }
-      const nav = parsed.panel === 'larare' ? LARARE_NAV : parsed.panel === 'admin' ? ADMIN_NAV : ELEV_NAV;
-      if (!nav.some((item) => item.id === parsed.page)) {
+      if (!navFor(parsed.panel).some((item) => item.id === parsed.page)) {
         navigate(defaultStartPage(panel));
         return;
       }
@@ -151,6 +162,9 @@ function SchoolApp() {
     }
     if (panel === 'admin') {
       return <AdminPanel activePage={page} onNavigate={navigate} />;
+    }
+    if (panel === 'speciallarare') {
+      return <SpeciallararPanel activePage={page} onNavigate={navigate} />;
     }
     if (panel === 'larare') {
       switch (page) {
@@ -191,12 +205,14 @@ function SchoolApp() {
         return <ElevMeddelanden />;
       case 'framsteg':
         return <ElevFramsteg />;
+      case 'halloween':
+        return <Halloween />;
       default:
         return <ElevHem onNavigate={navigate} />;
     }
   })();
 
-  return (
+  const shell = (
     <AppShell
       panel={panel}
       activePage={page}
@@ -208,6 +224,11 @@ function SchoolApp() {
       {content}
     </AppShell>
   );
+
+  // Halloween-läget laddas bara för elevpanelen, så lärare och administratörer
+  // aldrig hämtar shopdata de inte använder. Temat sätts på <html> och gäller
+  // därför även när eleven lämnar Halloween-området.
+  return panel === 'elev' ? <HalloweenProvider>{shell}</HalloweenProvider> : shell;
 }
 
 function Root() {
@@ -216,7 +237,7 @@ function Root() {
   if (loading) return <Splash />;
   if (!identity) return <Login />;
   if (identity.mustChangePassword) return <ForcePassword />;
-  if (access === 'denied' && !(identity.role === 'admin' && identity.active)) return <Denied reason={denialReason} />;
+  if (access === 'denied') return <Denied reason={denialReason} />;
   return <SchoolApp />;
 }
 

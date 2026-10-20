@@ -67,10 +67,20 @@ describe('schoolAccess', () => {
     expect(result.reason).toMatch(/privat elevkonto/);
   });
 
-  it('stänger ute admin, speciallärare och okänd roll', () => {
-    expect(schoolAccess({ ...base, role: 'admin' }).access).toBe('denied');
-    expect(schoolAccess({ ...base, role: 'speciallärare' }).access).toBe('denied');
-    expect(schoolAccess({ ...base, role: 'okand' }).access).toBe('denied');
+  it('ger systemadministratören adminpanelen och specialläraren sin egen panel', () => {
+    expect(schoolAccess({ ...base, role: 'admin' }).access).toBe('admin');
+    expect(schoolAccess({ ...base, role: 'speciallärare' }).access).toBe('specialteacher');
+  });
+
+  it('stänger ute okänd roll', () => {
+    const result = schoolAccess({ ...base, role: 'okand' });
+    expect(result.access).toBe('denied');
+    expect(result.reason).toMatch(/skolroll/);
+  });
+
+  it('stänger ute inaktiva konton även för admin och speciallärare', () => {
+    expect(schoolAccess({ ...base, role: 'admin', active: false }).access).toBe('denied');
+    expect(schoolAccess({ ...base, role: 'speciallärare', active: false }).access).toBe('denied');
   });
 
   it('stänger ute inaktiva konton', () => {

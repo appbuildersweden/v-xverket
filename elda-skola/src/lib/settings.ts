@@ -1,9 +1,8 @@
 import type { PanelKind } from '../components/AppShell';
-import { ADMIN_NAV, ELEV_NAV, LARARE_NAV } from '../components/AppShell';
+import { navFor } from '../components/AppShell';
 
 function pagesFor(panel: PanelKind): string[] {
-  const nav = panel === 'admin' ? ADMIN_NAV : panel === 'larare' ? LARARE_NAV : ELEV_NAV;
-  return nav.map((item) => item.id);
+  return navFor(panel).map((item) => item.id);
 }
 
 const KEY = 'elda-skola:start-page';
@@ -16,7 +15,7 @@ export function defaultStartPage(panel: PanelKind): string {
   } catch {
     /* lagring kan vara avstängd */
   }
-  return panel === 'admin' || panel === 'larare' ? 'oversikt' : 'hem';
+  return panel === 'elev' ? 'hem' : 'oversikt';
 }
 
 export function saveStartPage(panel: PanelKind, page: string): void {

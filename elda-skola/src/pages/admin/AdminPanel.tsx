@@ -8,7 +8,9 @@ import { ADMIN_NAV } from '../../components/AppShell';
 import { getAdaptationStats } from '../../lib/api';
 import { AdminPeople } from './AdminPeople';
 import { AdminClasses } from './AdminClasses';
-import { AdminMessages } from './AdminMessages';
+import { AdminOrganisations } from './AdminOrganisations';
+import { AdminPublications } from './AdminPublications';
+import { AdminSystemMessages } from './AdminSystemMessages';
 import { AdminPlanning } from './AdminPlanning';
 import { AdminAdaptations } from './AdminAdaptations';
 
@@ -68,7 +70,7 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
         <PageIntro
           eyebrow="Administratörspanel"
           title={title}
-          description="Skolans konton, klasser och innehåll. Åtgärder verifieras av skyddade serverfunktioner."
+          description="Samtliga skolor, konton, klasser och publiceringar. Du är systemadministratör för hela Elda Skola."
         />
       )}
 
@@ -123,10 +125,12 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
         </>
       )}
 
+      {activePage === 'organisationer' && <AdminOrganisations />}
+      {activePage === 'publiceringar' && <AdminPublications />}
       {activePage === 'anvandare' && <AdminPeople filter="alla" />}
       {activePage === 'larare' && <AdminPeople filter="lärare" />}
       {activePage === 'klasser' && <AdminClasses />}
-      {activePage === 'meddelanden' && <AdminMessages />}
+      {activePage === 'meddelanden' && <AdminSystemMessages />}
       {activePage === 'stod' && <AdminAdaptations />}
       {activePage === 'kalender' && <AdminPlanning />}
 

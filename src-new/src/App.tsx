@@ -19,7 +19,6 @@ import { CosmeticsProvider } from './lib/cosmetics';
 import { CosmeticsEffects } from './components/cosmetics/CosmeticsEffects';
 import { defaultRoute, resolveRoute, routeToRender, type Route } from './lib/guards';
 import { formatHashRoute, parseHashRoute } from './lib/hash-route';
-import { demoActive, leaveDemo } from './lib/demo-mode';
 import { PANEL_LABELS, categoryForPage, labelForPage } from './lib/nav';
 
 /**
@@ -215,19 +214,6 @@ function AppContent() {
         filter={navQuery}
       />
       <div className="main-col">
-        {/* Utvecklingsbygget kan visa panelen med exempeldata. Remsan talar om
-            att siffrorna är påhittade och att inget lämnar datorn. */}
-        {import.meta.env.DEV && demoActive() && (
-          <div className="demo-banner" role="status" data-testid="demo-banner">
-            <span className="demo-banner-badge">Demoläge</span>
-            <span className="demo-banner-text">
-              Exempeldata – inget sparas och inget skickas till Supabase.
-            </span>
-            <button type="button" className="btn btn-outline btn-sm" onClick={leaveDemo}>
-              Lämna demoläget
-            </button>
-          </div>
-        )}
         <TopBar
           panel={activeRoute.panel}
           onOpenProfile={handleOpenProfile}

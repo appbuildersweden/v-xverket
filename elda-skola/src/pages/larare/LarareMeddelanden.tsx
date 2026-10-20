@@ -4,6 +4,7 @@ import { useAsync } from '../../lib/useAsync';
 import { createAnnouncement, listAnnouncements, listClasses } from '../../lib/api';
 import { dateTime, truncate } from '../../lib/format';
 import { Alert, Badge, Button, Card, EmptyState, Field, Modal, PageIntro, Spinner } from '../../components/ui';
+import { MessageCenter } from '../../components/MessageCenter';
 import { InboxMessages } from '../../components/InboxMessages';
 
 export const LarareMeddelanden: React.FC = () => {
@@ -49,7 +50,13 @@ export const LarareMeddelanden: React.FC = () => {
       {message && <Alert tone="success">{message}</Alert>}
 
       <div style={{ marginBottom: 16 }}>
-        <InboxMessages />
+        <MessageCenter
+          title="Konversationer"
+          subtitle="Interna meddelanden inom din skola – med elever du undervisar och med kollegor."
+        />
+        <div style={{ marginTop: 16 }}>
+          <InboxMessages />
+        </div>
       </div>
 
       {rows.length === 0 ? (

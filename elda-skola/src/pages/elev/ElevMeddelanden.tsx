@@ -5,6 +5,7 @@ import { listAnnouncements, listClasses, markAnnouncementRead } from '../../lib/
 import { dateTime, truncate } from '../../lib/format';
 import type { Announcement } from '../../lib/types';
 import { Alert, Badge, Button, Card, EmptyState, Modal, PageIntro, Spinner } from '../../components/ui';
+import { MessageCenter } from '../../components/MessageCenter';
 import { InboxMessages } from '../../components/InboxMessages';
 
 export const ElevMeddelanden: React.FC = () => {
@@ -50,7 +51,7 @@ export const ElevMeddelanden: React.FC = () => {
       <PageIntro
         eyebrow="Elevpanel"
         title="Meddelanden"
-        description="Information från dina lärare. Du ser bara meddelanden för de klasser du är med i."
+        description="Skriv till lärare och speciallärare på din skola, och läs information för dina klasser."
         actions={
           <Button
             variant={onlyUnread ? 'secondary' : 'ghost'}
@@ -64,7 +65,13 @@ export const ElevMeddelanden: React.FC = () => {
       {error && <Alert>{error}</Alert>}
 
       <div style={{ marginBottom: 16 }}>
-        <InboxMessages />
+        <MessageCenter
+          title="Konversationer"
+          subtitle="Interna meddelanden inom din skola. Du kan skriva till lärare och speciallärare som undervisar dig."
+        />
+        <div style={{ marginTop: 16 }}>
+          <InboxMessages />
+        </div>
       </div>
 
       <Card>

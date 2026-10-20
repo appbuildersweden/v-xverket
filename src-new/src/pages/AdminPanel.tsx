@@ -23,10 +23,8 @@ interface Props {
 
 /** Vad respektive sektion ska innehålla när den byggs ut. */
 const PLANNED: Record<string, string[]> = {
-  klasser: ['Klasser och elevgrupper med tillhörighet'],
   dokument: ['Elevdokument och lärardokument med åtkomststyrning'],
   meddelanden: ['Meddelanden och nyheter till elever och personal'],
-  'ai-installningar': ['AI-modell, gränser och innehållsregler'],
   loggar: ['Administrativa händelser och säkerhetshändelser'],
   kopplingar: ['Kopplingar mellan elever och personal'],
   nyheter: ['Nyheter som visas i appen'],
@@ -51,7 +49,11 @@ export const AdminPanel: React.FC<Props> = ({ pageId, onNavigate }) => {
     }
     if (pageId === 'roller') return <AdminRolesPage onNavigate={onNavigate} />;
     if (pageId === 'amnen') return <AdminSchedulesPage onNavigate={onNavigate} />;
+    if (pageId === 'klasser') return <SectionPage panel="admin" pageId={pageId} />;
     if (pageId === 'uppgifter') return <AdminAssignmentsPage onNavigate={onNavigate} />;
+    if (pageId === 'dokument' || pageId === 'meddelanden' || pageId === 'loggar' || pageId === 'kopplingar' || pageId === 'nyheter') {
+      return <SectionPage panel="admin" pageId={pageId} planned={PLANNED[pageId]} />;
+    }
     if (pageId === 'ai-assistent') return <AdminAiPage />;
     if (pageId === 'ai-installningar' || pageId === 'ai-inställningar') return <AdminAiSettingsPage />;
     if (pageId === 'installningar') return <AdminSettingsPage onNavigate={onNavigate} />;

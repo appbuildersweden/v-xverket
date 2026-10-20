@@ -17,23 +17,10 @@ import './styles/shop.css';
 // ingenting när inget tema är köpt.
 import './styles/teman.css';
 
-/**
- * Demoläget finns bara i utvecklingsbygget. Grenen är alltid falsk i `dist`, så
- * Vite tar bort den (och därmed hela demo-modulen) ur produktionsbundeln.
- */
-async function boot() {
-  if (import.meta.env.DEV) {
-    const { startDemoFromAddress } = await import('./demo/boot');
-    await startDemoFromAddress();
-  }
-
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </React.StrictMode>,
-  );
-}
-
-void boot();
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>,
+);

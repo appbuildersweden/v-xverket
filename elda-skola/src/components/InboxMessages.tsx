@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Inbox } from 'lucide-react';
 import { useAsync } from '../lib/useAsync';
 import { listMyMessages, markMessageRead } from '../lib/api';
+import { refreshUnread } from '../lib/unread';
 import { dateTime, truncate } from '../lib/format';
 import type { InboxMessage } from '../lib/types';
 import { Alert, Badge, Button, Card, EmptyState, Modal, Spinner } from './ui';
@@ -25,7 +26,7 @@ export const InboxMessages: React.FC = () => {
     if (row.read_at) return;
     try {
       await markMessageRead(row.id);
-      await state.reload();
+      await Promise.all([state.reload(), refreshUnread()]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Kunde inte markera meddelandet som läst.');
     }

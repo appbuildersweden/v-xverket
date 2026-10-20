@@ -387,7 +387,7 @@ describe('översikten', () => {
     await renderElev('start');
 
     // Uppgiften finns kvar, men poängen visas som saknad — inte som noll.
-    expect(await screen.findByText('Träna multiplikation')).toBeTruthy();
+    expect((await screen.findAllByText('Träna multiplikation')).length).toBeGreaterThan(0);
     const notice = await screen.findByTestId('partial-data');
     expect(notice.textContent).toMatch(/dina poäng/);
   });

@@ -7,8 +7,12 @@ import {
   ClipboardCheck,
   ClipboardList,
   FolderOpen,
+  Ghost,
   GraduationCap,
   Home,
+  Megaphone,
+  Building2,
+  Newspaper,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -28,9 +32,11 @@ import {
   loadSchoolSettings,
   subscribeSchoolSettings,
 } from '../lib/school-settings';
+import { useMessageRealtime, useUnreadTotal } from '../lib/unread';
+import { NotificationBell } from './NotificationBell';
 import type { Identity, Profile } from '../lib/types';
 
-export type PanelKind = 'elev' | 'larare' | 'admin';
+export type PanelKind = 'elev' | 'larare' | 'speciallarare' | 'admin';
 
 export interface NavItem {
   id: string;
@@ -67,6 +73,7 @@ export const ELEV_NAV: NavItem[] = [
     group: 'Min klass',
   },
   { id: 'framsteg', label: 'Mina framsteg', icon: <ActivityIcon size={19} />, group: 'Min utveckling' },
+  { id: 'halloween', label: 'Halloween', icon: <Ghost size={19} />, group: 'Min utveckling' },
   { id: 'profil', label: 'Profil och inställningar', icon: <Settings size={19} />, group: 'Konto' },
 ];
 
@@ -122,11 +129,44 @@ export const LARARE_NAV: NavItem[] = [
 ];
 
 /**
+ * Speciallärarmeny. Specialläraren har en egen panel – den ersätts aldrig av
+ * elev- eller lärarpanelen.
+ */
+export const SPECIAL_NAV: NavItem[] = [
+  { id: 'hem', label: 'Översikt', icon: <LayoutDashboard size={19} />, group: 'Start' },
+  {
+    id: 'elever',
+    label: 'Mina elever och elevstöd',
+    icon: <UserRound size={19} />,
+    group: 'Elever och elevstöd',
+  },
+  {
+    id: 'meddelanden',
+    label: 'Meddelanden',
+    icon: <MessageSquare size={19} />,
+    group: 'Kommunikation',
+  },
+  { id: 'profil', label: 'Profil och inställningar', icon: <Settings size={19} />, group: 'Konto' },
+];
+
+/**
  * Administratörens meny. Det här är den enda definitionen – adminpanelen
  * importerar den härifrån i stället för att ha en egen kopia.
  */
 export const ADMIN_NAV: NavItem[] = [
   { id: 'oversikt', label: 'Översikt', icon: <LayoutDashboard size={19} />, group: 'Översikt' },
+  {
+    id: 'organisationer',
+    label: 'Skolor och medlemskap',
+    icon: <Building2 size={19} />,
+    group: 'Skolorganisationer',
+  },
+  {
+    id: 'publiceringar',
+    label: 'Nyheter och uppdateringar',
+    icon: <Newspaper size={19} />,
+    group: 'Publiceringar',
+  },
   {
     id: 'anvandare',
     label: 'Alla konton',
@@ -147,8 +187,8 @@ export const ADMIN_NAV: NavItem[] = [
   },
   {
     id: 'meddelanden',
-    label: 'Skicka meddelanden',
-    icon: <MessageSquare size={19} />,
+    label: 'Systemutskick',
+    icon: <Megaphone size={19} />,
     group: 'Meddelanden',
   },
   {
@@ -194,6 +234,7 @@ export const ADMIN_NAV: NavItem[] = [
 export function navFor(panel: PanelKind): NavItem[] {
   if (panel === 'admin') return ADMIN_NAV;
   if (panel === 'larare') return LARARE_NAV;
+  if (panel === 'speciallarare') return SPECIAL_NAV;
   return ELEV_NAV;
 }
 
@@ -235,6 +276,10 @@ export const AppShell: React.FC<Props> = ({
 }) => {
   const nav = navFor(panel);
   const groups = useMemo(() => groupNav(nav), [nav]);
+  // Olästa meddelanden visas i menyn för alla roller och uppdateras både vid
+  // läsning och via realtime, från samma serverräknade värde.
+  const unread = useUnreadTotal();
+  useMessageRealtime();
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('elda-skola-sidebar') === 'collapsed';
@@ -282,7 +327,22 @@ export const AppShell: React.FC<Props> = ({
   }, [mobileOpen]);
 
   const name = displayName(profile) === 'Okänd' ? identity.username : displayName(profile);
-  const roleLabel = panel === 'larare' ? 'Lärare' : panel === 'admin' ? 'Administratör' : 'Elev';
+  const roleLabel =
+    panel === 'larare'
+      ? 'Lärare'
+      : panel === 'admin'
+        ? 'Systemadministratör'
+        : panel === 'speciallarare'
+          ? 'Speciallärare'
+          : 'Elev';
+  const panelLabel =
+    panel === 'larare'
+      ? 'Lärarpanel'
+      : panel === 'admin'
+        ? 'Systemadministration'
+        : panel === 'speciallarare'
+          ? 'Speciallärarpanel'
+          : 'Elevpanel';
   const activeItem = nav.find((item) => item.id === activePage);
 
   return (
@@ -293,13 +353,12 @@ export const AppShell: React.FC<Props> = ({
             type="button"
             className="brand"
             onClick={() => onNavigate(nav[0].id)}
-            aria-label={`${school.school_name} – startsida`}
+            aria-label={`${school.school_name} – ${panelLabel} – startsida`}
             title={school.school_name}
           >
             <img src="elda-icon.png" alt="" />
             <span className="brand-text">
-              <strong>{school.school_name}</strong>
-              <small>{roleLabel === 'Lärare' ? 'Lärarpanel' : roleLabel === 'Administratör' ? 'Administration' : 'Elevpanel'}</small>
+              <strong>Elda Skola</strong>
             </span>
           </button>
           <button
@@ -339,6 +398,15 @@ export const AppShell: React.FC<Props> = ({
                 >
                   <span className="nav-icon">{item.icon}</span>
                   <span className="nav-label">{item.label}</span>
+                  {item.id === 'meddelanden' && unread > 0 && (
+                    <span
+                      className="nav-badge"
+                      aria-label={`${unread} olästa meddelanden`}
+                      title={`${unread} olästa`}
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -398,6 +466,7 @@ export const AppShell: React.FC<Props> = ({
           <div className="topbar-meta">
             <span className="topbar-date">{longDate()}</span>
             <span className="week-chip">Vecka {isoWeek()}</span>
+            <NotificationBell pages={nav.map((item) => item.id)} onNavigate={onNavigate} />
           </div>
         </header>
 

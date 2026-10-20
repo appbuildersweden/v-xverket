@@ -1,2 +1,6 @@
 /downloads/* /elda.html#nedladdning 302
 /skola /skola/ 308
+/elev /skola/ 302
+/elev/* /skola/ 302
+/personal /skola/ 302
+/personal/* /skola/ 302

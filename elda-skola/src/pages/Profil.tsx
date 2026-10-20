@@ -27,6 +27,7 @@ import { defaultStartPage, saveStartPage } from '../lib/settings';
 import { cachedSchoolSettings, subscribeSchoolSettings } from '../lib/school-settings';
 import type { Contact } from '../lib/types';
 import { Alert, Avatar, Badge, Button, Card, Field, PageIntro, Spinner } from '../components/ui';
+import { HalloweenInvite } from '../components/halloween/HalloweenInvite';
 
 interface Props {
   panel: PanelKind;
@@ -46,10 +47,16 @@ const START_OPTIONS: Record<PanelKind, Array<{ id: string; label: string }>> = {
     { id: 'klasser', label: 'Mina klasser och elever' },
     { id: 'kalender', label: 'Kalender och planering' },
   ],
+  speciallarare: [
+    { id: 'hem', label: 'Översikt' },
+    { id: 'elever', label: 'Mina elever och elevstöd' },
+    { id: 'meddelanden', label: 'Meddelanden' },
+  ],
   admin: [
     { id: 'oversikt', label: 'Översikt' },
+    { id: 'organisationer', label: 'Skolor och medlemskap' },
+    { id: 'publiceringar', label: 'Nyheter och uppdateringar' },
     { id: 'anvandare', label: 'Användare och konton' },
-    { id: 'roller', label: 'Roller och behörigheter' },
     { id: 'logg', label: 'Aktivitetslogg' },
   ],
 };
@@ -105,6 +112,10 @@ export const Profil: React.FC<Props> = ({ panel, onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {panel === 'elev' && (
+        <HalloweenInvite onOpen={() => onNavigate('halloween')} variant="card" />
+      )}
 
       <div className="profile-grid">
         <div className="span-2">
