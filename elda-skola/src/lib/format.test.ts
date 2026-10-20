@@ -25,6 +25,16 @@ describe('format', () => {
     expect(deadlineLabel(null)).toBe('Ingen deadline');
   });
 
+  it('klarar en fullständig tidsstämpel som deadline', () => {
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+      today.getDate(),
+    ).padStart(2, '0')}`;
+    expect(deadlineLabel(`${iso}T00:00:00Z`)).toBe('Idag');
+    expect(deadlineLabel(`${iso}T12:00:00Z`)).not.toContain('NaN');
+    expect(deadlineLabel('inte ett datum')).toBe('Ingen deadline');
+  });
+
   it('använder riktigt namn före användarnamn', () => {
     expect(displayName({ first_name: 'Anna', last_name: 'Andersson', username: 'eannaad01' })).toBe(
       'Anna Andersson',

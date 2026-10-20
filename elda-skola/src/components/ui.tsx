@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AlertCircle, CheckCircle2, Inbox, Loader2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Inbox, Loader2, Search, X } from 'lucide-react';
 import { initials } from '../lib/format';
 
 export const Button: React.FC<
@@ -177,5 +177,53 @@ export const PageIntro: React.FC<{
       {description && <p>{description}</p>}
     </div>
     {actions && <div className="page-actions">{actions}</div>}
+  </div>
+);
+
+/** Sökfält med ikon. Samma utseende i alla sökbara vyer. */
+export const SearchField: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  ariaLabel: string;
+  id?: string;
+  autoFocus?: boolean;
+}> = ({ value, onChange, placeholder, ariaLabel, id, autoFocus }) => (
+  <div className="search-field">
+    <Search size={16} aria-hidden />
+    <input
+      id={id}
+      className="input"
+      type="search"
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      value={value}
+      autoFocus={autoFocus}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  </div>
+);
+
+/** Växlare mellan flikar/filter. Används i stället för egna knapprader. */
+export const Segmented: React.FC<{
+  options: Array<{ id: string; label: string; count?: number }>;
+  value: string;
+  onChange: (id: string) => void;
+  ariaLabel: string;
+}> = ({ options, value, onChange, ariaLabel }) => (
+  <div className="segmented" role="tablist" aria-label={ariaLabel}>
+    {options.map((option) => (
+      <button
+        key={option.id}
+        type="button"
+        role="tab"
+        aria-selected={value === option.id}
+        className={value === option.id ? 'active' : undefined}
+        onClick={() => onChange(option.id)}
+      >
+        {option.label}
+        {typeof option.count === 'number' ? ` (${option.count})` : ''}
+      </button>
+    ))}
   </div>
 );

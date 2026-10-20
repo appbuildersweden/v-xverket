@@ -106,7 +106,7 @@ export const LarareOversikt: React.FC<Props> = ({ onNavigate }) => {
         actions={<Button icon={<ClipboardList size={16} />} onClick={() => onNavigate('uppgifter')}>Ny uppgift</Button>}
       />
 
-      <div className="grid-4" style={{ marginBottom: 18 }}>
+      <div className="stat-strip">
         <Stat label="Klasser" value={classes.length} hint="Där du är lärare" />
         <Stat label="Elever" value={uniqueStudents} tone={uniqueStudents ? 'green' : 'neutral'} hint="Unika konton" />
         <Stat label="Öppna uppgifter" value={openTasks.length} hint="För dina klasser och elever" />

@@ -1053,13 +1053,16 @@ textarea.input {
   background: var(--surface);
   border-radius: 16px;
   width: 100%;
-  max-width: 540px;
+  /* Flex-barn har min-width:auto, vilket gjorde att en bred verktygsrad
+     tryckte ut dialogen utanför mobilskärmen. */
+  min-width: 0;
+  max-width: min(540px, 100%);
   box-shadow: 0 24px 70px rgba(14, 30, 20, 0.32);
   border: 1px solid var(--border);
 }
 
 .modal-wide {
-  max-width: 760px;
+  max-width: min(760px, 100%);
 }
 
 .modal-head {
@@ -2556,6 +2559,50 @@ textarea.input {
 .bubble-html h3 {
   font-size: 15.5px;
   margin: 6px 0 4px;
+}
+
+/* Formaterad information som läses i en dialog. */
+.rich-text-body {
+  line-height: 1.55;
+}
+
+.rich-text-body p {
+  margin: 0 0 8px;
+}
+
+.rich-text-body p:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-body ul,
+.rich-text-body ol {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+
+.rich-text-body a {
+  color: var(--green-deep);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.rich-text-body h2 {
+  font-size: 19px;
+  margin: 10px 0 6px;
+}
+
+.rich-text-body h3 {
+  font-size: 16.5px;
+  margin: 8px 0 4px;
+}
+
+.rich-text-body h4 {
+  font-size: 15px;
+  margin: 8px 0 4px;
+}
+
+.info-row .list-title {
+  font-weight: 600;
 }
 
 /* ------------------------------------------------------------- bilagor */
@@ -4640,5 +4687,725 @@ textarea.input {
   }
   .joke-text {
     font-size: 16px;
+  }
+}
+
+/* =================================================================
+   Butik, XP och kommunväljare
+   Butiken återanvänder kortens, listornas och ikonernas mått. Det som
+   tillkommer är sällsynthetskanter, prisetiketten och kommunlistan.
+   ================================================================= */
+
+.brand-school {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--green-deep);
+  opacity: 0.85;
+}
+
+.shell-collapsed .brand-school {
+  display: none;
+}
+
+.shop-nav-btn {
+  color: var(--green-deep);
+}
+
+.shop-nav-btn:hover {
+  background: var(--green-soft);
+}
+
+.shop-balance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.shop-balance-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius);
+  background: var(--green-soft);
+}
+
+.shop-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-row .chip span {
+  margin-left: 4px;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.shop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.shop-card-owned {
+  background: var(--green-soft);
+}
+
+.rarity-border-ovanlig { border-left: 4px solid #5fbf8a; }
+.rarity-border-sallsynt { border-left: 4px solid #6fa8ff; }
+.rarity-border-episk { border-left: 4px solid #b07cff; }
+.rarity-border-legendarisk { border-left: 4px solid #e0a63c; }
+
+.shop-card-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 104px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.shop-owned-mark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+}
+
+.shop-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.shop-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shop-card-head h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.shop-card-category {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.shop-card-text {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 13.5px;
+  color: var(--text-2);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.shop-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 13px;
+}
+
+.shop-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: var(--green-deep);
+}
+
+.shop-requirement {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+}
+
+.shop-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--green-deep);
+}
+
+.shop-blocked {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--amber);
+}
+
+.shop-confirm,
+.shop-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.xp-row-figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-right: 10px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.xp-row-figures strong {
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* Kommunväljaren */
+
+.municipality-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.municipality-field svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.municipality-field .input {
+  padding-left: 34px;
+}
+
+.municipality-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.municipality-option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.municipality-option span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.municipality-option.active,
+.municipality-option:hover {
+  background: var(--green-soft);
+}
+
+@media (max-width: 900px) {
+  .shop-balance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .shop-balance-art {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .shop-grid {
+    grid-template-columns: 1fr;
+  }
+  .shop-balance {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================================== layoutprimitiver 2.0 */
+/*
+  Gemensamma byggstenar för de ombyggda vyerna: statistikrad, verktygsrad,
+  sökbara kort, detaljpanel med flikar, kompakt tabell och sidnumrering.
+  Samma klasser används av administrationen, elevens startsida och övriga
+  paneler, så att avstånd och typografi hålls konsekventa.
+*/
+
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stat-strip .stat {
+  padding: 11px 13px;
+  border-radius: 11px;
+}
+
+.stat-strip .stat-value {
+  font-size: 20px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.toolbar .search-field {
+  flex: 1 1 260px;
+  max-width: 520px;
+}
+
+.toolbar .toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------- sökbara kort */
+.org-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 12px;
+}
+
+.org-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-align: left;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.org-card:hover {
+  border-color: var(--green-line);
+  box-shadow: 0 6px 18px rgba(20, 45, 30, 0.07);
+}
+
+.org-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.org-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.org-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.org-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.org-figures b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.org-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* ------------------------------------------------------ detaljpanel */
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  margin: 0 0 3px;
+  font-size: 17px;
+  letter-spacing: -0.3px;
+}
+
+.panel-head p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.panel-body {
+  padding: 16px 18px;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.kv {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.kv dt {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-3);
+  font-weight: 700;
+}
+
+.kv dd {
+  margin: 3px 0 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- tabell */
+.table-compact {
+  min-width: 0;
+}
+
+.table-compact td,
+.table-compact th {
+  padding: 9px 12px;
+}
+
+.account-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.account-cell .account-name {
+  display: block;
+  font-weight: 650;
+  font-size: 13px;
+}
+
+.account-cell .account-user {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.pager-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.pager-btn {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.pager-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.pager-btn.is-current {
+  background: var(--green-soft);
+  border-color: var(--green-line);
+  color: var(--green-deep);
+}
+
+.pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --------------------------------------------------- snabbåtkomst m.m. */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--text);
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.quick-link:hover {
+  background: var(--green-soft);
+  border-color: var(--green-line);
+}
+
+.quick-link svg {
+  color: var(--green);
+  flex: 0 0 auto;
+}
+
+.focus-card {
+  border: 1px solid var(--green-line);
+  background: linear-gradient(135deg, var(--green-soft), var(--surface));
+  border-radius: 13px;
+  padding: 15px 17px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.focus-card h2 {
+  margin: 2px 0 4px;
+  font-size: 16.5px;
+  letter-spacing: -0.3px;
+}
+
+.focus-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(268px, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.home-grid > .stack {
+  gap: 14px;
+}
+
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+
+.org-card.is-active {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+button.org-card {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.panel .segmented {
+  flex-wrap: wrap;
+}
+
+.segmented button[role='tab'] {
+  border-right: 1px solid var(--border);
+}
+
+.segmented button[role='tab']:last-child {
+  border-right: 0;
+}
+
+/* ------------------------------------------------------- responsivt 2.0 */
+@media (max-width: 1120px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .org-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar .search-field {
+    max-width: none;
+  }
+
+  /* Konton som kort i stället för en tabell som kräver sidscroll. */
+  .stacked-table thead {
+    display: none;
+  }
+
+  .stacked-table,
+  .stacked-table tbody,
+  .stacked-table tr,
+  .stacked-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .stacked-table tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--surface);
+  }
+
+  .stacked-table td {
+    border: 0;
+    padding: 4px 0;
+  }
+
+  .stacked-table td[data-label]::before {
+    content: attr(data-label) ': ';
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .stacked-table td.table-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 380px) {
+  .stat-strip {
+    grid-template-columns: 1fr;
   }
 }

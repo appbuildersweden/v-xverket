@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowUpRight, BellRing, CalendarClock, Newspaper } from 'lucide-react';
 import { useAsync } from '../lib/useAsync';
 import { listPublications } from '../lib/api';
+import { hasFormatting, sanitizeHtml } from '../lib/sanitize';
 import { dateTime, truncate } from '../lib/format';
 import type { Publication, PublicationKind } from '../lib/types';
 import { Alert, Badge, Button, Card, EmptyState, Modal, Spinner } from './ui';
@@ -54,33 +55,52 @@ export const SchoolNews: React.FC = () => {
     );
   }
 
+  const visible = [groups.viktig, groups.nyhet, groups.uppdatering].filter(
+    (rows) => rows.length > 0,
+  );
+
+  if (visible.length === 0) {
+    return (
+      <Card title="Från skolan" subtitle="Nyheter och viktig information för din skola">
+        <EmptyState
+          icon={<Newspaper size={22} />}
+          title="Inget publicerat just nu"
+          description="När skolan publicerar nyheter eller viktig information visas den här."
+        />
+      </Card>
+    );
+  }
+
   return (
-    <div className="stack news-stack">
-      <Section
-        kind="viktig"
-        icon={<BellRing size={18} />}
-        title="Viktig information"
-        description="Sådant som skolan har markerat som särskilt viktigt."
-        rows={groups.viktig}
-        onOpen={setActive}
-        highlight
-      />
-      <Section
-        kind="nyhet"
-        icon={<Newspaper size={18} />}
-        title="Nyheter"
-        description="Publicerad information från skolan."
-        rows={groups.nyhet}
-        onOpen={setActive}
-      />
-      <Section
-        kind="uppdatering"
-        icon={<CalendarClock size={18} />}
-        title="Kommande uppdateringar"
-        description="Planerade förändringar och nya funktioner."
-        rows={groups.uppdatering}
-        onOpen={setActive}
-      />
+    <div className="news-grid">
+      {groups.viktig.length > 0 && (
+        <Section
+          icon={<BellRing size={16} />}
+          title="Viktig information"
+          description="Sådant som skolan markerat som särskilt viktigt."
+          rows={groups.viktig}
+          onOpen={setActive}
+          highlight
+        />
+      )}
+      {groups.nyhet.length > 0 && (
+        <Section
+          icon={<Newspaper size={16} />}
+          title="Nyheter"
+          description="Publicerad information från skolan."
+          rows={groups.nyhet}
+          onOpen={setActive}
+        />
+      )}
+      {groups.uppdatering.length > 0 && (
+        <Section
+          icon={<CalendarClock size={16} />}
+          title="Kommande uppdateringar"
+          description="Planerade förändringar och nya funktioner."
+          rows={groups.uppdatering}
+          onOpen={setActive}
+        />
+      )}
 
       {active && (
         <Modal
@@ -97,7 +117,12 @@ export const SchoolNews: React.FC = () => {
             </span>
           </div>
           {active.summary && <p className="news-summary">{active.summary}</p>}
-          {active.body ? (
+          {active.body && hasFormatting(active.body) ? (
+            <div
+              className="rich-text-body"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(active.body) }}
+            />
+          ) : active.body ? (
             <p style={{ whiteSpace: 'pre-wrap' }}>{active.body}</p>
           ) : (
             <p className="small muted">Ingen längre text är publicerad.</p>
@@ -116,55 +141,45 @@ export const SchoolNews: React.FC = () => {
 };
 
 const Section: React.FC<{
-  kind: PublicationKind;
   icon: React.ReactNode;
   title: string;
   description: string;
   rows: Publication[];
   onOpen: (row: Publication) => void;
   highlight?: boolean;
-}> = ({ kind, icon, title, description, rows, onOpen, highlight }) => (
+}> = ({ icon, title, description, rows, onOpen, highlight }) => (
   <Card
     title={title}
     subtitle={description}
     action={<span className="news-icon">{icon}</span>}
-    className={highlight && rows.length > 0 ? 'news-important' : undefined}
+    className={highlight ? 'news-important' : undefined}
   >
-    {rows.length === 0 ? (
-      <EmptyState
-        icon={icon}
-        title={
-          kind === 'viktig'
-            ? 'Ingen viktig information just nu'
-            : kind === 'nyhet'
-              ? 'Inga nyheter publicerade'
-              : 'Inga kommande uppdateringar'
-        }
-        description="Inget innehåll är publicerat för dig ännu. Det som publiceras för din skola visas här."
-      />
-    ) : (
-      <div className="list">
-        {rows.map((row) => (
-          <button
-            key={row.id}
-            type="button"
-            className="list-row news-row"
-            onClick={() => onOpen(row)}
-          >
-            <div className="list-main">
-              <p className="list-title">{row.title}</p>
-              {row.summary && <p className="list-sub">{truncate(row.summary, 160)}</p>}
-              <p className="list-sub">
-                {row.author_name} · {dateTime(row.publish_at)}
-              </p>
-            </div>
-            <div className="list-side">
-              <Badge tone={KIND_TONE[row.kind]}>{KIND_LABEL[row.kind]}</Badge>
-              <ArrowUpRight size={15} className="muted" aria-hidden />
-            </div>
-          </button>
-        ))}
-      </div>
-    )}
+    <div className="list">
+      {rows.slice(0, 3).map((row) => (
+        <button
+          key={row.id}
+          type="button"
+          className="list-row news-row"
+          onClick={() => onOpen(row)}
+        >
+          <div className="list-main">
+            <p className="list-title">{row.title}</p>
+            {row.summary && <p className="list-sub">{truncate(row.summary, 110)}</p>}
+            <p className="list-sub">
+              {row.author_name} · {dateTime(row.publish_at)}
+            </p>
+          </div>
+          <div className="list-side">
+            <Badge tone={KIND_TONE[row.kind]}>{KIND_LABEL[row.kind]}</Badge>
+            <ArrowUpRight size={15} className="muted" aria-hidden />
+          </div>
+        </button>
+      ))}
+      {rows.length > 3 && (
+        <p className="small muted" style={{ margin: '10px 0 0' }}>
+          {rows.length - 3} fler i samma kategori.
+        </p>
+      )}
+    </div>
   </Card>
 );

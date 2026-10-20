@@ -59,7 +59,10 @@ export function timeOnly(value: string): string {
 export function daysUntil(date: string | null): number | null {
   if (!date) return null;
   const now = new Date(todayIso());
-  const target = new Date(`${date}T12:00:00`);
+  // Datumkolumner kommer som "ÅÅÅÅ-MM-DD", men API:t kan även lämna en
+  // fullständig tidsstämpel. Då får den inte byggas om till ett ogiltigt datum.
+  const target = new Date(date.includes('T') ? date : `${date}T12:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
   return Math.round((target.getTime() - now.getTime()) / 86400000);
 }
 

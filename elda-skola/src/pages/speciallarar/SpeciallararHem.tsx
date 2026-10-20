@@ -62,7 +62,7 @@ export const SpeciallararHem: React.FC<Props> = ({ onNavigate }) => {
         description={`${longDate()} · Dina elever, elevstöd och meddelanden i en samlad vy.`}
       />
 
-      <div className="grid-4" style={{ marginBottom: 18 }}>
+      <div className="stat-strip">
         <Stat label="Mina elever" value={students.length} hint="Kopplade till dig" />
         <Stat
           label="Aktiva stödinsatser"
