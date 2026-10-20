@@ -133,7 +133,7 @@ export const LARARE_NAV: NavItem[] = [
  * elev- eller lärarpanelen.
  */
 export const SPECIAL_NAV: NavItem[] = [
-  { id: 'hem', label: 'Översikt', icon: <LayoutDashboard size={19} />, group: 'Start' },
+  { id: 'hem', label: 'Startsida', icon: <LayoutDashboard size={19} />, group: 'Start' },
   {
     id: 'elever',
     label: 'Mina elever och elevstöd',

@@ -31,7 +31,7 @@ export const SpeciallararHem: React.FC<Props> = ({ onNavigate }) => {
   if (state.error) {
     return (
       <>
-        <PageIntro title="Översikt" />
+        <PageIntro title="Startsida" />
         <Card>
           <EmptyState
             title="Kunde inte hämta översikten"
@@ -57,7 +57,7 @@ export const SpeciallararHem: React.FC<Props> = ({ onNavigate }) => {
   return (
     <div>
       <PageIntro
-        eyebrow="Speciallärarpanel"
+        eyebrow="Startsida"
         title={`Hej ${name.split(' ')[0] || ''}`}
         description={`${longDate()} · Dina elever, elevstöd och meddelanden i en samlad vy.`}
       />
