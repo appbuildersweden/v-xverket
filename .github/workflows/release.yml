@@ -23,8 +23,12 @@ name: Release
 # VITE_SUPABASE_* behövs eftersom appen bakar in Supabase-adressen i bygget.
 # Utan dem startar appen men kan inte logga in, så bygget stoppas hellre nedan.
 #
-# Webbplatsstegen hoppas över tills ELDA_DOWNLOAD_BASE och CLOUDFLARE_API_TOKEN
-# är satta, så att appen kan publiceras innan hostingen är klar.
+# CLOUDFLARE_API_TOKEN och CLOUDFLARE_ACCOUNT_ID måste vara satta som
+# hemligheter. Utan dem hoppas webbplatsstegen över, och då ligger den gamla
+# versionen kvar på elda-6a9.pages.dev. Det var precis vad som hände med
+# v0.2.13: releasen skapades men sidan uppdaterades aldrig. Därför avslutas en
+# taggkörning nu med fel om publiceringen inte kunde köras, i stället för att
+# se grön ut. PUBLICERING.md beskriver hur sidan publiceras manuellt i stället.
 
 on:
   push:
@@ -71,6 +75,12 @@ jobs:
           npm ci
           npm ci --prefix src-new
 
+      - name: Kontrollera att versionerna är samma
+        # Versionen finns i package.json, tauri.conf.json och Cargo.toml och
+        # används dessutom som taggnamn. Glider de isär byggs en app som heter
+        # något annat än releasen, och uppdateringsmanifestet pekar fel.
+        run: node scripts/kontrollera-version.mjs
+
       - name: Kontrollera att Supabase-konfigurationen finns
         shell: bash
         env:
@@ -83,6 +93,24 @@ jobs:
             echo "::error::VITE_SUPABASE_URL och VITE_SUPABASE_ANON_KEY måste vara satta som Actions-variabler."
             exit 1
           fi
+
+      - name: Läs releaseanteckningarna
+        # Anteckningarna ligger i RELEASE_NOTES.md i stället för i workflowen.
+        # Då följer de med versionsbumpen i samma commit och kan inte bli kvar
+        # som en tidigare versions text i en ny release.
+        id: release-notes
+        if: ${{ github.ref_type == 'tag' }}
+        shell: bash
+        run: |
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::RELEASE_NOTES.md saknas eller är tom."
+            exit 1
+          fi
+          {
+            echo 'body<<ELDA_RELEASE_NOTES'
+            cat RELEASE_NOTES.md
+            echo 'ELDA_RELEASE_NOTES'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Bygg och publicera Windows-paket
         # En manuell körning (workflow_dispatch) från en gren publicerar aldrig
@@ -98,16 +126,9 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Elda ${{ github.ref_name }}'
-          # Texten hamnar både i GitHub-releasen och i webbplatsens
-          # versionshistorik (site/build.mjs läser den). Håll den därför kort
-          # och beskriv vad som faktiskt ändrats.
-          releaseBody: |
-            Shopen växer: fler teman, ramar och dekorationer
-            - 19 nya föremål i shopen, 54 totalt i sju kategorier, fortfarande betalda med XP som redan tjänats in på uppgifter. Inga riktiga pengar, inga loot-lådor och ingen ny XP-väg.
-            - Två nya UI-teman: *Ghostly Moonlight* (550 XP) och *Candy Crypt* (350 XP). De målar sin bakgrund med gradienter, så de behöver ingen bildfil och kan inte sluta fungera om en fil byts ut.
-            - Fyra nya profilramar, fyra avatarer, fyra märken och fem dekorationer — alla med bilder som redan finns i paketet.
-            - Butikens förhandsvisning visar nu även teman utan bild, och samlingen, köpen och utrustningen fungerar som förut.
-            - Trädgården, uppgifterna, XP:n och övriga funktioner är oförändrade sedan 0.2.9.
+          # Texten läses från RELEASE_NOTES.md och hamnar både i GitHub-releasen
+          # och i webbplatsens versionshistorik (site/build.mjs läser den).
+          releaseBody: ${{ steps.release-notes.outputs.body }}
           releaseDraft: false
           prerelease: false
           args: --bundles nsis,msi
@@ -206,3 +227,21 @@ jobs:
         env:
           ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
         run: node scripts/kontrollera-uppdatering.mjs
+
+      - name: Kontrollera att den nya versionen ligger ute
+        # En lyckad uppladdning är inte samma sak som att sidan serverar den nya
+        # versionen. Jämför det som faktiskt svarar med det som byggdes.
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
+        env:
+          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
+        run: node scripts/kontrollera-publikation.mjs
+
+      - name: Stoppa tyst utebliven publicering
+        # Annars blir körningen grön trots att bara appen släpptes. Det var
+        # orsaken till att elda-6a9.pages.dev låg kvar på 0.2.12 efter v0.2.13.
+        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE != 'true' }}
+        shell: bash
+        run: |
+          echo "::error::GitHub-releasen skapades, men webbplatsen och /skola publicerades INTE: CLOUDFLARE_API_TOKEN saknas. elda-6a9.pages.dev serverar därför fortfarande föregående version."
+          echo "Lägg till CLOUDFLARE_API_TOKEN och CLOUDFLARE_ACCOUNT_ID under Settings → Secrets and variables → Actions och kör om jobbet, eller publicera sidan från en maskin med wrangler-inloggning enligt PUBLICERING.md."
+          exit 1

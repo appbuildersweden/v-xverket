@@ -51,8 +51,11 @@ Satta på **Settings → Secrets and variables → Actions** i repo:t:
 | `ELDA_SKOLA_URL` | variable (frivillig) | adressen till skolplattformen, t.ex. `https://elda-skola.pages.dev` |
 
 `ELDA_DOWNLOAD_BASE` används inte längre — det fanns bara för att peka på en
-publik `downloads/`-mapp. Webbplatsstegen hoppas över så länge
-`CLOUDFLARE_API_TOKEN` saknas.
+publik `downloads/`-mapp.
+
+`CLOUDFLARE_API_TOKEN` och `CLOUDFLARE_ACCOUNT_ID` är **obligatoriska**: utan
+dem kan sidan inte publiceras, och en taggkörning avslutas med fel i stället för
+att tyst lämna kvar föregående version (se avsnittet *Sidan måste publiceras*).
 
 ### Länken till Elda-skola
 
@@ -175,16 +178,81 @@ Adressen är just nu `https://elda-6a9.pages.dev`. Vill du ha t.ex.
    (`plugins.updater.endpoints`) och publicera en ny version, eftersom
    adressen är inbyggd i appen.
 
+## Sidan måste publiceras – annars ligger den gamla kvar
+
+Cloudflare Pages-projektet `elda` har **ingen Git-koppling**: sidan uppdateras
+bara när någon kör `wrangler pages deploy`. I releaseflödet är det steget
+`Publicera till Cloudflare Pages`, och det kräver hemligheterna
+`CLOUDFLARE_API_TOKEN` och `CLOUDFLARE_ACCOUNT_ID`.
+
+Tidigare hoppades de stegen över *tyst* när token saknades: GitHub-releasen
+blev klar, körningen såg grön ut, men `elda-6a9.pages.dev` och `/skola`
+serverade fortfarande föregående version. Det var orsaken till att sidan låg
+kvar på **0.2.12** efter `v0.2.13`.
+
+Nu gäller i stället:
+
+- Saknas token **misslyckas** en taggkörning med ett tydligt fel, efter att
+  releasen skapats. En grön körning betyder alltså att sidan verkligen är
+  publicerad.
+- Efter publiceringen kontrollerar `scripts/kontrollera-publikation.mjs` att
+  `/releases.json`, `/update.json` och `/skola/` svarar med den byggda
+  versionen. Samma kontroll kan köras manuellt:
+
+  ```bash
+  node scripts/kontrollera-publikation.mjs
+  ```
+
+- `scripts/kontrollera-version.mjs` jämför versionen i `package.json`,
+  `src-tauri/tauri.conf.json` och `src-tauri/Cargo.toml` och kräver att taggen
+  heter samma sak. Releaseanteckningarna ligger i `RELEASE_NOTES.md` och följer
+  med versionsbumpen i samma commit.
+
+### Publicera sidan manuellt
+
+Från en maskin med `npx wrangler login` (samma projekt `elda`):
+
+```bash
+# 1. Hämta releasens signerade filer till site/downloads
+node scripts/hamta-releasefiler.mjs v0.2.13
+
+# 2. Bygg hemsidan (update.json, releases.json, config.json)
+cd site && npm install && npm run build && cd ..
+
+# 3. Bygg Elda Skola under /skola (base /skola/)
+cd elda-skola
+ELDA_SKOLA_BUILD=1 npx tsc --noEmit
+ELDA_SKOLA_BUILD=1 npx vite build --outDir ../site/dist/skola --emptyOutDir
+cd ..
+
+# 4. Publicera till det befintliga projektet
+cd site && npx wrangler pages deploy dist --project-name elda --branch main && cd ..
+
+# 5. Kontrollera att rätt version ligger ute
+node scripts/kontrollera-publikation.mjs
+node scripts/kontrollera-uppdatering.mjs
+```
+
+Byggs skolappen utan `ELDA_SKOLA_BUILD=1` hamnar dess filer under `/assets`
+och då fungerar inte `/skola/`.
+
 ## Felsökning
 
 - **Nedladdningsknappen är grå på hemsidan** – ingen fil finns i
   `elda-installers`, eller så kunde `info`-läget inte läsas.
+- **Sidan visar en äldre version än Git-releasen** – sidan publicerades aldrig.
+  Jämför `node scripts/kontrollera-publikation.mjs` med
+  `npx wrangler pages deployment list --project-name elda`: senaste
+  produktionsdeployen ska ha samma commit som taggen.
 - **"Kontot väntar på godkännande"** – kontot är `limited` (t.ex. ett
   lärarkonto som väntar på granskning). En administratör måste godkänna det
   innan nedladdningslänkar utfärdas.
 - **Direktlänken ger ingen fil** – det är meningen. `/downloads/*` omdirigeras
   till nedladdningssektionen; filerna finns bara i den privata bucketen.
 - **Bygget hoppas över webbplatsstegen** – `CLOUDFLARE_API_TOKEN` saknas.
+  En taggkörning avslutas då med fel (efter att releasen skapats) i stället för
+  att se grön ut; sidan ligger kvar på föregående version. Publicera manuellt
+  enligt avsnittet ovan, eller lägg till hemligheten och kör om jobbet.
 - **Appen startar men inloggningen misslyckas** – bygget fick ingen
   Supabase-adress. Kontrollera att `VITE_SUPABASE_URL` och
   `VITE_SUPABASE_ANON_KEY` finns som variabler och publicera en ny version.
