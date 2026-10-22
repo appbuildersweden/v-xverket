@@ -1,7 +1,7 @@
-Notiser, skolnyheter och skyddade meddelanden
+Registrering som en chatt – konton skapas direkt
 
-- Notiser i appen för nya meddelanden, uppgifter och skolnyheter, med en klocka i sidhuvudet som visar det som är oläst.
-- Skolnyheter och aktiviteter på elevens och personalens startsidor, hämtade från den egna skolan.
-- Meddelanden mellan personal och elever skyddas av databasen: mottagare och innehåll släpps bara igenom för deltagarna i samtalet.
-- Speciallärarpanelen har en startsida med samma layout som elevens, egna elevlistor och pedagogiska anpassningar inom den egna skolorganisationen.
+- Registreringen på hemsidan är en chatt: svara på frågorna i tur och ordning och välj lösenord när allt stämmer.
+- Boten kvitterar namnet, hälsar med förnamnet och använder det i fortsatta svar, även när en påbörjad ansökan återupptas.
+- Frågorna anpassas efter rollen – skolelev, privat elev eller lärare – och svaren kan ändras innan kontot skapas.
+- Kontot skapas direkt när ansökan skickas: eleven hamnar i sin klass, läraren får sin klass och inloggningen fungerar på en gång.
 - Trädgården, uppgifterna, XP:n och shopen är oförändrade.
