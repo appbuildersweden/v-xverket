@@ -16,6 +16,7 @@ import { useHalloween } from '../../lib/halloween-context';
 import { displayName } from '../../lib/format';
 import { THEME_META, levelProgress } from '../../lib/halloween-catalog';
 import { isSeasonActive } from '../../lib/halloween';
+import { usePlatformFeatures } from '../../lib/features';
 import { AvatarStudio } from '../../components/halloween/AvatarStudio';
 import { HalloweenCollection } from '../../components/halloween/HalloweenCollection';
 import { HalloweenRoom } from '../../components/halloween/HalloweenRoom';
@@ -65,6 +66,26 @@ export const Halloween: React.FC = () => {
 
   const [tab, setTab] = useState<Tab>('shop');
 
+  // Skolans funktionsväxlar: shoppen, avatarer/figurer och hela området.
+  const { shop: shopEnabled, avatars: avatarsEnabled, halloween: halloweenEnabled } =
+    usePlatformFeatures();
+
+  const tabs = useMemo(
+    () =>
+      TABS.filter((row) =>
+        row.id === 'shop'
+          ? shopEnabled
+          : row.id === 'avatar'
+            ? avatarsEnabled
+            : true,
+      ),
+    [shopEnabled, avatarsEnabled],
+  );
+  // En flik som stängts av medan eleven står på den får aldrig lämna en tom yta.
+  const activeTab: Tab = tabs.some((row) => row.id === tab)
+    ? tab
+    : (tabs.find((row) => row.id === 'collection')?.id ?? tabs[0].id);
+
   const name = profile ? displayName(profile) : identity?.username ?? 'Elev';
 
   const season = seasons.find((row) => row.id === 'halloween') ?? null;
@@ -105,6 +126,23 @@ export const Halloween: React.FC = () => {
         <p>{error}</p>
         <Button onClick={() => void reload()}>Försök igen</Button>
       </Card>
+    );
+  }
+
+  // Hela området är avstängt: Elda Skola visas som vanligt, och temat sätts
+  // aldrig på dokumentet (se HalloweenProvider). Inget data tas bort.
+  if (!halloweenEnabled) {
+    return (
+      <div className="stack">
+        <Card title="Halloween är avstängt" subtitle="Skolan har stängt av Halloween just nu.">
+          <p style={{ marginBottom: 10 }}>
+            Du kan inte öppna Halloween-området, byta tema eller använda säsongens
+            föremål medan det är avstängt. Elda Skola visas i sin vanliga design, och
+            allt du har samlat finns kvar när skolan slår på Halloween igen.
+          </p>
+          <Badge tone="amber">Tillfälligt avstängt</Badge>
+        </Card>
+      </div>
     );
   }
 
@@ -212,9 +250,11 @@ export const Halloween: React.FC = () => {
                   Stäng av köpt tema
                 </Button>
               )}
-              <Button size="sm" variant="secondary" onClick={() => setTab('shop')}>
-                <Moon size={14} aria-hidden /> Teman i shopen
-              </Button>
+              {shopEnabled && (
+                <Button size="sm" variant="secondary" onClick={() => setTab('shop')}>
+                  <Moon size={14} aria-hidden /> Teman i shopen
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -227,13 +267,13 @@ export const Halloween: React.FC = () => {
       </section>
 
       <div className="halloween-tabs" role="tablist" aria-label="Halloween">
-        {TABS.map((row) => (
+        {tabs.map((row) => (
           <button
             key={row.id}
             type="button"
             role="tab"
-            aria-selected={tab === row.id}
-            className={`halloween-tab ${tab === row.id ? 'is-active' : ''}`}
+            aria-selected={activeTab === row.id}
+            className={`halloween-tab ${activeTab === row.id ? 'is-active' : ''}`}
             onClick={() => setTab(row.id)}
           >
             {row.icon}
@@ -255,18 +295,25 @@ export const Halloween: React.FC = () => {
         </div>
       )}
 
-      {tab === 'shop' && (
-        <HalloweenShop onOpenAvatar={() => setTab('avatar')} onOpenRoom={() => setTab('room')} />
-      )}
-      {tab === 'avatar' && <AvatarStudio onOpenShop={() => setTab('shop')} />}
-      {tab === 'collection' && (
-        <HalloweenCollection
-          onOpenShop={() => setTab('shop')}
-          onOpenAvatar={() => setTab('avatar')}
+      {activeTab === 'shop' && shopEnabled && (
+        <HalloweenShop
+          onOpenAvatar={avatarsEnabled ? () => setTab('avatar') : undefined}
           onOpenRoom={() => setTab('room')}
         />
       )}
-      {tab === 'room' && <HalloweenRoom onOpenShop={() => setTab('shop')} />}
+      {activeTab === 'avatar' && avatarsEnabled && (
+        <AvatarStudio onOpenShop={shopEnabled ? () => setTab('shop') : undefined} />
+      )}
+      {activeTab === 'collection' && (
+        <HalloweenCollection
+          onOpenShop={shopEnabled ? () => setTab('shop') : undefined}
+          onOpenAvatar={avatarsEnabled ? () => setTab('avatar') : undefined}
+          onOpenRoom={() => setTab('room')}
+        />
+      )}
+      {activeTab === 'room' && (
+        <HalloweenRoom onOpenShop={shopEnabled ? () => setTab('shop') : undefined} />
+      )}
 
       <section className="halloween-tips" aria-label="Så funkar Halloween">
         <Card title="Så funkar det" subtitle="Tre steg, och allt sparas på ditt konto.">

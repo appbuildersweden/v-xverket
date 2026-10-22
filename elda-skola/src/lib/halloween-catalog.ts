@@ -220,7 +220,15 @@ export function isRarity(value: string | null | undefined): value is Rarity {
  */
 export const FREE_THEME_KEY = 'halloween';
 
-export const THEME_KEYS = ['pumpa', 'spokhus', 'haxkonst', 'haunted-forest', 'midnight'] as const;
+export const THEME_KEYS = [
+  'pumpa',
+  'spokhus',
+  'haxkonst',
+  'haunted-forest',
+  'midnight',
+  'ghostly-moonlight',
+  'candy-crypt',
+] as const;
 
 export type ThemeKey = (typeof THEME_KEYS)[number];
 
@@ -269,6 +277,18 @@ export const THEME_META: Record<string, ThemeMeta> = {
     label: 'Midnight Halloween',
     description: 'Midnatt i neon: lila och magenta, lyktor över grusgången och en måne som lyser upp allt.',
     swatches: ['#140f22', '#c65cff', '#ff8a5c'],
+  },
+  'ghostly-moonlight': {
+    key: 'ghostly-moonlight',
+    label: 'Ghostly Moonlight',
+    description: 'Kallt månsken över kyrkogården: silvergrå ytor, gravstenar i dimman och ett stilla spökljus.',
+    swatches: ['#0b1220', '#dbe8f7', '#5a6d84'],
+  },
+  'candy-crypt': {
+    key: 'candy-crypt',
+    label: 'Candy Crypt',
+    description: 'Godiskryptan: polkagrisrosa, mintgrönt och karamell i en lekfull palett med godis längs kanten.',
+    swatches: ['#1c1020', '#ff9ec4', '#8ff0d5'],
   },
 };
 

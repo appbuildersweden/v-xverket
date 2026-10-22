@@ -10,6 +10,7 @@ import {
   navFor,
 } from './AppShell';
 import type { Identity, Profile } from '../lib/types';
+import { DEFAULT_PLATFORM_FEATURES, applyPlatformFeatures } from '../lib/features';
 
 const identity: Identity = {
   id: 'user-1',
@@ -140,11 +141,67 @@ describe('AppShell', () => {
       expect(ids).toContain('information');
       expect(ids.indexOf('information')).toBeGreaterThan(ids.indexOf('meddelanden'));
     }
-    // Admin skickar information under Publiceringar, skilt från systemutskicken.
-    expect(ADMIN_NAV.find((row) => row.id === 'information')?.group).toBe('Publiceringar');
-    expect(ADMIN_NAV.find((row) => row.id === 'meddelanden')?.group).toBe('Meddelanden');
+    // Admin har båda under Kommunikation, som två tydligt skilda poster.
+    const adminInfo = ADMIN_NAV.find((row) => row.id === 'information');
+    const adminSystem = ADMIN_NAV.find((row) => row.id === 'meddelanden');
+    expect(adminInfo?.group).toBe('Kommunikation');
+    expect(adminSystem?.group).toBe('Kommunikation');
+    expect(adminInfo?.label).not.toBe(adminSystem?.label);
     expect(LARARE_NAV.find((row) => row.id === 'meddelanden')?.label).toBe('Meddelanden');
     expect(LARARE_NAV.find((row) => row.id === 'information')?.label).toBe('Information');
+  });
+
+  it('grupperar adminmenyn i tydliga avsnitt utan dubblerade poster', () => {
+    expect(groupNav(ADMIN_NAV).map((group) => group.title)).toEqual([
+      'Översikt',
+      'Organisation',
+      'Användare och behörigheter',
+      'Kommunikation',
+      'Skolverksamhet',
+      'Belöningar',
+      'System och säkerhet',
+      'Konto',
+    ]);
+    // Startsidan är en enda post, inte både ”Översikt” och ”Startsida”.
+    expect(ADMIN_NAV[0].label).toBe('Startsida');
+    expect(ADMIN_NAV.filter((row) => row.id === 'oversikt')).toHaveLength(1);
+    const labels = ADMIN_NAV.map((row) => row.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it('fäller ihop och expanderar grupperna i adminmenyn', () => {
+    window.localStorage.clear();
+    render(
+      <AppShell
+        panel="admin"
+        activePage="oversikt"
+        onNavigate={vi.fn()}
+        identity={identity}
+        profile={profile}
+        onLogout={vi.fn()}
+      >
+        <p>Innehåll</p>
+      </AppShell>,
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Organisation' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: /Skolor och medlemskap/ })).toBeTruthy();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('button', { name: /Skolor och medlemskap/ })).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: /Skolor och medlemskap/ })).toBeTruthy();
+    window.localStorage.clear();
+  });
+
+  it('fäller bara ihop grupper i adminmenyn', () => {
+    renderShell('larare');
+    expect(screen.queryByRole('button', { name: 'Klasser och elever' })).toBeNull();
+    expect(screen.getByText('Klasser och elever')).toBeTruthy();
   });
 
   it('visar inte skoladministration för lärare eller elev', () => {
@@ -198,5 +255,27 @@ describe('AppShell', () => {
   it('visar sidans namn i toppfältet', () => {
     renderShell('larare');
     expect(document.querySelector('.topbar-title')?.textContent).toContain('Översikt');
+  });
+
+  it('döljer butiken och Halloween när skolan har stängt av dem', () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, shop: false, halloween: false });
+    const shell = renderShell('elev');
+    expect(screen.queryByText('Butiken')).toBeNull();
+    expect(screen.queryByText('Halloween')).toBeNull();
+    expect(screen.getAllByText('Hem').length).toBeGreaterThan(0);
+    shell.unmount();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  it('filtrerar elevmenyn med funktionsväxlarna', () => {
+    const noHalloween = { ...DEFAULT_PLATFORM_FEATURES, halloween: false };
+    expect(navFor('elev', noHalloween).map((row) => row.id)).not.toContain('halloween');
+    expect(navFor('elev', noHalloween).map((row) => row.id)).toContain('butik');
+    expect(
+      navFor('elev', { ...noHalloween, shop: false }).map((row) => row.id),
+    ).not.toContain('butik');
+    // Lärar- och adminmenyn påverkas inte av elevfunktionerna.
+    expect(navFor('larare', noHalloween)).toEqual(navFor('larare'));
+    expect(navFor('admin', noHalloween)).toEqual(navFor('admin'));
   });
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Ghost, Sparkles } from 'lucide-react';
 import { Button } from '../ui';
 import { useHalloween } from '../../lib/halloween-context';
+import { usePlatformFeatures } from '../../lib/features';
 import AvatarArt from './AvatarArt';
 
 /**
@@ -15,6 +16,10 @@ export const HalloweenInvite: React.FC<{
   variant?: 'banner' | 'card';
 }> = ({ onOpen, variant = 'banner' }) => {
   const { look, parts, wallet, collection, themeKey, freeTheme, setFreeTheme } = useHalloween();
+  const { halloween } = usePlatformFeatures();
+
+  // Är Halloween avstängt finns ingen ingång och inget tema att slå på.
+  if (!halloween) return null;
 
   const themeLabel = themeKey ? 'Säsongstema på' : 'Säsongstema av';
 

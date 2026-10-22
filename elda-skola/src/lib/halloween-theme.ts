@@ -1,4 +1,4 @@
-import { FREE_THEME_KEY, safeThemeKey } from './halloween-catalog';
+import { FREE_THEME_KEY, THEME_META, safeThemeKey } from './halloween-catalog';
 
 /**
  * Temat på <html>.
@@ -6,12 +6,18 @@ import { FREE_THEME_KEY, safeThemeKey } from './halloween-catalog';
  * Säsongstemat är frivilligt: appen behåller sina vanliga färger tills eleven
  * själv slår på det. Ett köpt tema vinner över det fria, och en okänd nyckel
  * (t.ex. efter en ändrad produkt) faller alltid tillbaka på standardtemat i
- * stället för att lämna appen utan färger. Valet sparas lokalt så att appen
- * inte blinkar i fel färger innan servern har svarat – servern är ändå den som
- * avgör vilka teman eleven äger.
+ * stället för att lämna appen utan färger. Servern är den som avgör vilka
+ * teman eleven äger – klienten läser bara det som redan är utrustat.
+ *
+ * Invändningen sparas per konto. Nyckeln innehåller användarens id, så två
+ * elever som lånar samma dator aldrig ärver varandras val: den som loggar in
+ * får sitt eget tema, och en elev utan tema får appens vanliga färger.
  */
 
-const PREFERENCE_KEY = 'elda-skola-halloween-prefs';
+const PREFERENCE_PREFIX = 'elda-skola-tema-prefs:';
+
+/** Gammal nyckel utan konto – läses aldrig, städas bort när ett konto loggar in. */
+const LEGACY_PREFERENCE_KEY = 'elda-skola-halloween-prefs';
 
 export interface ThemePreference {
   /** Sant när eleven har slagit på det fria säsongstemat. */
@@ -20,9 +26,12 @@ export interface ThemePreference {
 
 const DEFAULT_PREFERENCE: ThemePreference = { freeTheme: false };
 
-export function readThemePreference(): ThemePreference {
+const storageKey = (userId: string) => `${PREFERENCE_PREFIX}${userId}`;
+
+export function readThemePreference(userId: string | null | undefined): ThemePreference {
+  if (!userId) return DEFAULT_PREFERENCE;
   try {
-    const raw = localStorage.getItem(PREFERENCE_KEY);
+    const raw = localStorage.getItem(storageKey(userId));
     if (!raw) return DEFAULT_PREFERENCE;
     const parsed = JSON.parse(raw) as Partial<ThemePreference>;
     return { freeTheme: parsed.freeTheme === true };
@@ -31,11 +40,27 @@ export function readThemePreference(): ThemePreference {
   }
 }
 
-export function writeThemePreference(preference: ThemePreference): void {
+export function writeThemePreference(
+  userId: string | null | undefined,
+  preference: ThemePreference,
+): void {
+  if (!userId) return;
   try {
-    localStorage.setItem(PREFERENCE_KEY, JSON.stringify(preference));
+    localStorage.setItem(storageKey(userId), JSON.stringify({ freeTheme: preference.freeTheme }));
   } catch {
     /* lagring kan vara avstängd – temat fungerar ändå i den här sessionen */
+  }
+}
+
+/**
+ * Tar bort gamla globala valet. Det skrevs innan temat var personligt och
+ * skulle annars kunna slå på säsongstemat åt nästa person vid samma dator.
+ */
+export function clearLegacyThemePreference(): void {
+  try {
+    localStorage.removeItem(LEGACY_PREFERENCE_KEY);
+  } catch {
+    /* inget att städa om lagringen är avstängd */
   }
 }
 
@@ -50,7 +75,9 @@ export function applyTheme(themeKey: string | null): void {
 
 /**
  * Vilket tema som ska gälla. Ett köpt tema har alltid företräde; annars gäller
- * det fria säsongstemat om eleven har slagit på det.
+ * det fria säsongstemat om eleven har slagit på det. Ett tema som inte är
+ * utrustat på servern skickas aldrig in hit, så ett köpt tema kan bara synas
+ * för den som äger det.
  */
 export function resolveThemeKey(
   equippedThemeKey: string | null | undefined,
@@ -65,6 +92,7 @@ export function resolveThemeKey(
 /** Etikett för det aktiva temat, för statusraden i Halloween-vyn. */
 export function describeTheme(themeKey: string | null): string {
   if (!themeKey) return 'Standardtema';
-  if (themeKey === FREE_THEME_KEY) return 'Nattens Elda (fritt säsongstema)';
-  return themeKey;
+  const label = THEME_META[themeKey]?.label ?? themeKey;
+  if (themeKey === FREE_THEME_KEY) return `${label} (fritt säsongstema)`;
+  return label;
 }

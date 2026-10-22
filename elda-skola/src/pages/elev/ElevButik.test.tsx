@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ShopProduct, ShopPurchase } from '../../lib/shop';
 
@@ -87,12 +87,26 @@ vi.mock('../../lib/shop', async (importOriginal) => {
 });
 
 import { ElevButik } from './ElevButik';
+import { DEFAULT_PLATFORM_FEATURES, applyPlatformFeatures } from '../../lib/features';
 
 describe('ElevButik', () => {
   beforeEach(() => {
     fixtures.products = [pumpkin, midnight];
     fixtures.purchases = [];
     buyProduct.mockReset();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  afterEach(() => {
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  it('visar att butiken är avstängd när skolan har stängt av shoppen', async () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, shop: false });
+    render(<ElevButik />);
+    expect(await screen.findByText('Butiken är avstängd')).toBeTruthy();
+    expect(screen.getByText(/Dina XP, din nivå och allt du redan har köpt finns kvar/i)).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Pumpan' })).toBeNull();
   });
 
   it('visar saldo och föremål från butiken', async () => {

@@ -27,6 +27,7 @@ import { Button, Card, EmptyState, PageIntro, Spinner, Stat } from '../../compon
 import { SchoolNews } from '../../components/SchoolNews';
 import { XpPopup } from '../../components/XpPopup';
 import { HalloweenInvite } from '../../components/halloween/HalloweenInvite';
+import { usePlatformFeatures } from '../../lib/features';
 import { DailyJoke } from '../../components/DailyJoke';
 
 interface Props {
@@ -53,6 +54,8 @@ function useClock(): Date {
  */
 export const ElevHem: React.FC<Props> = ({ onNavigate }) => {
   const { identity, profile } = useAuth();
+  // Genvägar till avstängda funktioner ska inte visas alls.
+  const { shop: shopEnabled, halloween: halloweenEnabled } = usePlatformFeatures();
   const now = useClock();
   const state = useAsync(async () => {
     const classes = await listClasses();
@@ -250,14 +253,22 @@ export const ElevHem: React.FC<Props> = ({ onNavigate }) => {
                 <BookOpen size={16} />
                 Ämnen
               </button>
-              <button type="button" className="quick-link" onClick={() => onNavigate('butik')}>
-                <ShoppingBag size={16} />
-                Butiken
-              </button>
-              <button type="button" className="quick-link" onClick={() => onNavigate('halloween')}>
-                <Ghost size={16} />
-                Halloween
-              </button>
+              {shopEnabled && (
+                <button type="button" className="quick-link" onClick={() => onNavigate('butik')}>
+                  <ShoppingBag size={16} />
+                  Butiken
+                </button>
+              )}
+              {halloweenEnabled && (
+                <button
+                  type="button"
+                  className="quick-link"
+                  onClick={() => onNavigate('halloween')}
+                >
+                  <Ghost size={16} />
+                  Halloween
+                </button>
+              )}
             </div>
           </Card>
 

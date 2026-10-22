@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Filter, Lock, Search, ShoppingBag, Sparkles } from 'lucide-react';
 import { Badge, Button, Card, EmptyState, Modal } from '../ui';
 import { useHalloween } from '../../lib/halloween-context';
+import { usePlatformFeatures } from '../../lib/features';
 import {
   AVAILABILITY_LABELS,
   CATEGORY_META,
@@ -80,6 +81,7 @@ function toEntries(
   look: Record<string, string>,
   room: readonly { part_slug: string }[],
   equippedProducts: Record<string, string>,
+  avatarsEnabled = true,
 ): ShopEntry[] {
   const ownedProductIds = new Set(
     purchases.map((row) => row.product_id).filter((id): id is string => Boolean(id)),
@@ -88,8 +90,14 @@ function toEntries(
   const lookSlugs = new Set(Object.values(look));
   const roomSlugs = new Set(room.map((row) => row.part_slug));
 
+  // Är avatarer och figurer avstängda visas de inte i shopen alls – varken
+  // figurer eller avatar-delar. Rummet och dess dekorationer ligger kvar.
   const productEntries: ShopEntry[] = products
-    .filter((product) => !HIDDEN_PRODUCT_CATEGORIES.has(product.category))
+    .filter(
+      (product) =>
+        !HIDDEN_PRODUCT_CATEGORIES.has(product.category) &&
+        (avatarsEnabled || (product.category !== 'figur' && product.category !== 'avatar')),
+    )
     .map((product) => ({
       kind: 'produkt',
       key: `p-${product.id}`,
@@ -109,7 +117,9 @@ function toEntries(
       ornament_key: product.ornament_key,
     }));
 
-  const partEntries: ShopEntry[] = parts.map((part) => ({
+  const partEntries: ShopEntry[] = parts
+    .filter((part) => avatarsEnabled || part.slot === 'dekoration')
+    .map((part) => ({
     kind: 'del',
     key: `d-${part.slug}`,
     part,
@@ -133,7 +143,8 @@ function toEntries(
 }
 
 export const HalloweenShop: React.FC<{
-  onOpenAvatar: () => void;
+  /** Utelämnas när avatarer är avstängda – då döljs ingången helt. */
+  onOpenAvatar?: () => void;
   onOpenRoom: () => void;
 }> = ({ onOpenAvatar, onOpenRoom }) => {
   const {
@@ -159,10 +170,12 @@ export const HalloweenShop: React.FC<{
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { avatars: avatarsEnabled } = usePlatformFeatures();
 
   const entries = useMemo(
-    () => toEntries(products, parts, purchases, ownedParts, look, room, equipped),
-    [products, parts, purchases, ownedParts, look, room, equipped],
+    () =>
+      toEntries(products, parts, purchases, ownedParts, look, room, equipped, avatarsEnabled),
+    [products, parts, purchases, ownedParts, look, room, equipped, avatarsEnabled],
   );
 
   const groups = useMemo(() => {
@@ -327,9 +340,11 @@ export const HalloweenShop: React.FC<{
                 <Button size="sm" variant="secondary" onClick={() => setTryOn(null)}>
                   Tillbaka till din avatar
                 </Button>
-                <Button size="sm" variant="ghost" onClick={onOpenAvatar}>
-                  Öppna avatarstudion
-                </Button>
+                {onOpenAvatar && (
+                  <Button size="sm" variant="ghost" onClick={onOpenAvatar}>
+                    Öppna avatarstudion
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -596,9 +611,11 @@ export const HalloweenShop: React.FC<{
       <div className="halloween-shop-footer">
         <p className="small muted">Allt du köper ligger kvar i samlingen och kan användas igen.</p>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <Button size="sm" variant="secondary" onClick={onOpenAvatar}>
-            Bygg din avatar
-          </Button>
+          {onOpenAvatar && (
+            <Button size="sm" variant="secondary" onClick={onOpenAvatar}>
+              Bygg din avatar
+            </Button>
+          )}
           <Button size="sm" variant="ghost" onClick={onOpenRoom}>
             Till rummet
           </Button>

@@ -225,6 +225,20 @@ export interface SchoolSettings {
   updated_at: string | null;
 }
 
+/**
+ * Plattformens funktionsväxlar. Gäller hela Elda Skola och sparas på servern,
+ * så att elever får samma tillgång oavsett enhet.
+ */
+export interface PlatformFeatures {
+  /** XP-shoppen och alla köp för XP. */
+  shop: boolean;
+  /** Avatarer, figurer och deras delar. */
+  avatars: boolean;
+  /** Halloween-området och dess tema. */
+  halloween: boolean;
+  updated_at: string | null;
+}
+
 /** Endast aggregat – innehållet i anpassningarna är fortsatt skyddat. */
 export interface AdaptationStats {
   total: number;

@@ -421,7 +421,59 @@ a {
 }
 
 .nav-group + .nav-group {
-  margin-top: 10px;
+  margin-top: 8px;
+}
+
+.nav-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nav-group-items[hidden] {
+  display: none;
+}
+
+/* Rubriken är en knapp: gruppen kan fällas ihop och expanderas. */
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 6px 4px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  text-align: left;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.nav-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--text-2);
+}
+
+.nav-group-toggle:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 1px;
+}
+
+.nav-group-chevron {
+  flex: 0 0 auto;
+  opacity: 0.7;
+  transition: transform 160ms ease;
+}
+
+.nav-group-folded .nav-group-chevron {
+  transform: rotate(-90deg);
+}
+
+.nav-group-folded .nav-group-toggle {
+  color: var(--text-2);
 }
 
 .nav-group-label {
@@ -435,6 +487,16 @@ a {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.nav-group-toggle .nav-group-label {
+  padding: 0;
+  color: inherit;
+}
+
+/* I ikonläget finns ingen rubrik att fälla ihop – då visas alla poster. */
+.shell-collapsed .nav-group-toggle {
+  display: none;
 }
 
 .shell-collapsed .nav-group-label {
@@ -453,6 +515,7 @@ a {
   align-items: center;
   gap: 11px;
   width: 100%;
+  min-width: 0;
   padding: 9px 10px;
   border: 0;
   border-radius: 9px;
@@ -461,18 +524,25 @@ a {
   font-size: 13.5px;
   font-weight: 550;
   text-align: left;
-  line-height: 1.3;
-  transition: background 140ms ease;
+  line-height: 1.35;
+  transition: background 140ms ease, box-shadow 140ms ease;
 }
 
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.48);
 }
 
+/* Aktiv sida: mintgrön bakgrund och ett tydligt streck till vänster. */
 .nav-item-active {
   background: var(--green-active);
   color: var(--text);
   font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.nav-item:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: -1px;
 }
 
 .nav-icon {
@@ -1876,6 +1946,12 @@ textarea.input {
   }
 }
 
+@media (max-width: 980px) {
+  .admin-home-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 820px) {
   .sidebar {
     position: fixed;
@@ -1907,6 +1983,10 @@ textarea.input {
   }
   .nav-group-label {
     display: block;
+  }
+  /* På mobil är menyn alltid utfälld, även om den var ihopfälld på desktop. */
+  .shell-collapsed .nav-group-toggle {
+    display: flex;
   }
   .shell-collapsed .nav-group + .nav-group {
     margin-top: 10px;
@@ -2844,6 +2924,487 @@ textarea.input {
   --halloween-accent: #c971ff;
   --halloween-accent-2: #e8bcff;
   --halloween-glow: rgba(198, 92, 255, 0.35);
+}
+
+[data-ui-tema="ghostly-moonlight"] {
+  --surface: #0b1220;
+  --surface-2: #111a29;
+  --surface-3: #182435;
+  --text: #f1f6ff;
+  --text-2: #cfdcec;
+  --text-3: #9fb0c6;
+  --border: #1d2a3c;
+  --border-strong: #32455e;
+  --green: #c3d8ef;
+  --green-deep: #eaf2ff;
+  --green-soft: #152233;
+  --green-line: #3a516e;
+  --green-panel: #0d1622;
+  --green-active: #1d2c40;
+  --halloween-accent: #cfe0f4;
+  --halloween-accent-2: #eef6ff;
+  --halloween-glow: rgba(207, 224, 244, 0.28);
+}
+
+[data-ui-tema="candy-crypt"] {
+  --surface: #1c1020;
+  --surface-2: #261529;
+  --surface-3: #332036;
+  --text: #fff2f8;
+  --text-2: #f0c9dd;
+  --text-3: #c9a0b6;
+  --border: #3a2340;
+  --border-strong: #5c355f;
+  --green: #ff9ec4;
+  --green-deep: #ffd0e2;
+  --green-soft: #2a1930;
+  --green-line: #63386a;
+  --green-panel: #190e1e;
+  --green-active: #3a2141;
+  --halloween-accent: #ff9ec4;
+  --halloween-accent-2: #ffe0ec;
+  --halloween-glow: rgba(255, 158, 196, 0.3);
+}
+
+/* ------------------------------------------------- temats egen scen
+   Scenen ligger fast i bakgrunden, bakom sidomenyn och innehållet, och tar
+   aldrig emot klick. Att den ligger under innehållet gör att text, kort och
+   knappar alltid är läsbara – dekorationen syns bara där ytan är öppen. */
+.theme-scenery {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.theme-scenery svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Bara innehållskolumnen behöver ligga över scenen. Sidomenyn har redan sin
+   egen z-index, och den mobila skärmen sin – de får inte skrivas över. */
+.shell > .main-col {
+  position: relative;
+  z-index: 1;
+}
+
+/* Huvudytan släpper igenom scenen; ytan bakom kommer från .shell och body,
+   som fortfarande har temats --surface. Sidomenyn behåller sin egen yta. */
+[data-ui-tema] .main-col {
+  background: transparent;
+}
+
+.theme-scenery .scenery-float {
+  animation: scenery-float 11s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.theme-scenery .scenery-drift {
+  animation: scenery-drift 22s ease-in-out infinite;
+}
+
+.theme-scenery .scenery-flicker {
+  animation: scenery-flicker 4.5s ease-in-out infinite;
+}
+
+.theme-scenery .scenery-rise {
+  animation: scenery-rise 9s ease-in-out infinite;
+}
+
+.theme-scenery .scenery-fog {
+  animation: scenery-fog 26s ease-in-out infinite;
+}
+
+.theme-scenery .scenery-glow {
+  animation: scenery-pulse 7s ease-in-out infinite;
+}
+
+@keyframes scenery-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -14px;
+  }
+}
+
+@keyframes scenery-drift {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.9;
+  }
+  50% {
+    translate: 26px -10px;
+    opacity: 0.6;
+  }
+}
+
+@keyframes scenery-flicker {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes scenery-rise {
+  0% {
+    translate: 0 0;
+    opacity: 0.75;
+  }
+  100% {
+    translate: 0 -26px;
+    opacity: 0.3;
+  }
+}
+
+@keyframes scenery-fog {
+  0%,
+  100% {
+    translate: -20px 0;
+    opacity: 0.8;
+  }
+  50% {
+    translate: 20px 0;
+    opacity: 1;
+  }
+}
+
+@keyframes scenery-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ------------------------------------------------- temanas signaturer
+   Utöver färgerna får varje köpt tema egen form och typografi: pumpan är mjuk
+   och rund, spökhuset glasar, häxkonsten är handskriven, skogen är organisk,
+   neonnatten glöder, kyrkogården är tunn och stilren och godiskryptan är
+   klumpig och lekfull. Det fria säsongstemat rör bara accenter. */
+
+[data-ui-tema] .card {
+  border-radius: calc(var(--radius) + 2px);
+}
+
+[data-ui-tema] .page-intro h1 {
+  position: relative;
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .page-intro h1::after {
+  content: '';
+  display: block;
+  width: 76px;
+  height: 5px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--halloween-accent), rgba(255, 255, 255, 0));
+}
+
+[data-ui-tema]:not([data-ui-tema="halloween"]) .btn-primary {
+  box-shadow: 0 8px 22px var(--halloween-glow);
+}
+
+[data-ui-tema="halloween"] .page-intro h1::after {
+  content: '';
+  display: block;
+  width: 52px;
+  height: 3px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: var(--halloween-accent);
+  opacity: 0.65;
+}
+
+/* Pumpatema – rundade pumpar, lyktglöd och en mjuk, varm ram. */
+[data-ui-tema="pumpa"] .card {
+  border-radius: 20px;
+  border-color: #4a3324;
+  box-shadow: 0 14px 32px rgba(240, 138, 52, 0.08);
+}
+
+[data-ui-tema="pumpa"] .btn,
+[data-ui-tema="pumpa"] .badge {
+  border-radius: 999px;
+}
+
+[data-ui-tema="pumpa"] .sidebar {
+  background: linear-gradient(180deg, #241a13 0%, #17100c 60%, #2a1c13 100%);
+  border-right-color: #3a2a20;
+}
+
+[data-ui-tema="pumpa"] .nav-item-active {
+  box-shadow: inset 3px 0 0 var(--halloween-accent);
+}
+
+/* Spökhus – glasade, kalla ytor och en hög, smal välkomstform. */
+[data-ui-tema="spokhus"] .card {
+  border-radius: 12px 12px 22px 22px;
+  border-color: rgba(143, 184, 232, 0.28);
+  background: linear-gradient(180deg, #1d2c46, #101a2b);
+  box-shadow: inset 0 1px 0 rgba(207, 226, 255, 0.14), 0 18px 40px rgba(4, 8, 16, 0.45);
+}
+
+[data-ui-tema="spokhus"] .btn,
+[data-ui-tema="spokhus"] .badge {
+  border-radius: 8px;
+}
+
+[data-ui-tema="spokhus"] .page-intro h1 {
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 24px rgba(143, 184, 232, 0.35);
+}
+
+[data-ui-tema="spokhus"] .sidebar {
+  background: linear-gradient(180deg, #0f1826 0%, #0b1220 100%);
+  border-right-color: #24344d;
+}
+
+/* Häxkonst – handskriven känsla: serif, streckade guldkant och ljus i kanten. */
+[data-ui-tema="haxkonst"] .card {
+  border-radius: 14px;
+  border-style: dashed;
+  border-color: #5a4529;
+  background: linear-gradient(180deg, #2e251a, #1b160f);
+}
+
+[data-ui-tema="haxkonst"] .page-intro h1,
+[data-ui-tema="haxkonst"] .card-head h2,
+[data-ui-tema="haxkonst"] .halloween-theme-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.015em;
+}
+
+[data-ui-tema="haxkonst"] .btn,
+[data-ui-tema="haxkonst"] .badge {
+  border-radius: 6px;
+}
+
+[data-ui-tema="haxkonst"] .sidebar {
+  background: linear-gradient(180deg, #221b12 0%, #17130e 60%, #241c12 100%);
+  border-right-color: #55452f;
+}
+
+[data-ui-tema="haxkonst"] .green-soft,
+[data-ui-tema="haxkonst"] .nav-item-active {
+  border-color: #5f4a2c;
+}
+
+/* Haunted Forest – organiska former, som grenar och lövverk. */
+[data-ui-tema="haunted-forest"] .card {
+  border-radius: 22px 8px 22px 8px;
+  border-color: #2c4a3e;
+  box-shadow: inset 0 0 0 1px rgba(95, 209, 180, 0.08), 0 16px 34px rgba(3, 10, 8, 0.5);
+}
+
+[data-ui-tema="haunted-forest"] .btn,
+[data-ui-tema="haunted-forest"] .badge {
+  border-radius: 14px 4px 14px 4px;
+}
+
+[data-ui-tema="haunted-forest"] .sidebar {
+  background: linear-gradient(180deg, #132520 0%, #0b1614 100%);
+  border-right-color: #2c4a3e;
+}
+
+[data-ui-tema="haunted-forest"] .nav-item-active {
+  box-shadow: inset 3px 0 0 #5fd1b4;
+}
+
+/* Midnight – neon: glödande kanter och en gradient i rubrikerna. */
+[data-ui-tema="midnight"] .card {
+  border-radius: 16px;
+  border-color: #4a2f6b;
+  box-shadow: 0 0 0 1px rgba(198, 92, 255, 0.16), 0 18px 42px rgba(80, 20, 120, 0.28);
+}
+
+[data-ui-tema="midnight"] .page-intro h1,
+[data-ui-tema="midnight"] .card-head h2 {
+  background: linear-gradient(92deg, #f4d9ff 0%, #c971ff 45%, #ff8a5c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-ui-tema="midnight"] .btn,
+[data-ui-tema="midnight"] .badge {
+  border-radius: 999px;
+}
+
+[data-ui-tema="midnight"] .sidebar {
+  background: linear-gradient(180deg, #1a1129 0%, #120d1d 55%, #2a1338 100%);
+  border-right-color: #4a2f6b;
+}
+
+[data-ui-tema="midnight"] .nav-item-active {
+  box-shadow: inset 3px 0 0 #ff8a5c, 0 0 22px rgba(198, 92, 255, 0.25);
+}
+
+/* Ghostly Moonlight – tunn silverlinje, versaler och stilla ytor. */
+[data-ui-tema="ghostly-moonlight"] .card {
+  border-radius: 4px 4px 14px 14px;
+  border-color: #2b3d53;
+  background: linear-gradient(180deg, #162130, #0d1622);
+  box-shadow: inset 0 1px 0 rgba(219, 232, 247, 0.12), 0 16px 36px rgba(3, 7, 13, 0.5);
+}
+
+[data-ui-tema="ghostly-moonlight"] .page-intro .eyebrow,
+[data-ui-tema="ghostly-moonlight"] .card-head h2 {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.82em;
+}
+
+[data-ui-tema="ghostly-moonlight"] .btn,
+[data-ui-tema="ghostly-moonlight"] .badge {
+  border-radius: 4px;
+}
+
+[data-ui-tema="ghostly-moonlight"] .sidebar {
+  background: linear-gradient(180deg, #0d1725 0%, #0a1018 100%);
+  border-right-color: #22344a;
+}
+
+[data-ui-tema="ghostly-moonlight"] .page-intro h1 {
+  font-weight: 500;
+}
+
+/* Candy Crypt – klumpigt och lekfullt, med polkagrisrand i kortets överkant. */
+[data-ui-tema="candy-crypt"] .card {
+  position: relative;
+  border-radius: 24px;
+  border-color: #5c355f;
+  background: linear-gradient(180deg, #332036, #1c1020);
+  box-shadow: 0 16px 34px rgba(90, 20, 60, 0.28);
+}
+
+[data-ui-tema="candy-crypt"] .card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  border-radius: 24px 24px 0 0;
+  background: repeating-linear-gradient(
+    115deg,
+    #ff9ec4 0 12px,
+    #ffe0ec 12px 24px,
+    #8ff0d5 24px 36px,
+    #ffe0ec 36px 48px
+  );
+  opacity: 0.85;
+}
+
+[data-ui-tema="candy-crypt"] .card > * {
+  position: relative;
+}
+
+[data-ui-tema="candy-crypt"] .page-intro h1 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 0 rgba(255, 158, 196, 0.35);
+}
+
+[data-ui-tema="candy-crypt"] .btn,
+[data-ui-tema="candy-crypt"] .badge {
+  border-radius: 999px;
+  font-weight: 650;
+}
+
+[data-ui-tema="candy-crypt"] .sidebar {
+  background: linear-gradient(180deg, #2a1830 0%, #190e1e 60%, #33203a 100%);
+  border-right-color: #5c355f;
+}
+
+/* Motiv på temakorten i shopen. */
+.halloween-art-theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.halloween-art-theme .theme-motif {
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+
+/* Märket i sidopanelen visar vilket tema eleven har på, även på sidor där
+   scenen knappt syns bakom korten. */
+.sidebar-theme {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--green-line);
+  border-radius: 11px;
+  background: var(--green-soft);
+  color: var(--green-deep);
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.sidebar-theme .theme-motif {
+  flex: 0 0 auto;
+}
+
+.sidebar-theme-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-collapsed .sidebar-theme {
+  justify-content: center;
+  padding: 7px 4px;
+}
+
+.shell-collapsed .sidebar-theme-label {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .theme-scenery {
+    opacity: 0.75;
+  }
+
+  /* På mobil är menyn alltid utfälld när den är öppen, så temamärket visar
+     sitt namn även om panelen var ihopfälld på datorn. */
+  .shell-collapsed .sidebar-theme {
+    justify-content: flex-start;
+    padding: 7px 10px;
+  }
+
+  .shell-collapsed .sidebar-theme-label {
+    display: inline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-scenery .scenery-float,
+  .theme-scenery .scenery-drift,
+  .theme-scenery .scenery-flicker,
+  .theme-scenery .scenery-rise,
+  .theme-scenery .scenery-fog,
+  .theme-scenery .scenery-glow {
+    animation: none;
+  }
 }
 
 /* ------------------------------------------------------------- ytan */
@@ -5248,6 +5809,49 @@ textarea.input {
 }
 
 /* --------------------------------------------------- snabbåtkomst m.m. */
+/* Administratörens startsida: händelser och genvägar sida vid sida. */
+.admin-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(250px, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 8px;
+}
+
+.quick-link-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.quick-link-text strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.quick-link-text small {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.quick-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
 .quick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
@@ -5407,5 +6011,165 @@ button.org-card {
 @media (max-width: 380px) {
   .stat-strip {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ================================================================
+   Funktionshantering (admin)
+   ================================================================
+   Samma lugna mintpalett som resten av panelen. Korten visar funktionens
+   namn, vad den gör och vad som händer när den är avstängd, med en tydlig
+   växlingsknapp till höger. */
+
+.feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.feature-row.is-on {
+  border-color: var(--green-line);
+  background: var(--green-soft);
+}
+
+.feature-row-main {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.feature-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.feature-icon.is-on {
+  background: var(--surface);
+  color: var(--green-deep);
+  box-shadow: inset 0 0 0 1px var(--green-line);
+}
+
+.feature-text {
+  min-width: 0;
+}
+
+.feature-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 15px;
+}
+
+.feature-desc {
+  margin: 4px 0 6px;
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+
+.feature-effect {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
+.feature-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 32px;
+  margin-top: 3px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.feature-switch.is-on {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.feature-switch:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.feature-switch:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.feature-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 35, 25, 0.28);
+  transition: transform 160ms ease;
+}
+
+.feature-switch.is-on .feature-switch-knob {
+  transform: translateX(24px);
+}
+
+.feature-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+
+.feature-note > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--green);
+}
+
+@media (max-width: 640px) {
+  .feature-row {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .feature-row-main {
+    gap: 11px;
+  }
+
+  .feature-switch {
+    width: 50px;
+  }
+
+  .feature-switch.is-on .feature-switch-knob {
+    transform: translateX(18px);
   }
 }

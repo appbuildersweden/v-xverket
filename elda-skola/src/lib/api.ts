@@ -28,6 +28,7 @@ import type {
   MessageContact,
   MyOrganisation,
   PendingAttachment,
+  PlatformFeatures,
   Publication,
   PublicationKind,
   PublicationStatus,
@@ -958,6 +959,57 @@ export async function saveSchoolSettings(input: {
   });
   if (error) fail(error);
   const saved = toSchoolSettings(data);
+  if (!saved) throw new ApiError('Inställningarna sparades men kunde inte läsas tillbaka.');
+  return saved;
+}
+
+// --------------------------------------------------- funktionshantering
+
+const ALL_FEATURES_ON: PlatformFeatures = {
+  shop: true,
+  avatars: true,
+  halloween: true,
+  updated_at: null,
+};
+
+function toPlatformFeatures(data: unknown): PlatformFeatures | null {
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null | undefined;
+  if (
+    !row ||
+    typeof row.shop_enabled !== 'boolean' ||
+    typeof row.avatars_enabled !== 'boolean' ||
+    typeof row.halloween_enabled !== 'boolean'
+  ) {
+    return null;
+  }
+  return {
+    shop: row.shop_enabled,
+    avatars: row.avatars_enabled,
+    halloween: row.halloween_enabled,
+    updated_at: typeof row.updated_at === 'string' ? row.updated_at : null,
+  };
+}
+
+/** Läser plattformens funktionsväxlar. */
+export async function getPlatformFeatures(): Promise<PlatformFeatures> {
+  const { data, error } = await supabase.rpc('elda_skola_platform_features');
+  if (error) fail(error);
+  return toPlatformFeatures(data) ?? ALL_FEATURES_ON;
+}
+
+/** Sparar funktionsväxlarna. Endast administratörer släpps igenom av servern. */
+export async function savePlatformFeatures(input: {
+  shop: boolean;
+  avatars: boolean;
+  halloween: boolean;
+}): Promise<PlatformFeatures> {
+  const { data, error } = await supabase.rpc('elda_skola_save_platform_features', {
+    p_shop_enabled: input.shop,
+    p_avatars_enabled: input.avatars,
+    p_halloween_enabled: input.halloween,
+  });
+  if (error) fail(error);
+  const saved = toPlatformFeatures(data);
   if (!saved) throw new ApiError('Inställningarna sparades men kunde inte läsas tillbaka.');
   return saved;
 }

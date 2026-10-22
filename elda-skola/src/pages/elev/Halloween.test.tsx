@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Halloween } from './Halloween';
 import type { HalloweenApi } from '../../lib/halloween-context';
+import { DEFAULT_PLATFORM_FEATURES, applyPlatformFeatures } from '../../lib/features';
 import type { HalloweenPart, HalloweenProduct } from '../../lib/halloween';
 
 /**
@@ -240,5 +241,44 @@ describe('Halloween-området', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Rummet/i }));
     expect(screen.getByRole('group', { name: /Ditt Halloween-rum/i })).toBeTruthy();
     expect(screen.getAllByRole('button', { name: /plats|Vänster|Mitten|Höger/i })).toHaveLength(6);
+  });
+
+  it('visar ett stängt område när skolan har stängt av Halloween', () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, halloween: false });
+    const view = render(<Halloween />);
+    expect(screen.getByRole('heading', { name: 'Halloween är avstängt' })).toBeTruthy();
+    expect(screen.getByText(/Elda Skola visas i sin vanliga design/i)).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: /Shop/i })).toBeNull();
+    view.unmount();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  it('döljer avatarfliken när avatarer är avstängda', () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, avatars: false });
+    const view = render(<Halloween />);
+    expect(screen.queryByRole('tab', { name: /Avatar/i })).toBeNull();
+    expect(screen.getByRole('tab', { name: /Shop/i })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: /Samling/i })).toBeTruthy();
+    view.unmount();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  it('gömmer avatar-delar i shopen när avatarer är avstängda', () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, avatars: false });
+    const view = render(<Halloween />);
+    expect(screen.getByRole('tab', { name: /Shop/i })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Häxhatten' })).toBeNull();
+    view.unmount();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
+  });
+
+  it('döljer shopfliken och shoppens ingångar när XP-shoppen är avstängd', () => {
+    applyPlatformFeatures({ ...DEFAULT_PLATFORM_FEATURES, shop: false });
+    const view = render(<Halloween />);
+    expect(screen.queryByRole('tab', { name: /Shop/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Bygg din avatar/i })).toBeNull();
+    expect(screen.getByRole('tab', { name: /Avatar/i })).toBeTruthy();
+    view.unmount();
+    applyPlatformFeatures(DEFAULT_PLATFORM_FEATURES);
   });
 });

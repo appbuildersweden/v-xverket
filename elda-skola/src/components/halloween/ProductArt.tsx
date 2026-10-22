@@ -1,6 +1,7 @@
 import React from 'react';
 import { Moon, Sparkles } from 'lucide-react';
 import AvatarArt from './AvatarArt';
+import { ThemeMotif } from '../theme/ThemeScenery';
 import { DEFAULT_LOOK, THEME_META, isRarity, type AvatarSlot } from '../../lib/halloween-catalog';
 import type { HalloweenPart } from '../../lib/halloween';
 
@@ -31,14 +32,19 @@ export const ProductArt: React.FC<{
   const theme = themeKey ? THEME_META[themeKey] : null;
 
   if (theme) {
+    // Temakortet visar temats eget motiv, så att pumpor, spökhus och häxkittlar
+    // går att skilja på redan i shopen – inte bara som tre färgprover.
     return (
       <span
         className="halloween-art halloween-art-theme"
-        style={{ width: size, height: size, background: theme.swatches[0] }}
+        style={{
+          width: size,
+          height: size,
+          background: `radial-gradient(circle at 30% 20%, ${theme.swatches[2]} 0%, ${theme.swatches[0]} 72%)`,
+        }}
         aria-hidden
       >
-        <span style={{ background: theme.swatches[1] }} />
-        <span style={{ background: theme.swatches[2] }} />
+        <ThemeMotif themeKey={theme.key} size={Math.round(size * 0.82)} />
       </span>
     );
   }

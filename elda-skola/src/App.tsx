@@ -33,6 +33,7 @@ import {
 import { Profil } from './pages/Profil';
 import { Information } from './pages/Information';
 import { HalloweenProvider } from './lib/halloween-context';
+import { useLoadPlatformFeatures, usePlatformFeatures } from './lib/features';
 
 interface Route {
   panel: PanelKind;
@@ -98,24 +99,31 @@ function SchoolApp() {
           ? 'speciallarare'
           : 'elev';
 
+  // Funktionsväxlarna avgör vilka sidor som finns i menyn just nu. De laddas en
+  // gång per inloggning och uppdateras direkt när admin ändrar dem.
+  const features = usePlatformFeatures();
+  useLoadPlatformFeatures(Boolean(identity));
+
+  const fallbackPage = useMemo(() => defaultStartPage(panel, features), [panel, features]);
+
   const [route, setRoute] = useState<Route>(() => {
     const parsed = typeof window === 'undefined' ? null : parseRoute(window.location.hash);
     if (parsed && parsed.panel === panel) return parsed;
-    return { panel, page: defaultStartPage(panel) };
+    return { panel, page: defaultStartPage(panel, features) };
   });
 
   // Rollen äger panelen. En elev kan aldrig nå lärarpanelen genom att ändra
-  // adressen, och tvärtom.
+  // adressen, och tvärtom. Avstängda funktioner räknas inte som giltiga sidor.
   const validPage = useMemo(
-    () => navFor(route.panel).some((item) => item.id === route.page),
-    [route],
+    () => navFor(route.panel, features).some((item) => item.id === route.page),
+    [route, features],
   );
 
   useEffect(() => {
     if (route.panel !== panel || !validPage) {
-      setRoute({ panel, page: defaultStartPage(panel) });
+      setRoute({ panel, page: fallbackPage });
     }
-  }, [panel, route.panel, validPage]);
+  }, [panel, route.panel, validPage, fallbackPage]);
 
   const navigate = useCallback(
     (page: string) => {
@@ -136,15 +144,15 @@ function SchoolApp() {
       const parsed = parseRoute(window.location.hash);
       if (!parsed) {
         // Tom eller okänd adress: tillbaka till rollens startsida.
-        setRoute({ panel, page: defaultStartPage(panel) });
+        setRoute({ panel, page: fallbackPage });
         return;
       }
       if (parsed.panel !== panel) {
-        navigate(defaultStartPage(panel));
+        navigate(fallbackPage);
         return;
       }
-      if (!navFor(parsed.panel).some((item) => item.id === parsed.page)) {
-        navigate(defaultStartPage(panel));
+      if (!navFor(parsed.panel, features).some((item) => item.id === parsed.page)) {
+        navigate(fallbackPage);
         return;
       }
       setRoute(parsed);
@@ -152,11 +160,11 @@ function SchoolApp() {
     apply();
     window.addEventListener('hashchange', apply);
     return () => window.removeEventListener('hashchange', apply);
-  }, [panel, navigate]);
+  }, [panel, navigate, fallbackPage, features]);
 
   if (!identity) return null;
 
-  const page = route.panel === panel && validPage ? route.page : defaultStartPage(panel);
+  const page = route.panel === panel && validPage ? route.page : fallbackPage;
 
   const content = (() => {
     if (page === 'profil') {

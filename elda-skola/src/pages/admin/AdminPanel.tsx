@@ -1,11 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { LogOut, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/auth';
-import type { AdaptationStats } from '../../lib/types';
-import { Alert, Badge, Button, Card, EmptyState, PageIntro, Spinner, Stat } from '../../components/ui';
-import { ADMIN_NAV } from '../../components/AppShell';
-import { getAdaptationStats } from '../../lib/api';
+import { Alert, Badge, Button, Card, EmptyState, Spinner } from '../../components/ui';
+import { AdminHome, type AuditRow } from './AdminHome';
 import { AdminPeople } from './AdminPeople';
 import { AdminClasses } from './AdminClasses';
 import { AdminOrganisations } from './AdminOrganisations';
@@ -15,118 +13,20 @@ import { AdminPlanning } from './AdminPlanning';
 import { AdminAdaptations } from './AdminAdaptations';
 import { AdminXp } from './AdminXp';
 import { AdminShop } from './AdminShop';
+import { AdminFeatures } from './AdminFeatures';
 import { Information } from '../Information';
 
-interface OverviewCounts {
-  accounts: number;
-  active: number;
-  inactive: number;
-  students: number;
-  teachers: number;
-  specialTeachers: number;
-  admins: number;
-  limited: number;
-  pendingApplications: number;
-}
 
 export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: string) => void }> = ({
   activePage,
+  onNavigate,
 }) => {
   const { identity, profile, logout } = useAuth();
-  const [counts, setCounts] = useState<OverviewCounts | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: invokeError } = await supabase.functions.invoke('admin-users', {
-        body: { action: 'overview' },
-      });
-      const next = (data as { counts?: OverviewCounts } | null)?.counts;
-      if (invokeError || !next) {
-        setCounts(null);
-        setError('Kunde inte hämta översikten. Kontrollera att adminfunktionen är publicerad.');
-      } else {
-        setCounts(next);
-      }
-    } catch {
-      setCounts(null);
-      setError('Anslutningen till administrationen misslyckades. Försök igen.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh, reloadKey]);
-
-  const title = ADMIN_NAV.find((item) => item.id === activePage)?.label ?? 'Översikt';
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || identity?.username || 'Administratör';
 
   return (
     <div className="admin-page">
-      {activePage === 'oversikt' && (
-        <PageIntro
-          eyebrow="Administratörspanel"
-          title={title}
-          description="Samtliga skolor, konton, klasser och publiceringar. Du är systemadministratör för hela Elda Skola."
-        />
-      )}
-
-      {activePage === 'oversikt' && (
-        <>
-          {error && (
-            <Alert>
-              {error}
-              <div>
-                <Button size="sm" variant="ghost" onClick={() => setReloadKey((value) => value + 1)}>
-                  Försök igen
-                </Button>
-              </div>
-            </Alert>
-          )}
-          {loading && !counts ? (
-            <Spinner label="Hämtar administrationen…" />
-          ) : counts ? (
-            <div className="stack">
-              <div className="grid-4">
-                <Stat label="Konton" value={counts.accounts} hint={`${counts.active} aktiva · ${counts.inactive} inaktiva`} />
-                <Stat label="Lärare" value={counts.teachers} />
-                <Stat label="Elever" value={counts.students} />
-                <Stat label="Administratörer" value={counts.admins} />
-              </div>
-              <Card title="Översikt" subtitle="Aktuella serverräknade kontostatusar">
-                <div className="dl">
-                  <div>
-                    <dt>Speciallärare</dt>
-                    <dd>{counts.specialTeachers}</dd>
-                  </div>
-                  <div>
-                    <dt>Begränsade konton</dt>
-                    <dd>{counts.limited}</dd>
-                  </div>
-                  <div>
-                    <dt>Väntande ansökningar</dt>
-                    <dd>{counts.pendingApplications}</dd>
-                  </div>
-                </div>
-              </Card>
-              <AdaptationSummary />
-              <Card title="Administratörens säkerhetsramar">
-                <p className="small muted" style={{ margin: 0 }}>
-                  Roller, lösenord och kontostatus ändras endast via serverfunktionen{' '}
-                  <code>admin-users</code>. Den verifierar adminrollen från den signerade sessionen och
-                  loggar varje åtgärd. Inga service role-nycklar finns i webbläsaren.
-                </p>
-              </Card>
-            </div>
-          ) : null}
-        </>
-      )}
+      {activePage === 'oversikt' && <AdminHome onNavigate={onNavigate} />}
 
       {activePage === 'organisationer' && <AdminOrganisations />}
       {activePage === 'publiceringar' && <AdminPublications />}
@@ -136,6 +36,7 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
       {activePage === 'klasser' && <AdminClasses />}
       {activePage === 'xp' && <AdminXp />}
       {activePage === 'butik' && <AdminShop />}
+      {activePage === 'funktioner' && <AdminFeatures />}
       {activePage === 'meddelanden' && <AdminSystemMessages />}
       {activePage === 'stod' && <AdminAdaptations />}
       {activePage === 'kalender' && <AdminPlanning />}
@@ -170,43 +71,6 @@ export const AdminPanel: React.FC<{ activePage: string; onNavigate: (page: strin
         <AdminContent page={activePage} />
       )}
     </div>
-  );
-};
-
-/** Liten sammanfattning av elevstödet på översikten. */
-const AdaptationSummary: React.FC = () => {
-  const [stats, setStats] = useState<AdaptationStats | null>(null);
-  const [failed, setFailed] = useState(false);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    void getAdaptationStats()
-      .then((next) => {
-        if (mounted.current) setStats(next);
-      })
-      .catch(() => {
-        if (mounted.current) setFailed(true);
-      });
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  if (failed || !stats) return null;
-
-  return (
-    <Card title="Elevstöd" subtitle="Aggregat – inga elevuppgifter visas här">
-      <div className="grid-4">
-        <Stat label="Anpassningar" value={stats.total} />
-        <Stat label="Aktiva" value={stats.active} />
-        <Stat label="Avslutade" value={stats.completed} />
-        <Stat label="Elever" value={stats.students} />
-      </div>
-      <p className="small muted" style={{ marginBottom: 0, marginTop: 10 }}>
-        <ShieldCheck size={13} /> Innehållet kan bara läsas av lärare som undervisar eleven.
-      </p>
-    </Card>
   );
 };
 
@@ -355,7 +219,7 @@ const AdminContent: React.FC<{ page: string }> = ({ page }) => {
 };
 
 const AdminAuditLog: React.FC = () => {
-  const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
+  const [rows, setRows] = useState<AuditRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -364,7 +228,7 @@ const AdminAuditLog: React.FC = () => {
     void supabase.rpc('list_audit_log', { p_limit: 100 }).then(({ data, error: err }) => {
       if (!live) return;
       if (err) setError('Aktivitetsloggen kunde inte hämtas med din behörighet.');
-      else setRows((data ?? []) as Array<Record<string, unknown>>);
+      else setRows((data ?? []) as AuditRow[]);
       setLoading(false);
     });
     return () => {

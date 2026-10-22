@@ -38,7 +38,7 @@ import { partProgress, type HalloweenPart } from '../../lib/halloween';
 
 const GROUPS: Array<'Karaktär' | 'Kläder' | 'Scen'> = ['Karaktär', 'Kläder', 'Scen'];
 
-export const AvatarStudio: React.FC<{ onOpenShop: () => void }> = ({ onOpenShop }) => {
+export const AvatarStudio: React.FC<{ onOpenShop?: () => void }> = ({ onOpenShop }) => {
   const { parts, look, ownedParts, wallet, saveLook, purchasePart, loading, ready } = useHalloween();
 
   const [draft, setDraft] = useState<Record<string, string>>(() => normalizeLook(look));
@@ -405,9 +405,11 @@ export const AvatarStudio: React.FC<{ onOpenShop: () => void }> = ({ onOpenShop 
           </Card>
 
           <div className="halloween-studio-foot">
-            <Button variant="secondary" size="sm" onClick={onOpenShop}>
-              Fler delar i shopen
-            </Button>
+            {onOpenShop && (
+              <Button variant="secondary" size="sm" onClick={onOpenShop}>
+                Fler delar i shopen
+              </Button>
+            )}
             <span className="small muted">
               {dirty ? 'Osparade ändringar' : 'Allt är sparat'}
             </span>

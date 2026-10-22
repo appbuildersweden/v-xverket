@@ -8,7 +8,14 @@ import React, {
   useState,
 } from 'react';
 import { useAuth } from './auth';
-import { applyTheme, readThemePreference, resolveThemeKey, writeThemePreference } from './halloween-theme';
+import { usePlatformFeatures } from './features';
+import {
+  applyTheme,
+  clearLegacyThemePreference,
+  readThemePreference,
+  resolveThemeKey,
+  writeThemePreference,
+} from './halloween-theme';
 import {
   buildCollection,
   equipProduct,
@@ -121,12 +128,29 @@ const HalloweenCtx = createContext<HalloweenApi>({
 export const HalloweenProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { identity } = useAuth();
   const userId = identity?.id ?? null;
+  // Skolan kan stänga av Halloween helt. Då används inget tema alls, även om
+  // eleven har ett köpt tema utrustat – servern behåller valet tills det slås på.
+  const features = usePlatformFeatures();
 
   const [state, setState] = useState<HalloweenState | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [freeTheme, setFreeThemeState] = useState(() => readThemePreference().freeTheme);
+  // Invändningen är personlig: den läses först när kontot är känt, och nollställs
+  // när kontot byts så att ingen ärver någon annans tema.
+  const [freeTheme, setFreeThemeState] = useState(
+    () => readThemePreference(identity?.id ?? null).freeTheme,
+  );
   const loadedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    clearLegacyThemePreference();
+    setFreeThemeState(readThemePreference(userId).freeTheme);
+    return () => {
+      // Lämnar eleven appen (utloggning eller annat konto) ska inget tema ligga
+      // kvar på dokumentet och färga nästa persons inloggning.
+      applyTheme(null);
+    };
+  }, [userId]);
 
   const reload = useCallback(async () => {
     if (!userId) return;
@@ -150,6 +174,9 @@ export const HalloweenProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     if (loadedFor.current === userId) return;
     loadedFor.current = userId;
+    // Inget från förra kontot får hänga kvar medan det nya laddas.
+    setState(null);
+    setError(null);
     void reload();
   }, [userId, reload]);
 
@@ -163,18 +190,22 @@ export const HalloweenProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [state, equippedThemeProductId]);
 
   const themeKey = useMemo(
-    () => resolveThemeKey(equippedThemeKey, { freeTheme }),
-    [equippedThemeKey, freeTheme],
+    () => (features.halloween ? resolveThemeKey(equippedThemeKey, { freeTheme }) : null),
+    [equippedThemeKey, freeTheme, features.halloween],
   );
 
   useEffect(() => {
     applyTheme(themeKey);
   }, [themeKey]);
 
-  const setFreeTheme = useCallback((enabled: boolean) => {
-    setFreeThemeState(enabled);
-    writeThemePreference({ freeTheme: enabled });
-  }, []);
+  const setFreeTheme = useCallback(
+    (enabled: boolean) => {
+      if (!features.halloween) return;
+      setFreeThemeState(enabled);
+      writeThemePreference(userId, { freeTheme: enabled });
+    },
+    [userId, features.halloween],
+  );
 
   const ownedParts = useMemo(
     () => ownedPartSlugs(state?.parts ?? [], state?.unlocks ?? []),

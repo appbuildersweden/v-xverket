@@ -26,6 +26,7 @@ import {
 import { shortDate } from '../../lib/format';
 import { Alert, Badge, Button, Card, EmptyState, Modal, PageIntro, Spinner, Stat } from '../../components/ui';
 import { ProductArt } from '../../components/halloween/ProductArt';
+import { usePlatformFeatures } from '../../lib/features';
 
 /** XP per nivå. Samma värde som `reward_settings.xp_per_level` i databasen. */
 const XP_PER_LEVEL = 100;
@@ -40,16 +41,24 @@ type Filter = 'alla' | ShopCategory | 'mina';
  * förklarar bara varför något inte går att köpa ännu – de avgör ingenting.
  */
 export const ElevButik: React.FC = () => {
-  const state = useAsync(async () => {
-    const [products, purchases, equipped, xp, seasons] = await Promise.all([
-      listShopProducts(),
-      listMyPurchases(),
-      listMyEquipped(),
-      loadXp(),
-      listSeasons(),
-    ]);
-    return { products, purchases, equipped, xp, seasons };
-  }, []);
+  // Butiken styrs av skolans funktionsväxel. Är den avstängd hämtas ingenting
+  // och sidan visar ett tydligt besked i stället – även om eleven går direkt
+  // till adressen. Servern stoppar dessutom varje köp.
+  const { shop: shopEnabled } = usePlatformFeatures();
+  const state = useAsync(
+    async () => {
+      const [products, purchases, equipped, xp, seasons] = await Promise.all([
+        listShopProducts(),
+        listMyPurchases(),
+        listMyEquipped(),
+        loadXp(),
+        listSeasons(),
+      ]);
+      return { products, purchases, equipped, xp, seasons };
+    },
+    [],
+    { enabled: shopEnabled },
+  );
 
   const [filter, setFilter] = useState<Filter>('alla');
   const [query, setQuery] = useState('');
@@ -157,6 +166,26 @@ export const ElevButik: React.FC = () => {
       setBusyId(null);
     }
   };
+
+  if (!shopEnabled) {
+    return (
+      <div className="stack">
+        <PageIntro
+          eyebrow="Belöningar"
+          title="Butiken"
+          description="Skolan bestämmer när XP-shoppen är öppen."
+        />
+        <Card title="Butiken är avstängd" subtitle="Skolan har stängt av XP-shoppen just nu.">
+          <p style={{ marginBottom: 10 }}>
+            Du kan inte öppna butiken eller köpa något medan den är avstängd. Dina XP,
+            din nivå och allt du redan har köpt finns kvar och kommer tillbaka när skolan
+            slår på butiken igen.
+          </p>
+          <Badge tone="amber">Tillfälligt avstängd</Badge>
+        </Card>
+      </div>
+    );
+  }
 
   if (state.loading) return <Spinner label="Hämtar butiken…" />;
   if (state.error) {

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_LOOK,
   SORT_LABELS,
+  THEME_KEYS,
+  THEME_META,
   canAfford,
   filterItems,
   itemStatus,
@@ -19,7 +21,14 @@ import {
   type HalloweenPurchase,
   type HalloweenUnlock,
 } from './halloween';
-import { applyTheme, readThemePreference, resolveThemeKey, writeThemePreference } from './halloween-theme';
+import {
+  applyTheme,
+  clearLegacyThemePreference,
+  describeTheme,
+  readThemePreference,
+  resolveThemeKey,
+  writeThemePreference,
+} from './halloween-theme';
 
 /**
  * Halloween-logiken är avsiktligt ren: urval, status, nivå och ägande går att
@@ -200,8 +209,18 @@ describe('teman', () => {
   it('släpper bara igenom kända temanycklar', () => {
     expect(safeThemeKey('halloween')).toBe('halloween');
     expect(safeThemeKey('midnight')).toBe('midnight');
+    expect(safeThemeKey('candy-crypt')).toBe('candy-crypt');
+    expect(safeThemeKey('ghostly-moonlight')).toBe('ghostly-moonlight');
     expect(safeThemeKey('okant-tema')).toBeNull();
     expect(safeThemeKey(null)).toBeNull();
+  });
+
+  it('har ett eget motiv och en egen beskrivning för varje tema', () => {
+    for (const key of THEME_KEYS) {
+      expect(THEME_META[key]?.label).toBeTruthy();
+      expect(THEME_META[key]?.swatches).toHaveLength(3);
+    }
+    expect(new Set(THEME_KEYS).size).toBe(THEME_KEYS.length);
   });
 
   it('låter ett köpt tema vinna över det fria', () => {
@@ -219,13 +238,35 @@ describe('teman', () => {
   });
 
   it('har säsongstemat avstängt tills eleven själv slår på det', () => {
-    expect(readThemePreference()).toEqual({ freeTheme: false });
-    writeThemePreference({ freeTheme: true });
-    expect(readThemePreference()).toEqual({ freeTheme: true });
-    writeThemePreference({ freeTheme: false });
-    expect(readThemePreference()).toEqual({ freeTheme: false });
-    localStorage.setItem('elda-skola-halloween-prefs', '{trasigt');
-    expect(readThemePreference()).toEqual({ freeTheme: false });
+    expect(readThemePreference('elev-1')).toEqual({ freeTheme: false });
+    writeThemePreference('elev-1', { freeTheme: true });
+    expect(readThemePreference('elev-1')).toEqual({ freeTheme: true });
+    writeThemePreference('elev-1', { freeTheme: false });
+    expect(readThemePreference('elev-1')).toEqual({ freeTheme: false });
+    localStorage.setItem('elda-skola-tema-prefs:elev-1', '{trasigt');
+    expect(readThemePreference('elev-1')).toEqual({ freeTheme: false });
+  });
+
+  it('låter aldrig en elev ärva en annan elevs temaval', () => {
+    writeThemePreference('elev-a', { freeTheme: true });
+    expect(readThemePreference('elev-a')).toEqual({ freeTheme: true });
+    // Samma webbläsare, annat konto: inget tema alls.
+    expect(readThemePreference('elev-b')).toEqual({ freeTheme: false });
+    expect(readThemePreference(null)).toEqual({ freeTheme: false });
+  });
+
+  it('städar bort det gamla globala valet', () => {
+    localStorage.setItem('elda-skola-halloween-prefs', JSON.stringify({ freeTheme: true }));
+    clearLegacyThemePreference();
+    expect(localStorage.getItem('elda-skola-halloween-prefs')).toBeNull();
+    // Okänt konto får aldrig ett tema av det gamla värdet.
+    expect(readThemePreference('elev-ny')).toEqual({ freeTheme: false });
+  });
+
+  it('visar temats namn i statusraden', () => {
+    expect(describeTheme(null)).toBe('Standardtema');
+    expect(describeTheme('halloween')).toBe('Nattens Elda (fritt säsongstema)');
+    expect(describeTheme('candy-crypt')).toBe('Candy Crypt');
   });
 });
 

@@ -4,6 +4,7 @@ import {
   ShieldCheck,
   BookOpen,
   CalendarDays,
+  ChevronDown,
   ClipboardCheck,
   ClipboardList,
   Coins,
@@ -20,8 +21,10 @@ import {
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
+  Send,
   Settings,
   ShoppingBag,
+  SlidersHorizontal,
   Sparkles,
   Users,
   UserRound,
@@ -36,6 +39,11 @@ import {
 } from '../lib/school-settings';
 import { useMessageRealtime, useUnreadTotal } from '../lib/unread';
 import { NotificationBell } from './NotificationBell';
+import { ThemeMotif, ThemeScenery } from './theme/ThemeScenery';
+import { useHalloween } from '../lib/halloween-context';
+import { describeTheme } from '../lib/halloween-theme';
+import { isPageEnabled, usePlatformFeatures } from '../lib/features';
+import type { PlatformFeatures } from '../lib/types';
 import { getMyOrganisation } from '../lib/api';
 import type { Identity, MyOrganisation, Profile } from '../lib/types';
 
@@ -174,50 +182,78 @@ export const SPECIAL_NAV: NavItem[] = [
 /**
  * Administratörens meny. Det här är den enda definitionen – adminpanelen
  * importerar den härifrån i stället för att ha en egen kopia.
+ *
+ * Sju grupper i den ordning en administratör arbetar: översikt, organisation,
+ * användare, kommunikation, skolverksamhet, belöningar och system. Varje post
+ * har en egen sida i AdminPanel; grupperna är bara rubriker och fällbara.
  */
 export const ADMIN_NAV: NavItem[] = [
-  { id: 'oversikt', label: 'Översikt', icon: <LayoutDashboard size={19} />, group: 'Översikt' },
+  { id: 'oversikt', label: 'Startsida', icon: <LayoutDashboard size={19} />, group: 'Översikt' },
   {
     id: 'organisationer',
     label: 'Skolor och medlemskap',
     icon: <Building2 size={19} />,
-    group: 'Skolorganisationer',
-  },
-  {
-    id: 'publiceringar',
-    label: 'Nyheter och uppdateringar',
-    icon: <Newspaper size={19} />,
-    group: 'Publiceringar',
-  },
-  {
-    id: 'information',
-    label: 'Information till klasser',
-    icon: <Megaphone size={19} />,
-    group: 'Publiceringar',
-  },
-  {
-    id: 'anvandare',
-    label: 'Alla konton',
-    icon: <Users size={19} />,
-    group: 'Användare och konton',
+    group: 'Organisation',
   },
   {
     id: 'klasser',
     label: 'Klasser och medlemmar',
     icon: <GraduationCap size={19} />,
-    group: 'Klasser',
+    group: 'Organisation',
+  },
+  {
+    id: 'anvandare',
+    label: 'Alla konton',
+    icon: <Users size={19} />,
+    group: 'Användare och behörigheter',
   },
   {
     id: 'larare',
     label: 'Lärarkonton',
     icon: <UserRound size={19} />,
-    group: 'Lärare',
+    group: 'Användare och behörigheter',
+  },
+  {
+    id: 'publiceringar',
+    label: 'Nyheter och uppdateringar',
+    icon: <Newspaper size={19} />,
+    group: 'Kommunikation',
+  },
+  {
+    id: 'information',
+    label: 'Information till klasser',
+    icon: <Megaphone size={19} />,
+    group: 'Kommunikation',
   },
   {
     id: 'meddelanden',
     label: 'Systemutskick',
-    icon: <Megaphone size={19} />,
-    group: 'Meddelanden',
+    icon: <Send size={19} />,
+    group: 'Kommunikation',
+  },
+  {
+    id: 'kalender',
+    label: 'Skolans planering',
+    icon: <CalendarDays size={19} />,
+    group: 'Skolverksamhet',
+  },
+  {
+    id: 'uppgifter',
+    label: 'Uppgifter',
+    icon: <ClipboardList size={19} />,
+    group: 'Skolverksamhet',
+  },
+  {
+    id: 'material',
+    label: 'Läromaterial',
+    icon: <FolderOpen size={19} />,
+    group: 'Skolverksamhet',
+  },
+  {
+    id: 'stod',
+    label: 'Elevstöd och anpassningar',
+    icon: <ShieldCheck size={19} />,
+    group: 'Skolverksamhet',
   },
   {
     id: 'xp',
@@ -232,36 +268,17 @@ export const ADMIN_NAV: NavItem[] = [
     group: 'Belöningar',
   },
   {
-    id: 'stod',
-    label: 'Anpassningar',
-    icon: <ShieldCheck size={19} />,
-    group: 'Elevstöd och anpassningar',
+    id: 'funktioner',
+    label: 'Funktionshantering',
+    icon: <SlidersHorizontal size={19} />,
+    group: 'System och säkerhet',
   },
   {
-    id: 'kalender',
-    label: 'Skolans planering',
-    icon: <CalendarDays size={19} />,
-    group: 'Planering',
+    id: 'logg',
+    label: 'Aktivitetslogg',
+    icon: <ActivityIcon size={19} />,
+    group: 'System och säkerhet',
   },
-  {
-    id: 'uppgifter',
-    label: 'Uppgifter',
-    icon: <ClipboardList size={19} />,
-    group: 'Uppgifter och läromaterial',
-  },
-  {
-    id: 'material',
-    label: 'Läromaterial',
-    icon: <FolderOpen size={19} />,
-    group: 'Uppgifter och läromaterial',
-  },
-  {
-    id: 'installningar',
-    label: 'Systeminställningar',
-    icon: <Settings size={19} />,
-    group: 'Systeminställningar',
-  },
-  { id: 'logg', label: 'Aktivitetslogg', icon: <ActivityIcon size={19} />, group: 'Systeminställningar' },
   {
     id: 'profil',
     label: 'Min administratörsprofil',
@@ -270,12 +287,21 @@ export const ADMIN_NAV: NavItem[] = [
   },
 ];
 
-/** Menyn för en roll. Används av App.tsx och settings.ts. */
-export function navFor(panel: PanelKind): NavItem[] {
-  if (panel === 'admin') return ADMIN_NAV;
-  if (panel === 'larare') return LARARE_NAV;
-  if (panel === 'speciallarare') return SPECIAL_NAV;
-  return ELEV_NAV;
+/**
+ * Menyn för en roll. Sidor som en funktion har stängt av filtreras bort, så
+ * att eleven inte kan navigera till en avstängd butik eller ett avstängt
+ * Halloween-område. Utan växlar visas hela menyn (roller och tester).
+ */
+export function navFor(panel: PanelKind, features?: PlatformFeatures): NavItem[] {
+  const nav =
+    panel === 'admin'
+      ? ADMIN_NAV
+      : panel === 'larare'
+        ? LARARE_NAV
+        : panel === 'speciallarare'
+          ? SPECIAL_NAV
+          : ELEV_NAV;
+  return features ? nav.filter((item) => isPageEnabled(item.id, features)) : nav;
 }
 
 interface NavGroup {
@@ -314,12 +340,36 @@ export const AppShell: React.FC<Props> = ({
   onLogout,
   children,
 }) => {
-  const nav = navFor(panel);
+  // Funktionsväxlarna styr hela elevmenyn (butik och Halloween). De laddas en
+  // gång av App.tsx, så menyn följer samma läge som sidorna. Lärar- och
+  // adminvyer påverkas inte.
+  const features = usePlatformFeatures();
+  const nav = useMemo(() => navFor(panel, features), [panel, features]);
   const groups = useMemo(() => groupNav(nav), [nav]);
   // Olästa meddelanden visas i menyn för alla roller och uppdateras både vid
   // läsning och via realtime, från samma serverräknade värde.
+  // Adminmenyn har fällbara grupper. Elev-, lärar- och speciallärarmenyn
+  // behåller sin fasta struktur, så att bara administratörsvyn ändras här.
+  const collapsibleGroups = panel === 'admin';
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('elda-skola-nav-groups');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) && parsed.every((value) => typeof value === 'string')
+        ? parsed
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const toggleGroup = (title: string) =>
+    setCollapsedGroups((current) =>
+      current.includes(title) ? current.filter((value) => value !== title) : [...current, title],
+    );
   const unread = useUnreadTotal();
   useMessageRealtime();
+  // Elevens aktiva tema. Tomt för lärare och admin, som aldrig har en provider.
+  const { themeKey } = useHalloween();
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('elda-skola-sidebar') === 'collapsed';
@@ -368,6 +418,26 @@ export const AppShell: React.FC<Props> = ({
     setMobileOpen(false);
   }, [activePage]);
 
+  // Ihopfällda grupper sparas lokalt, så att menyn ser likadan ut nästa gång.
+  useEffect(() => {
+    if (!collapsibleGroups) return;
+    try {
+      localStorage.setItem('elda-skola-nav-groups', JSON.stringify(collapsedGroups));
+    } catch {
+      /* lagring kan vara avstängd */
+    }
+  }, [collapsedGroups, collapsibleGroups]);
+
+  // Den grupp som innehåller den aktiva sidan fälls alltid ut.
+  useEffect(() => {
+    if (!collapsibleGroups) return;
+    const group = nav.find((item) => item.id === activePage)?.group;
+    if (!group) return;
+    setCollapsedGroups((current) =>
+      current.includes(group) ? current.filter((value) => value !== group) : current,
+    );
+  }, [activePage, nav, collapsibleGroups]);
+
   // Escape stänger menyn, och bakgrunden får inte scrolla bakom den.
   useEffect(() => {
     if (!mobileOpen) return;
@@ -404,6 +474,8 @@ export const AppShell: React.FC<Props> = ({
 
   return (
     <div className={`shell ${collapsed ? 'shell-collapsed' : ''}`}>
+      {/* Temats egen scen. Tom för alla som inte har ett tema aktivt. */}
+      <ThemeScenery />
       <aside className={`sidebar ${mobileOpen ? 'sidebar-mobile-open' : ''}`}>
         <div className="sidebar-top">
           <button
@@ -446,37 +518,68 @@ export const AppShell: React.FC<Props> = ({
         </div>
 
         <nav className="side-nav" aria-label="Huvudmeny" id="skolmeny">
-          {groups.map((group, index) => (
-            <div className="nav-group" key={group.title || `grupp-${index}`}>
-              {group.title && <p className="nav-group-label">{group.title}</p>}
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`nav-item ${activePage === item.id ? 'nav-item-active' : ''}`}
-                  onClick={() => onNavigate(item.id)}
-                  aria-current={activePage === item.id ? 'page' : undefined}
-                  aria-label={collapsed ? item.label : undefined}
-                  title={item.label}
-                >
-                  <span className="nav-icon">{item.icon}</span>
-                  <span className="nav-label">{item.label}</span>
-                  {item.id === 'meddelanden' && unread > 0 && (
-                    <span
-                      className="nav-badge"
-                      aria-label={`${unread} olästa meddelanden`}
-                      title={`${unread} olästa`}
+          {groups.map((group, index) => {
+            // I ikonläget finns ingen rubrik att fälla, så alla poster visas.
+            const fald = collapsibleGroups && !collapsed && collapsedGroups.includes(group.title);
+            const itemsId = `nav-grupp-${index}`;
+            return (
+              <div
+                className={`nav-group ${fald ? 'nav-group-folded' : ''}`}
+                key={group.title || `grupp-${index}`}
+              >
+                {group.title &&
+                  (collapsibleGroups ? (
+                    <button
+                      type="button"
+                      className="nav-group-toggle"
+                      aria-expanded={!fald}
+                      aria-controls={itemsId}
+                      onClick={() => toggleGroup(group.title)}
+                      title={`${fald ? 'Visa' : 'Dölj'} ${group.title.toLowerCase()}`}
                     >
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          ))}
+                      <span className="nav-group-label">{group.title}</span>
+                      <ChevronDown size={13} className="nav-group-chevron" aria-hidden />
+                    </button>
+                  ) : (
+                    <p className="nav-group-label">{group.title}</p>
+                  ))}
+                <div className="nav-group-items" id={itemsId} hidden={fald}>
+                  {group.items.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`nav-item ${activePage === item.id ? 'nav-item-active' : ''}`}
+                      onClick={() => onNavigate(item.id)}
+                      aria-current={activePage === item.id ? 'page' : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                      title={item.label}
+                    >
+                      <span className="nav-icon">{item.icon}</span>
+                      <span className="nav-label">{item.label}</span>
+                      {item.id === 'meddelanden' && unread > 0 && (
+                        <span
+                          className="nav-badge"
+                          aria-label={`${unread} olästa meddelanden`}
+                          title={`${unread} olästa`}
+                        >
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="sidebar-bottom">
+          {themeKey && (
+            <div className="sidebar-theme" title={`Aktivt tema: ${describeTheme(themeKey)}`}>
+              <ThemeMotif themeKey={themeKey} size={20} />
+              <span className="sidebar-theme-label">{describeTheme(themeKey)}</span>
+            </div>
+          )}
           <button type="button" className="user-card" onClick={() => onNavigate('profil')} title={name}>
             <Avatar name={name} size={34} />
             <span className="user-card-text">

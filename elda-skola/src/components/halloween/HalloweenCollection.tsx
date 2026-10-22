@@ -39,8 +39,10 @@ const CollectionArt: React.FC<{
 };
 
 export const HalloweenCollection: React.FC<{
-  onOpenShop: () => void;
-  onOpenAvatar: () => void;
+  /** Utelämnas när XP-shoppen är avstängd – då döljs ingången helt. */
+  onOpenShop?: () => void;
+  /** Utelämnas när avatarer är avstängda – då döljs ingången helt. */
+  onOpenAvatar?: () => void;
   onOpenRoom: () => void;
 }> = ({ onOpenShop, onOpenAvatar, onOpenRoom }) => {
   const {
@@ -197,7 +199,7 @@ export const HalloweenCollection: React.FC<{
             icon={<PackageOpen size={24} />}
             title="Din samling är tom ännu"
             description="När du låser upp eller köper ditt första Halloween-föremål dyker det upp här. XP får du när lärare godkänner dina inlämningar."
-            action={<Button onClick={onOpenShop}>Till shopen</Button>}
+            action={onOpenShop ? <Button onClick={onOpenShop}>Till shopen</Button> : undefined}
           />
         </Card>
       ) : visible.length === 0 ? (
@@ -270,7 +272,7 @@ export const HalloweenCollection: React.FC<{
                     <Button size="sm" variant="secondary" onClick={onOpenRoom}>
                       {item.equipped ? 'I rummet' : 'Ställ ut'}
                     </Button>
-                  ) : item.kind === 'del' ? (
+                  ) : item.kind === 'del' && onOpenAvatar ? (
                     <Button size="sm" variant="secondary" onClick={onOpenAvatar}>
                       {item.equipped ? 'Används' : 'Använd'}
                     </Button>
@@ -320,11 +322,13 @@ export const HalloweenCollection: React.FC<{
         {locked.length > 12 && (
           <p className="small muted">Och {locked.length - 12} till i shopen.</p>
         )}
-        <div className="row" style={{ marginTop: 12 }}>
-          <Button size="sm" variant="secondary" onClick={onOpenShop}>
-            Till shopen
-          </Button>
-        </div>
+        {onOpenShop && (
+          <div className="row" style={{ marginTop: 12 }}>
+            <Button size="sm" variant="secondary" onClick={onOpenShop}>
+              Till shopen
+            </Button>
+          </div>
+        )}
       </Card>
 
       <p className="small muted">

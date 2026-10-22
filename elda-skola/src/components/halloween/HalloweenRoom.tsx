@@ -20,7 +20,7 @@ import { HalloweenRoomScene } from './HalloweenRoomScene';
  * dem. Den bakre raden ritas mindre än den främre, så rummet får djup.
  */
 
-export const HalloweenRoom: React.FC<{ onOpenShop: () => void }> = ({ onOpenShop }) => {
+export const HalloweenRoom: React.FC<{ onOpenShop?: () => void }> = ({ onOpenShop }) => {
   const { parts, ownedParts, room, placeRoom, removeRoom } = useHalloween();
   const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
@@ -157,7 +157,9 @@ export const HalloweenRoom: React.FC<{ onOpenShop: () => void }> = ({ onOpenShop
               icon={<Trees size={24} />}
               title="Inga dekorationer ännu"
               description="Dekorationer köps i shopen. Den första pumpalyktan och gravstenen är gratis."
-              action={<Button onClick={onOpenShop}>Till shopen</Button>}
+              action={
+                onOpenShop ? <Button onClick={onOpenShop}>Till shopen</Button> : undefined
+              }
             />
           ) : (
             <ul className="halloween-decor-list" aria-label="Dina dekorationer">
