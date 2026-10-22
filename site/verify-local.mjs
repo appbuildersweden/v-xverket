@@ -43,7 +43,6 @@ function fieldsFor(kind) {
       { id: 'wantsClass', label: 'Skapa klass', type: 'boolean', required: false, question: 'Vill du skapa en klass direkt?' },
       { id: 'className', label: 'Klassens namn', type: 'text', required: false, question: 'Vad ska klassen heta?', when: { wantsClass: true } },
       { id: 'classSize', label: 'Ungefärlig klassstorlek', type: 'number', required: false, question: 'Ungefär hur många elever har du?' },
-      { id: 'features', label: 'Funktioner', type: 'choice', required: false, question: 'Vilka delar av Elda behöver du först?', options: ['Klass och klasschatt', 'Uppgifter och återkoppling', 'Undervisningsmaterial', 'Provträning och flashcards', 'Planering och att göra', 'Belöningar och nivåer', 'AI-stöd i undervisningen'] },
     ],
   }[kind] ?? null;
 }
@@ -560,8 +559,8 @@ async function main() {
   if (!status.ok) throw new Error(`status: ${status.error}`);
   if (status.data.status !== 'skapad') throw new Error(`statusstatus: ${status.data.status}`);
 
-  // Lärarflödet innehåller ett val (features). Det måste komma med sina
-  // alternativ — annars ritas inga kryssrutor och frågan går inte att besvara.
+  // Lärarflödet frågar inte vilka delar av Elda läraren vill ha — menyn följer
+  // rollen. Frågan får inte komma tillbaka, och flödet ska bli klart utan den.
   const teacher = await bot.start('larare', newIdempotencyKey());
   if (!teacher.ok) throw new Error(`lärare start: ${teacher.error}`);
   const tCode = String(teacher.data.trackingCode ?? '');
@@ -581,27 +580,17 @@ async function main() {
     teacherStep = res.data;
   }
 
-  let choice = null;
   for (let i = 0; i < 10 && !teacherStep.complete; i += 1) {
     const field = teacherStep.nextField;
     if (!field) throw new Error('lärare: inget nästa fält men inte klart');
-    if (field.type === 'choice') {
-      choice = field;
-      break;
+    if (field.id === 'features') {
+      throw new Error('lärare: frågan om vilka funktioner läraren vill ha ska vara borta');
     }
     const res = await bot.answerStep(tCode, field.id, '');
     if (!res.ok) throw new Error(`lärare hoppa över ${field.id}: ${res.error}`);
     teacherStep = res.data;
   }
-  if (!choice) throw new Error('lärare: valfrågan (features) nåddes aldrig');
-  if (!(choice.options ?? []).length) throw new Error('lärare: valfrågan saknar alternativ');
-  if (choice.required !== false) throw new Error('lärare: valfrågan har fel required');
-
-  const choiceDone = await bot.answerStep(tCode, choice.id, [choice.options[0]]);
-  if (!choiceDone.ok) throw new Error(`lärare val: ${choiceDone.error}`);
-  if (choiceDone.data.answers?.[choice.id]?.[0] !== choice.options[0]) {
-    throw new Error('lärare: valet sparades inte');
-  }
+  if (!teacherStep.complete) throw new Error('lärare: ansökan blev aldrig klar');
 
   const teacherSubmit = await bot.submit(tCode, 'mittEget123');
   if (!teacherSubmit.ok) throw new Error(`lärare submit: ${teacherSubmit.error}`);
@@ -615,7 +604,6 @@ async function main() {
   console.log('trackingCode', trackingCode);
   console.log('username', submitted.data.username);
   console.log('överhoppade frågor', asked.join(', '));
-  console.log('lärarval', choice.id, '→', choice.options[0]);
   console.log('lärarkonto', teacherSubmit.data.username, teacherSubmit.data.status);
   console.log('config', TEST_CONFIG);
 }

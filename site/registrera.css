@@ -461,19 +461,6 @@ textarea.reg-input { resize: vertical; min-height: 96px; }
 
 .reg-result-line { margin: 0; font-weight: 620; }
 
-/* Besked som handlar om tjänstens läge (t.ex. slut på AI-kvot), inte om fel
-   den sökande har gjort. Därför dämpad yta i stället för felruta. */
-.reg-note-warning {
-  margin: 0;
-  padding: 11px 13px;
-  border: 1px solid var(--border-strong);
-  border-left-width: 3px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 0.92rem;
-}
-
 @media (max-width: 640px) {
   .reg-card { padding: 20px; }
   .reg-main { padding-top: calc(var(--nav-h) + 22px); }

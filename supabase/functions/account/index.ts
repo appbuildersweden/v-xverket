@@ -8,10 +8,11 @@
  *                    klienten, och valen skrivs både på profilen (auktoritativ)
  *                    och i app_metadata (följer med i sessionen).
  *
- *   delete           Borttagning av det egna kontot med spårningskoden från
- *                    registreringen. Koden ensam räcker aldrig: lösenordet
- *                    verifieras av Supabase Auth för samma konto. Borttagningen
- *                    är idempotent och lämnar ett spår utan personuppgifter.
+ *   delete           Borttagning av det egna kontot med användarnamnet från
+ *                    registreringen. Användarnamnet ensamt räcker aldrig:
+ *                    lösenordet verifieras av Supabase Auth för samma konto.
+ *                    Borttagningen är idempotent och lämnar ett spår utan
+ *                    personuppgifter.
  *
  * Deploy: supabase functions deploy account --no-verify-jwt
  * (JWT verifieras i funktionen; delete-flödet är avsiktligt utan session.)
@@ -34,7 +35,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 // Missbruksskydd per IP och åtgärd. Borttagning är den känsligaste åtgärden och
-// har därför en snål budget: en spårningskod ska inte gå att gissa sig till.
+// har därför en snål budget: ett användarnamn ska inte gå att pröva i fred.
 const WINDOW_MS = 15 * 60 * 1000;
 const LIMITS: Record<string, number> = {
   'update-features': 30,
@@ -71,6 +72,44 @@ async function audit(
     subject_id: subjectId,
     details,
   });
+}
+
+/**
+ * Sparar spåret efter en borttagning utan personuppgifter: ansökan markeras som
+ * borttagen och kopplingen ansökan → konto sparas, så att en upprepad begäran
+ * får samma svar utan att något görs om.
+ *
+ * Konton som skapats av en administratör saknar ansökan — då finns inget att
+ * markera, och bara kontot tas bort.
+ */
+async function recordDeletion(
+  admin: SupabaseClient,
+  applicationId: string | null,
+  userId: string,
+): Promise<void> {
+  if (!applicationId) return;
+  await admin
+    .from('registration_applications')
+    .update({
+      status: 'borttagen',
+      payload: { answers: {}, skipped: [] },
+      summary: null,
+      full_name: null,
+      email: null,
+      created_username: null,
+      risk_flags: [],
+      review_note: null,
+      deleted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', applicationId);
+  try {
+    await admin
+      .from('account_deletions')
+      .insert({ application_id: applicationId, deleted_user_id: userId });
+  } catch {
+    /* redan registrerad */
+  }
 }
 
 Deno.serve(async (req) => {
@@ -160,12 +199,13 @@ Deno.serve(async (req) => {
   }
 
   // ------------------------------------------------------ kontoborttagning
-  const trackingCode = String(body.trackingCode ?? '').trim().slice(0, 80);
+  // Användarnamnet pekar ut kontot; lösenordet avgör om det får tas bort.
+  const username = String(body.username ?? '').trim().toLowerCase().slice(0, 32);
   const password = String(body.password ?? '');
   const confirm = body.confirm === true;
 
-  if (!trackingCode) {
-    return json({ error: 'Ange spårningskoden från din registrering.' }, 400);
+  if (!username) {
+    return json({ error: 'Ange ditt användarnamn.' }, 400);
   }
   if (!confirm) {
     return json(
@@ -176,58 +216,38 @@ Deno.serve(async (req) => {
   if (!password) {
     return json({ error: 'Ange kontots lösenord för att bekräfta att det är ditt.' }, 400);
   }
-  if (!allow(trackingCode, 'delete')) {
-    return json({ error: 'För många försök för den här koden. Vänta en stund.' }, 429);
+  if (!allow(username, 'delete')) {
+    return json({ error: 'För många försök för det här användarnamnet. Vänta en stund.' }, 429);
   }
 
-  const { data: found } = await admin
-    .from('registration_applications')
-    .select('id, status, created_user_id, created_username')
-    .eq('tracking_code', trackingCode)
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, username, created_by_application')
+    .eq('username', username)
     .maybeSingle();
 
-  // Samma svar oavsett om koden finns: koden ska inte gå att kartlägga.
-  if (!found) {
-    return json({ error: 'Spårningskoden hittades inte.' }, 404);
-  }
-
-  const row = found as Record<string, unknown>;
-  const applicationId = String(row.id);
-
-  // Redan borttagen: samma svar igen, utan att något görs om. Det gör ett
-  // omförsök efter ett nätverksfel ofarligt.
-  if (row.status === 'borttagen') {
-    return json({ ok: true, deleted: true, alreadyDeleted: true });
-  }
-
-  const userId = row.created_user_id ? String(row.created_user_id) : '';
-  if (!userId) {
+  // Samma svar oavsett vilka konton som finns: användarnamn ska inte gå att
+  // kartlägga genom att pröva sig fram.
+  if (!profile) {
     return json(
-      { error: 'Det finns inget konto kopplat till den här koden.' },
-      409,
+      {
+        error:
+          'Användarnamnet hittades inte. Kontrollera stavningen — kontot kan också redan vara borttaget.',
+      },
+      404,
     );
   }
+
+  const userId = String(profile.id);
+  const applicationId = profile.created_by_application
+    ? String(profile.created_by_application)
+    : null;
 
   const { data: authUser, error: userErr } = await admin.auth.admin.getUserById(userId);
   if (userErr || !authUser?.user?.email) {
     // Kontot är redan borta (t.ex. borttaget av admin). Markera ansökan och svara
     // som en lyckad, idempotent borttagning.
-    await admin
-      .from('registration_applications')
-      .update({
-        status: 'borttagen',
-        deleted_at: new Date().toISOString(),
-        created_username: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', applicationId);
-    try {
-      await admin
-        .from('account_deletions')
-        .insert({ application_id: applicationId, deleted_user_id: userId });
-    } catch {
-      /* redan registrerad */
-    }
+    await recordDeletion(admin, applicationId, userId);
     return json({ ok: true, deleted: true, alreadyDeleted: true });
   }
 
@@ -240,7 +260,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // Ägarskapet verifieras med lösenordet. Spårningskoden pekar ut kontot, men
+  // Ägarskapet verifieras med lösenordet. Användarnamnet pekar ut kontot, men
   // bara den som kan kontots lösenord får radera det.
   const grant = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -272,36 +292,17 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Personuppgifterna i ansökan tas bort; kvar är spårningskoden och statusen,
-  // som behövs för att en upprepad begäran ska få samma svar.
-  await admin
-    .from('registration_applications')
-    .update({
-      status: 'borttagen',
-      payload: { answers: {}, skipped: [] },
-      summary: null,
-      full_name: null,
-      email: null,
-      created_username: null,
-      risk_flags: [],
-      review_note: null,
-      deleted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', applicationId);
+  // Personuppgifterna i ansökan tas bort; kvar är statusen och kopplingen till
+  // kontot, som behövs för att en upprepad begäran ska få samma svar.
+  await recordDeletion(admin, applicationId, userId);
 
-  try {
-    await admin
-      .from('account_deletions')
-      .insert({ application_id: applicationId, deleted_user_id: userId });
-  } catch {
-    /* redan registrerad */
-  }
-
-  await audit(admin, 'account.deleted', 'application', applicationId, {
-    role,
-    via: 'tracking-code',
-  });
+  await audit(
+    admin,
+    'account.deleted',
+    applicationId ? 'application' : 'user',
+    applicationId ?? userId,
+    { role, via: 'användarnamn' },
+  );
 
   return json({ ok: true, deleted: true, alreadyDeleted: false });
 });

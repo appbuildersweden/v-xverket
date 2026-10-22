@@ -245,12 +245,12 @@ const HELP_RULES = [
   {
     keys: ['vad händer sen', 'vad hander sen', 'vad händer efter', 'vad hander efter', 'efter registreringen'],
     reply:
-      'När kontot är klart får du ett användarnamn och loggar in i Elda Skola med det och lösenordet du valde. Där finns uppgifter, planering, meddelanden och resten av menyvalen du kryssade i.',
+      'När kontot är klart får du ett användarnamn och loggar in i Elda Skola med det och lösenordet du valde. Där finns uppgifter, planering, meddelanden och resten av menyvalen som hör till din roll.',
   },
   {
     keys: ['ångra', 'angra', 'byta namn', 'ändra namn', 'andra namn', 'fel uppgift', 'rätta', 'ratta'],
     reply:
-      'Uppgifterna kan ändras i efterhand: namn och profil under Profil i appen, och lösenordet via kontoinställningarna. Vill du börja om helt kan du ta bort kontot längre ner på den här sidan med din spårningskod och ditt lösenord.',
+      'Uppgifterna kan ändras i efterhand: namn och profil under Profil i appen, och lösenordet via kontoinställningarna. Vill du börja om helt kan du ta bort kontot längre ner på den här sidan med ditt användarnamn och ditt lösenord.',
   },
   {
     keys: ['mobil', 'telefon', 'surfplatta', 'i appen'],
@@ -260,7 +260,7 @@ const HELP_RULES = [
   {
     keys: ['integritet', 'personuppgift', 'gdpr', 'sparas', 'lagras', 'krypter', 'säker', 'saker', 'trygg', 'radera kontot', 'ta bort kontot', 'spårningskod'],
     reply:
-      'Uppgifterna sparas hos Eldas server för att kunna skapa och administrera kontot, och sidan använder inga spårningskakor. Du kan ta bort kontot längre ner på sidan med din spårningskod och ditt lösenord.',
+      'Uppgifterna sparas hos Eldas server för att kunna skapa och administrera kontot, och sidan använder inga spårningskakor. Du kan ta bort kontot längre ner på sidan med ditt användarnamn och ditt lösenord.',
   },
   {
     keys: ['användarnamn', 'anvandarnamn'],
@@ -490,7 +490,7 @@ export function createBotClient({ supabaseUrl, anonKey, fetchImpl } = {}) {
   const invokeAccount = (body, timeoutMs) => request('account', body, timeoutMs);
 
   return {
-    /** Hämtar frågorna för en kontotyp (och om AI-formulering är på). */
+    /** Hämtar frågorna för en kontotyp. */
     questions(kind) {
       return invoke({ action: 'questions', kind });
     },
@@ -510,16 +510,16 @@ export function createBotClient({ supabaseUrl, anonKey, fetchImpl } = {}) {
       return invoke({ action: 'answers', trackingCode, answers });
     },
 
-    /** Skickar in ansökan med det valda lösenordet. AI-bedömningen kan ta
-     * några sekunder, därför en något längre tidsgräns än för enskilda svar. */
+    /** Skickar in ansökan med det valda lösenordet. Kontot skapas i samma
+     * anrop, därför en något längre tidsgräns än för enskilda svar. */
     submit(trackingCode, password) {
       return invoke({ action: 'submit', trackingCode, password }, 25000);
     },
 
-    /** Tar bort kontot med spårningskoden. Kräver lösenordet som verifiering. */
-    deleteAccount(trackingCode, password) {
+    /** Tar bort kontot med användarnamnet. Kräver lösenordet som verifiering. */
+    deleteAccount(username, password) {
       return invokeAccount(
-        { action: 'delete', trackingCode, password, confirm: true },
+        { action: 'delete', username, password, confirm: true },
         25000,
       );
     },

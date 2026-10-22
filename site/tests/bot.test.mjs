@@ -424,18 +424,18 @@ test('chattens svar tolkas som folk skriver dem', () => {
   });
 
   // Ett kort svar ska räcka när det bara kan betyda ett alternativ.
-  const features = {
-    id: 'features',
-    label: 'Funktioner',
+  const parts = {
+    id: 'parts',
+    label: 'Delar',
     type: 'choice',
     required: true,
     options: ['Planering och att göra', 'Uppgifter och uppföljning', 'Klasschatt'],
   };
-  assert.deepEqual(parseChatAnswer(features, 'planering'), {
+  assert.deepEqual(parseChatAnswer(parts, 'planering'), {
     ok: true,
     value: ['Planering och att göra'],
   });
-  assert.deepEqual(parseChatAnswer(features, 'uppgifter'), {
+  assert.deepEqual(parseChatAnswer(parts, 'uppgifter'), {
     ok: true,
     value: ['Uppgifter och uppföljning'],
   });

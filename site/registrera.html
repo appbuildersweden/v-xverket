@@ -198,9 +198,9 @@
         <li>En elev som använder en klasskod skickar en förfrågan. Klassens innehåll
           öppnas först när läraren har godkänt den.</li>
         <li>Frågorna kommer från serverns fältlista och besvaras utan AI-anrop, så
-          boten svarar direkt. AI används en gång, när ansökan skickas in, för att flagga
-          varningssignaler. Servern skapar kontot direkt; flaggorna sparas så att en
-          administratör kan granska ansökan i efterhand.</li>
+          boten svarar direkt. Servern skapar kontot direkt och sparar de
+          varningssignaler som dess egna regler hittar, så att en administratör kan
+          granska ansökan i efterhand.</li>
       </ul>
     </section>
 
@@ -208,15 +208,15 @@
       <details class="reg-resume">
         <summary>Ta bort ditt konto</summary>
         <p class="reg-note-text">
-          Ange spårningskoden från registreringen och kontots lösenord. Koden pekar ut
-          kontot, men bara den som kan lösenordet kan ta bort det. Kontot, profilen och
-          uppgifterna tas bort — åtgärden kan inte ångras.
+          Ange användarnamnet du fick när kontot skapades och kontots lösenord.
+          Användarnamnet pekar ut kontot, men bara den som kan lösenordet kan ta bort
+          det. Kontot, profilen och uppgifterna tas bort — åtgärden kan inte ångras.
         </p>
         <form id="delete-form" class="reg-form">
           <div class="reg-field">
-            <label class="reg-label" for="delete-code">Spårningskod</label>
-            <input class="reg-input" id="delete-code" autocomplete="off" spellcheck="false"
-                   placeholder="Koden du fick när kontot skapades">
+            <label class="reg-label" for="delete-username">Användarnamn</label>
+            <input class="reg-input" id="delete-username" autocomplete="username" spellcheck="false"
+                   placeholder="Användarnamnet du fick när kontot skapades">
           </div>
           <div class="reg-field">
             <label class="reg-label" for="delete-password">Kontots lösenord</label>
@@ -281,6 +281,6 @@
   </div>
 </footer>
 
-<script type="module" src="./registrera.js?v=20261022-8"></script>
+<script type="module" src="./registrera.js?v=20261022-9"></script>
 </body>
 </html>

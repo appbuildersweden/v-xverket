@@ -29,7 +29,7 @@ import {
   questionFor,
   readConfig,
   validateNewPassword,
-} from './bot.js?v=20261022-8';
+} from './bot.js?v=20261022-9';
 
 /* ------------------------------- Tema ---------------------------------- */
 const themeBtn = document.getElementById('theme-toggle');
@@ -142,7 +142,7 @@ const nodes = {
   resultRestart: $('result-restart'),
   resultSkola: $('result-skola'),
   deleteForm: $('delete-form'),
-  deleteCode: $('delete-code'),
+  deleteUsername: $('delete-username'),
   deletePassword: $('delete-password'),
   deleteConfirm: $('delete-confirm'),
   deleteSubmit: $('delete-submit'),
@@ -280,23 +280,6 @@ function setQuickFor(field) {
   setQuick([]);
 }
 
-/**
- * Förklarar varför automatiken inte kunde bedöma ansökan.
- *
- * Servern skickar en kod (aldrig några driftdetaljer utöver att en kvot eller
- * kredit är slut) och sidan säger rakt ut vad det betyder: kontot är skapat och
- * fungerar, men underlaget kan granskas i efterhand. Inget allmänt "något gick
- * fel", och ingen behöver vänta på ett godkännande.
- */
-const AI_ISSUE_NOTICE = {
-  'kvot-slut':
-    'AI-bedömningen kunde inte göras eftersom gratiskvoten för AI-tjänsten är slut just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
-  'krediter-slut':
-    'AI-bedömningen kunde inte göras eftersom AI-tjänsten saknar krediter just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
-  'svar-uteblev':
-    'AI-bedömningen kunde inte göras just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
-};
-
 /** Visar ansökans resultat eller status — alltid som text, aldrig som HTML. */
 function renderResult(data) {
   clear(nodes.resultBody);
@@ -316,10 +299,6 @@ function renderResult(data) {
   }
   if (data.joinMessage) {
     nodes.resultBody.appendChild(text('p', 'reg-note-text', data.joinMessage));
-  }
-  const aiIssueNotice = data.aiIssue ? AI_ISSUE_NOTICE[data.aiIssue] : null;
-  if (aiIssueNotice) {
-    nodes.resultBody.appendChild(text('p', 'reg-note-warning', aiIssueNotice));
   }
   if (Array.isArray(data.riskFlags) && data.riskFlags.length > 0) {
     nodes.resultBody.appendChild(
@@ -681,12 +660,12 @@ async function submitApplication(event) {
 async function deleteAccount(event) {
   event.preventDefault();
   if (!bot) return;
-  const code = nodes.deleteCode?.value.trim() ?? '';
+  const username = nodes.deleteUsername?.value.trim() ?? '';
   const password = nodes.deletePassword?.value ?? '';
 
   setError(nodes.deleteError, null);
-  if (!code) {
-    setError(nodes.deleteError, 'Ange spårningskoden från din registrering.');
+  if (!username) {
+    setError(nodes.deleteError, 'Ange användarnamnet du fick när kontot skapades.');
     return;
   }
   if (!password) {
@@ -699,7 +678,7 @@ async function deleteAccount(event) {
   }
 
   if (nodes.deleteSubmit) nodes.deleteSubmit.disabled = true;
-  const res = await bot.deleteAccount(code, password);
+  const res = await bot.deleteAccount(username, password);
   if (nodes.deleteSubmit) nodes.deleteSubmit.disabled = false;
 
   if (!res.ok) {
