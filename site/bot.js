@@ -88,6 +88,283 @@ export function answerValueFor(field, raw) {
   return { ok: true, value: typeof text === 'string' ? text : String(text ?? '') };
 }
 
+/**
+ * Tolkar ett skrivet chattmeddelande som svar på botens fråga.
+ *
+ * Chatten har ingen kryssruta att klicka på, så svaren måste gå att skriva som
+ * folk faktiskt skriver: "ja", "japp", "2", "speciallärare" eller
+ * "Uppgifter och uppföljning, Planering". Servern validerar allt igen — det här
+ * är bara för att ge ett begripligt svar direkt i chatten.
+ */
+export function parseChatAnswer(field, raw) {
+  if (!field) return { ok: false, error: 'Jag väntar på en fråga först.' };
+
+  const text = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  const skip = /^(\/hoppa|hoppa över|hoppa|skip)$/i.test(text);
+
+  if (!text || skip) {
+    return field.required
+      ? { ok: false, error: `${field.label} behövs för att gå vidare.` }
+      : { ok: true, value: '', skipped: true };
+  }
+
+  if (field.type === 'boolean') {
+    if (/^(ja|japp|javisst|ja tack|absolut|visst|självklart|yes|y|1)$/i.test(text)) {
+      return { ok: true, value: true };
+    }
+    if (/^(nej|nej tack|nä|nix|no|n|0)$/i.test(text)) {
+      return { ok: true, value: false };
+    }
+    return { ok: false, error: 'Svara ja eller nej.' };
+  }
+
+  if (field.type === 'number') {
+    const digits = text.replace(/[^\d]/g, '');
+    if (!digits) return { ok: false, error: 'Ange bara en siffra, till exempel 24.' };
+    const value = Number(digits);
+    if (field.id === 'classSize' && (value < 1 || value > 60)) {
+      return { ok: false, error: 'Ange ett antal mellan 1 och 60.' };
+    }
+    return { ok: true, value };
+  }
+
+  if (field.type === 'email') {
+    const value = text.replace(/\s+/g, '');
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(value)) {
+      return {
+        ok: false,
+        error: 'Skriv en e-postadress som namn@skola.se — eller /hoppa för att lämna den tom.',
+      };
+    }
+    return { ok: true, value };
+  }
+
+  if (field.type === 'choice') {
+    const options = Array.isArray(field.options) ? field.options : [];
+    const picked = [];
+    const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    for (const option of options) {
+      const needle = escape(String(option).toLowerCase());
+      // Matcha hela ord, så att "speciallärare" inte också räknas som "lärare".
+      if (new RegExp(`(^|[^a-zåäö])${needle}([^a-zåäö]|$)`, 'i').test(text)) {
+        picked.push(option);
+      }
+    }
+
+    if (picked.length === 0) {
+      for (const match of text.matchAll(/\d+/g)) {
+        const option = options[Number(match[0]) - 1];
+        if (option && !picked.includes(option)) picked.push(option);
+      }
+    }
+
+    if (picked.length === 0 && /\b(alla|allt|allting)\b/i.test(text)) {
+      picked.push(...options);
+    }
+
+    // Ett kort svar som börjar på ett alternativ ska räcka: "planering" väljer
+    // "Planering och att göra". Bara när det är entydigt.
+    if (picked.length === 0) {
+      const lower = text.toLowerCase();
+      const starts = options.filter((option) => {
+        const value = String(option).toLowerCase();
+        return value.startsWith(lower) || lower.startsWith(value);
+      });
+      if (starts.length === 1) picked.push(starts[0]);
+      else if (starts.length > 1) {
+        return {
+          ok: false,
+          error: `Vilket av alternativen menar du: ${starts.join(', ')}?`,
+        };
+      }
+    }
+
+    if (picked.length === 0) {
+      return {
+        ok: false,
+        error: options.length
+          ? `Välj bland: ${options.join(', ')}.`
+          : 'Svaret matchar inget alternativ.',
+      };
+    }
+
+    // Rollen är ett enda val, även om fälttypen i övrigt tillåter flera.
+    if (field.id === 'staffRole' && picked.length > 1) {
+      return { ok: false, error: 'Välj en av rollerna: Lärare eller Speciallärare.' };
+    }
+
+    return { ok: true, value: picked };
+  }
+
+  return { ok: true, value: text };
+}
+
+/** Tolkar kontotypen ur ett skrivet meddelande. */
+export function parseKind(raw) {
+  const text = String(raw ?? '').toLowerCase();
+  if (/privat/.test(text)) return 'privat_elev';
+  if (/(lärare|larare|undervisar|teacher)/.test(text)) return 'larare';
+  if (/(skolelev|elev|student|skola)/.test(text)) return 'skolelev';
+  return null;
+}
+
+const ACCOUNT_REPLY =
+  'Du skapar kontot här i chatten: jag frågar efter namn och några uppgifter, du väljer lösenord, och servern skapar kontot. Skriv ”skolelev”, ”privat elev” eller ”lärare” så börjar vi — eller fortsätt svara på frågan ovan.';
+
+/** "Hur skapar jag ett konto?" men inte "Hur skapar jag en klass?". */
+const WANTS_ACCOUNT_RE = /(skapa|skapar|skaffa|registrerar|registrera|ordna)[^.!?]{0,24}\bkonto\b|\bkonto\b[^.!?]{0,24}(skapa|skaffa|ordna)/i;
+
+/** Frågor chatten kan svara på utan att blanda sig i ansökan. */
+const HELP_RULES = [
+  {
+    keys: ['kostar', 'pris', 'gratis', 'betala', 'avgift', 'pengar'],
+    reply:
+      'Elda Skola är gratis för skolelever, privata elever och lärare. Det finns inget betalkort och ingen avgift i registreringen.',
+  },
+  {
+    keys: ['lösenord', 'losenord', 'password'],
+    reply:
+      'Du väljer lösenord själv i slutet av registreringen, minst 8 tecken. Det får inte vara samma som användarnamnet eller ett vanligt standardlösenord. Användarnamnet skapas av servern.',
+  },
+  {
+    keys: ['klasskod', 'klass kod'],
+    reply:
+      'Klasskoden får du av din lärare och är sex tecken, till exempel ABC234. Anger du den skickas en förfrågan — läraren måste godkänna den innan du ser klassens innehåll. Du kan hoppa över frågan och lägga till koden senare.',
+  },
+  {
+    keys: ['speciallärare', 'speciallarare', 'undervisar', 'lärarkonto', 'lararkonto', 'granskas'],
+    reply:
+      'Boten skapar lärar- och speciallärarkonton direkt, med klassverktygen öppna. Underlaget sparas så att en administratör kan granska det i efterhand — du behöver inte vänta på något godkännande.',
+  },
+  {
+    keys: ['hur lång tid', 'hur lang tid', 'hur länge', 'hur lange', 'hur snabbt', 'tar det'],
+    reply:
+      'Det tar oftast under en minut att svara på frågorna. Sedan skapas kontot direkt — du behöver inte vänta på något godkännande.',
+  },
+  {
+    keys: ['vad händer sen', 'vad hander sen', 'vad händer efter', 'vad hander efter', 'efter registreringen'],
+    reply:
+      'När kontot är klart får du ett användarnamn och loggar in i Elda Skola med det och lösenordet du valde. Där finns uppgifter, planering, meddelanden och resten av menyvalen du kryssade i.',
+  },
+  {
+    keys: ['ångra', 'angra', 'byta namn', 'ändra namn', 'andra namn', 'fel uppgift', 'rätta', 'ratta'],
+    reply:
+      'Uppgifterna kan ändras i efterhand: namn och profil under Profil i appen, och lösenordet via kontoinställningarna. Vill du börja om helt kan du ta bort kontot längre ner på den här sidan med din spårningskod och ditt lösenord.',
+  },
+  {
+    keys: ['mobil', 'telefon', 'surfplatta', 'i appen'],
+    reply:
+      'Elda fungerar i mobilens och surfplattans webbläsare — du behöver inte installera något. Registreringen här fungerar lika bra på en liten skärm.',
+  },
+  {
+    keys: ['integritet', 'personuppgift', 'gdpr', 'sparas', 'lagras', 'krypter', 'säker', 'saker', 'trygg', 'radera kontot', 'ta bort kontot', 'spårningskod'],
+    reply:
+      'Uppgifterna sparas hos Eldas server för att kunna skapa och administrera kontot, och sidan använder inga spårningskakor. Du kan ta bort kontot längre ner på sidan med din spårningskod och ditt lösenord.',
+  },
+  {
+    keys: ['användarnamn', 'anvandarnamn'],
+    reply:
+      'Användarnamnet skapas av servern när kontot skapas, så du väljer det inte själv. Det visas när ansökan är klar.',
+  },
+  {
+    keys: [
+      'vilken typ',
+      'vilket konto',
+      'vilken ska jag',
+      'vilken passar',
+      'skillnad',
+      'osäker',
+    ],
+    reply:
+      'Skolelev: du går i skolan och har en klasskod från din lärare. Privat elev: du pluggar på egen hand och kan ansluta till en klass senare. Lärare: du undervisar och vill skapa klasser, uppgifter och material. Välj den som stämmer — du kan byta senare.',
+  },
+  {
+    keys: ['hjälp', 'hjalp', 'vad kan du', 'vad gör du', 'hur funkar', 'fråga dig'],
+    reply:
+      'Jag ställer frågorna som behövs för kontot och svarar på frågor om registreringen. Skriv till exempel ”vad kostar det?”, ”hur får jag en klasskod?” eller ”vad händer med mina uppgifter?”.',
+  },
+  {
+    keys: [
+      'skapa konto',
+      'skaffa konto',
+      'få konto',
+      'fa konto',
+      'vill ha konto',
+      'registrera mig',
+      'bli medlem',
+      'nytt konto',
+    ],
+    reply: ACCOUNT_REPLY,
+  },
+];
+
+/** Förnamnet ur de sparade svaren, om det finns. Används för att boten ska
+ * kunna tilltala personen vid namn i fortsättningen av samtalet. */
+export function firstNameFrom(answers) {
+  const value = answers?.firstName;
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Hälsningar boten kan svara med. Ingen av dem utgår från att personen redan
+ * har bestämt sig för att skapa ett konto. */
+export const GREETINGS = [
+  'Hej! Vad kan jag hjälpa dig med?',
+  'Hej hej! Är du här för att skapa ett konto, eller har du en fråga?',
+  'Hallå! Jag kan hjälpa dig med konto, lösenord och klasskod — vad vill du veta?',
+  'Hej! Kul att du tittar in. Vill du komma igång med ett konto?',
+];
+
+/**
+ * Väljer en hälsning som inte är samma som förra gången, så att boten inte
+ * upprepar exakt samma mening varje gång någon skriver "hej".
+ */
+export function greetingReply(previousIndex = -1) {
+  let index = Math.floor(Math.random() * GREETINGS.length);
+  if (GREETINGS.length > 1 && index === previousIndex) {
+    index = (index + 1) % GREETINGS.length;
+  }
+  return { text: GREETINGS[index], index };
+}
+
+/**
+ * Sant för meddelanden som är en fråga till boten snarare än ett svar på
+ * frågan. Kontrollen är medvetet försiktig: ett vanligt svar som "Klass 9A"
+ * ska aldrig tolkas som en fråga.
+ */
+export function looksLikeQuestion(raw) {
+  const text = String(raw ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!text) return false;
+  if (/^\/(hjälp|hjalp)/.test(text)) return true;
+  if (text.includes('?')) return true;
+  if (
+    /^(hur|vad|varför|varfor|när|nar|vilken|vilket|vilka|vem|kan jag|får jag|far jag|måste jag|maste jag|behöver jag|behover jag|går det|gar det|är det|ar det)\b/.test(
+      text,
+    )
+  ) {
+    return true;
+  }
+  if (/(skapa|skaffa|få|vill ha|behöver).{0,24}konto/.test(text)) return true;
+  return false;
+}
+
+/** Sant när meddelandet är en begäran om att få skapa ett konto. */
+export function looksLikeAccountRequest(raw) {
+  const text = String(raw ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  return text ? WANTS_ACCOUNT_RE.test(text) : false;
+}
+
+/** Svaret på en fråga, eller null när ingen regel matchar. */
+export function helpReply(raw) {
+  const text = String(raw ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  for (const rule of HELP_RULES) {
+    if (rule.keys.some((key) => text.includes(key))) return rule.reply;
+  }
+  if (looksLikeAccountRequest(text)) return ACCOUNT_REPLY;
+  return null;
+}
+
 /** Slumpad nyckel som gör ett omladdat formulär idempotent. */
 export function newIdempotencyKey() {
   try {
@@ -264,189 +541,3 @@ export function readConfig(raw) {
 
 /** Spårningskoden sparas lokalt så att en avbruten ansökan kan fortsätta. */
 export const TRACKING_KEY = 'elda-registration-code';
-
-/** Sessionen på webbplatsen. Samma konto som i appen — ingen andra inloggning. */
-export const SESSION_KEY = 'elda-site-session';
-
-function readStoredSession() {
-  try {
-    const raw = globalThis.localStorage?.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.access_token || !parsed?.refresh_token) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function storeSession(session) {
-  try {
-    if (session) globalThis.localStorage?.setItem(SESSION_KEY, JSON.stringify(session));
-    else globalThis.localStorage?.removeItem(SESSION_KEY);
-  } catch {
-    /* privat läge: sessionen lever bara i den här fliken */
-  }
-}
-
-/**
- * Klient för inloggning och skyddad nedladdning på webbplatsen.
- *
- * Inloggningen går genom samma serverfunktion som appen använder
- * (`auth-login`), så ett konto som skapades i registreringen fungerar direkt.
- * Nedladdningsfunktionen kräver en giltig session och ett godkänt konto; den
- * här klienten kan aldrig själv avgöra behörighet.
- */
-export function createSiteClient({ supabaseUrl, anonKey, fetchImpl } = {}) {
-  const doFetch = fetchImpl || globalThis.fetch;
-  const base = String(supabaseUrl || '').replace(/\/$/, '');
-  if (!base || !anonKey) throw new Error('Webbplatsen saknar serverkonfiguration.');
-  if (typeof doFetch !== 'function') throw new Error('Webbläsaren kan inte nå servern.');
-
-  async function post(path, body, token = anonKey, timeoutMs = 15000) {
-    try {
-      return await doFetch(`${base}/functions/v1/${path}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: anonKey,
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-        signal: timeoutSignal(timeoutMs),
-      });
-    } catch {
-      return null;
-    }
-  }
-
-  async function refresh(session) {
-    if (!session?.refresh_token) return null;
-    try {
-      const res = await doFetch(`${base}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: session.refresh_token }),
-        signal: timeoutSignal(15000),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (!data?.access_token || !data?.refresh_token) return null;
-      return {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: data.expires_at ?? null,
-        user: data.user ?? session.user ?? null,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /** Giltig session, förnyad om den snart går ut. Null = ingen inloggning. */
-  async function currentSession() {
-    let session = readStoredSession();
-    if (!session) return null;
-    const expiresAt = Number(session.expires_at) * 1000;
-    if (Number.isFinite(expiresAt) && expiresAt > 0 && expiresAt - 30_000 < Date.now()) {
-      session = await refresh(session);
-      storeSession(session);
-    }
-    return session;
-  }
-
-  return {
-    SESSION_KEY,
-
-    /** Sparad användare utan nätverk, för att kunna rita rätt läge direkt. */
-    peekUser() {
-      return readStoredSession()?.user ?? null;
-    },
-
-    async login(username, password) {
-      const res = await post('auth-login', { username, password });
-      if (!res) {
-        return { ok: false, error: NETWORK_ERROR };
-      }
-      let data = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
-      if (!res.ok) {
-        if (res.status === 429) {
-          return { ok: false, error: data?.error || THROTTLED };
-        }
-        return {
-          ok: false,
-          error: data?.error || 'Fel användarnamn eller lösenord.',
-          mustChangePassword: data?.mustChangePassword === true,
-        };
-      }
-      if (!data?.access_token || !data?.refresh_token) {
-        return { ok: false, error: 'Inloggningen kunde inte slutföras. Försök igen.' };
-      }
-      const session = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: data.expires_at ?? null,
-        user: data.user ?? null,
-      };
-      storeSession(session);
-      return { ok: true, user: session.user };
-    },
-
-    async logout() {
-      storeSession(null);
-    },
-
-    /**
-     * Begär en signerad nedladdningslänk. Servern kontrollerar kontot; ett
-     * begränsat (väntande) konto får `pendingReview` i stället för en länk.
-     */
-    async download(format = 'exe') {
-      let session = await currentSession();
-      if (!session) {
-        return {
-          ok: false,
-          needsLogin: true,
-          error: 'Logga in med kontot du skapade i registreringen för att ladda ner.',
-        };
-      }
-
-      let res = await post('download', { format }, session.access_token);
-      if (res?.status === 401) {
-        session = await refresh(session);
-        storeSession(session);
-        if (!session) {
-          return {
-            ok: false,
-            needsLogin: true,
-            error: 'Sessionen har gått ut. Logga in igen.',
-          };
-        }
-        res = await post('download', { format }, session.access_token);
-      }
-      if (!res) {
-        return { ok: false, error: NETWORK_ERROR };
-      }
-
-      let data = null;
-      try {
-        data = await res.json();
-      } catch {
-        data = null;
-      }
-      if (!res.ok) {
-        return {
-          ok: false,
-          error: data?.error || 'Nedladdningen är inte tillgänglig just nu.',
-          pendingReview: data?.pendingReview === true,
-          needsLogin: res.status === 401,
-        };
-      }
-      return { ok: true, data };
-    },
-  };
-}

@@ -1,4 +1,12 @@
-/downloads/* /elda.html#nedladdning 302
+# Den nedlagda Windows-appens gamla adresser. De svara 302 till startsidan i
+# stället för att lämna kvar ett cachat uppdateringsmanifest.
+/update.json / 302
+/releases.json / 302
+/downloads/* / 302
+/elda.html / 302
+/versioner.html / 302
+/skola.html / 302
+
 /skola /skola/ 308
 /elev /skola/ 302
 /elev/* /skola/ 302

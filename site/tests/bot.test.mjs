@@ -12,13 +12,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  GREETINGS,
   KINDS,
   MIN_PASSWORD_LENGTH,
-  SESSION_KEY,
   answerValueFor,
   createBotClient,
-  createSiteClient,
+  firstNameFrom,
+  greetingReply,
+  helpReply,
+  looksLikeAccountRequest,
+  looksLikeQuestion,
   newIdempotencyKey,
+  parseChatAnswer,
+  parseKind,
   questionFor,
   readConfig,
   validateNewPassword,
@@ -183,27 +189,26 @@ test('en ny användare kan gå hela flödet: starta, svara och skicka in', async
   assert.ok(!('limited' in submitBody));
 });
 
-test('läraransökan går till granskning i stället för att godkännas direkt', async () => {
+test('läraransökan skapar kontot direkt — inget godkännande behövs', async () => {
   const { bot } = client({
     submit: () => ({
       json: {
-        status: 'vantar',
+        status: 'skapad',
         trackingCode: 'ELDA-TEACH1',
         username: 'elara01',
         role: 'lärare',
-        review: 'granskas',
+        review: 'auto',
         riskFlags: [],
-        message:
-          'Kontot är skapat men en administratör granskar uppgifterna först. Du kan logga in redan nu, men vissa delar är begränsade till dess.',
+        message: 'Klart! Logga in med ditt användarnamn och lösenordet du valde.',
       },
     }),
   });
 
   const res = await bot.submit('ELDA-TEACH1', 'mittEget123');
   assert.equal(res.ok, true);
-  assert.equal(res.data.status, 'vantar');
-  assert.equal(res.data.review, 'granskas');
-  assert.match(res.data.message, /granskar/);
+  assert.equal(res.data.status, 'skapad');
+  assert.equal(res.data.review, 'auto');
+  assert.match(res.data.message, /Logga in/);
 });
 
 test('fältfel från servern når fram även när svaret saknar meddelande', async () => {
@@ -376,132 +381,156 @@ test('ett tomt svar skickas vidare som tomt och avgörs av servern', () => {
   assert.equal(answerValueFor({ type: 'choice', required: false }, []).ok, false);
 });
 
-/* ------------------- konto, inloggning och nedladdning ------------------- */
+test('chattens svar tolkas som folk skriver dem', () => {
+  const yesNo = { id: 'hasClass', label: 'Har du en klass?', type: 'boolean', required: true };
+  assert.deepEqual(parseChatAnswer(yesNo, 'japp'), { ok: true, value: true });
+  assert.deepEqual(parseChatAnswer(yesNo, 'Nej tack'), { ok: true, value: false });
+  assert.equal(parseChatAnswer(yesNo, 'kanske').ok, false);
 
-/** Minne i stället för webbläsarens localStorage. */
-function memoryStorage() {
-  const map = new Map();
-  return {
-    getItem: (key) => (map.has(key) ? map.get(key) : null),
-    setItem: (key, value) => map.set(key, String(value)),
-    removeItem: (key) => map.delete(key),
-    clear: () => map.clear(),
+  const size = { id: 'classSize', label: 'Antal elever', type: 'number', required: true };
+  assert.deepEqual(parseChatAnswer(size, '24 elever'), { ok: true, value: 24 });
+  assert.equal(parseChatAnswer(size, '99').ok, false);
+  assert.equal(parseChatAnswer(size, 'många').ok, false);
+
+  const mail = { id: 'email', label: 'E-post', type: 'email', required: false };
+  assert.deepEqual(parseChatAnswer(mail, 'anna@skola.se'), { ok: true, value: 'anna@skola.se' });
+  assert.equal(parseChatAnswer(mail, 'anna.skola.se').ok, false);
+
+  const role = {
+    id: 'staffRole',
+    label: 'Roll',
+    type: 'choice',
+    required: true,
+    options: ['Lärare', 'Speciallärare'],
   };
-}
+  assert.deepEqual(parseChatAnswer(role, 'speciallärare'), { ok: true, value: ['Speciallärare'] });
+  assert.deepEqual(parseChatAnswer(role, '2'), { ok: true, value: ['Speciallärare'] });
+  assert.equal(parseChatAnswer(role, 'båda').ok, false);
 
-test('borttagning går till konto-funktionen med uttrycklig bekräftelse', async () => {
-  const { bot, calls } = client({
-    delete: () => ({ json: { ok: true, deleted: true, alreadyDeleted: false } }),
-  });
-
-  const res = await bot.deleteAccount('abc123', 'mittEget123');
-  assert.equal(res.ok, true);
-  assert.equal(res.data.deleted, true);
-
-  assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /\/functions\/v1\/account$/);
-  assert.deepEqual(calls[0].body, {
-    action: 'delete',
-    trackingCode: 'abc123',
-    password: 'mittEget123',
-    confirm: true,
-  });
-});
-
-test('webbplatsens inloggning ger en session som nedladdningen använder', async () => {
-  const store = memoryStorage();
-  globalThis.localStorage = store;
-  const calls = [];
-
-  const fetchImpl = async (url, init) => {
-    calls.push({ url, headers: init.headers, body: init.body ? JSON.parse(init.body) : null });
-    if (url.endsWith('/functions/v1/auth-login')) {
-      return new Response(
-        JSON.stringify({
-          access_token: 'tok',
-          refresh_token: 'ref',
-          expires_at: Math.floor(Date.now() / 1000) + 3600,
-          user: { username: 'anna01', role: 'elev', limited: false, features: [] },
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-    if (url.endsWith('/functions/v1/download')) {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          url: 'https://projekt.supabase.co/storage/v1/object/sign/x?token=abc',
-          fileName: 'Elda_0.2.1_x64-setup.exe',
-          version: '0.2.1',
-          expiresIn: 120,
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-    return new Response('{}', { status: 404 });
+  const subjects = {
+    id: 'subjects',
+    label: 'Ämnen',
+    type: 'choice',
+    required: false,
+    options: ['Matematik', 'Svenska', 'Engelska'],
   };
-
-  const site = createSiteClient({
-    supabaseUrl: 'https://projekt.supabase.co',
-    anonKey: 'publik-anon-nyckel',
-    fetchImpl,
+  assert.deepEqual(parseChatAnswer(subjects, 'svenska och engelska'), {
+    ok: true,
+    value: ['Svenska', 'Engelska'],
+  });
+  assert.deepEqual(parseChatAnswer(subjects, 'alla'), {
+    ok: true,
+    value: ['Matematik', 'Svenska', 'Engelska'],
   });
 
-  const login = await site.login('Anna01', 'hemligt123');
-  assert.equal(login.ok, true);
-  assert.equal(site.peekUser()?.username, 'anna01');
-  assert.ok(store.getItem(SESSION_KEY), 'sessionen sparas lokalt');
+  // Ett kort svar ska räcka när det bara kan betyda ett alternativ.
+  const features = {
+    id: 'features',
+    label: 'Funktioner',
+    type: 'choice',
+    required: true,
+    options: ['Planering och att göra', 'Uppgifter och uppföljning', 'Klasschatt'],
+  };
+  assert.deepEqual(parseChatAnswer(features, 'planering'), {
+    ok: true,
+    value: ['Planering och att göra'],
+  });
+  assert.deepEqual(parseChatAnswer(features, 'uppgifter'), {
+    ok: true,
+    value: ['Uppgifter och uppföljning'],
+  });
 
-  const res = await site.download('exe');
-  assert.equal(res.ok, true);
-  assert.match(res.data.url, /^https:\/\//);
-
-  const downloadCall = calls.find((c) => c.url.endsWith('/functions/v1/download'));
-  assert.equal(downloadCall.headers.Authorization, 'Bearer tok');
-  assert.deepEqual(downloadCall.body, { format: 'exe' });
+  // Två alternativ som börjar lika får inte gissas.
+  const ambiguous = {
+    id: 'x',
+    label: 'X',
+    type: 'choice',
+    required: true,
+    options: ['Planering', 'Planering och att göra'],
+  };
+  assert.match(parseChatAnswer(ambiguous, 'plane').error, /Vilket av alternativen/);
 });
 
-test('ett konto som väntar på granskning får ingen nedladdningslänk', async () => {
-  globalThis.localStorage = memoryStorage();
-  globalThis.localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify({
-      access_token: 'tok',
-      refresh_token: 'ref',
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      user: { username: 'ny01', role: 'lärare', limited: true },
-    }),
-  );
+test('frivilliga frågor kan hoppas över med /hoppa — obligatoriska kan inte', () => {
+  const optional = { id: 'email', label: 'E-post', type: 'email', required: false };
+  const required = { id: 'firstName', label: 'Förnamn', type: 'text', required: true };
 
-  const fetchImpl = async () =>
-    new Response(
-      JSON.stringify({ error: 'Kontot väntar på godkännande.', pendingReview: true }),
-      { status: 403, headers: { 'Content-Type': 'application/json' } },
-    );
-
-  const site = createSiteClient({
-    supabaseUrl: 'https://projekt.supabase.co',
-    anonKey: 'publik-anon-nyckel',
-    fetchImpl,
-  });
-
-  const res = await site.download('exe');
-  assert.equal(res.ok, false);
-  assert.equal(res.pendingReview, true);
-  assert.match(res.error, /väntar på godkännande/i);
+  assert.deepEqual(parseChatAnswer(optional, '/hoppa'), { ok: true, value: '', skipped: true });
+  assert.deepEqual(parseChatAnswer(optional, 'hoppa över'), { ok: true, value: '', skipped: true });
+  assert.deepEqual(parseChatAnswer(optional, ''), { ok: true, value: '', skipped: true });
+  assert.match(parseChatAnswer(required, '').error, /behövs/);
+  assert.match(parseChatAnswer(required, '/hoppa').error, /behövs/);
 });
 
-test('utan inloggning ber klienten om inloggning i stället för att ladda ner', async () => {
-  globalThis.localStorage = memoryStorage();
-  const site = createSiteClient({
-    supabaseUrl: 'https://projekt.supabase.co',
-    anonKey: 'publik-anon-nyckel',
-    fetchImpl: async () => new Response('{}', { status: 200 }),
-  });
+test('kontotypen kan skrivas i chatten i stället för att klickas', () => {
+  assert.equal(parseKind('skolelev'), 'skolelev');
+  assert.equal(parseKind('Jag är elev och går i nian'), 'skolelev');
+  assert.equal(parseKind('privat elev'), 'privat_elev');
+  assert.equal(parseKind('jag pluggar själv hemma'), null);
+  assert.equal(parseKind('lärare'), 'larare');
+  assert.equal(parseKind('jag undervisar på en skola'), 'larare');
+  assert.equal(parseKind('hej'), null);
+});
 
-  const res = await site.download('exe');
-  assert.equal(res.ok, false);
-  assert.equal(res.needsLogin, true);
+test('en fråga känns igen som fråga — ett vanligt svar gör det inte', () => {
+  assert.equal(looksLikeQuestion('Vad kostar det?'), true);
+  assert.equal(looksLikeQuestion('hur får jag en klasskod'), true);
+  assert.equal(looksLikeQuestion('kan jag få skapa konto'), true);
+  assert.equal(looksLikeQuestion('/hjälp'), true);
+  assert.equal(looksLikeQuestion('Klass 9A'), false);
+  assert.equal(looksLikeQuestion('Anna'), false);
+  assert.equal(looksLikeQuestion('ja'), false);
+});
+
+test('boten hittar förnamnet i de sparade svaren', () => {
+  assert.equal(firstNameFrom({ firstName: '  Anna ' }), 'Anna');
+  assert.equal(firstNameFrom({ firstName: '' }), '');
+  assert.equal(firstNameFrom({}), '');
+  assert.equal(firstNameFrom(null), '');
+  assert.equal(firstNameFrom({ firstName: ['Anna'] }), '');
+});
+
+test('hälsningen varierar och utgår inte från att kontot ska skapas', () => {
+  assert.ok(GREETINGS.length >= 3);
+  for (const text of GREETINGS) {
+    assert.match(text, /^(Hej|Hallå)/);
+    assert.doesNotMatch(text, /Vad kul att du vill skapa/);
+  }
+
+  // Samma hälsning ska aldrig komma två gånger i rad.
+  let previous = -1;
+  for (let i = 0; i < 20; i += 1) {
+    const reply = greetingReply(previous);
+    assert.ok(reply.index >= 0 && reply.index < GREETINGS.length);
+    assert.equal(reply.text, GREETINGS[reply.index]);
+    assert.notEqual(reply.index, previous);
+    previous = reply.index;
+  }
+});
+
+test('en begäran om konto känns igen även när den är en fråga', () => {
+  assert.equal(looksLikeAccountRequest('kan jag få skapa konto?'), true);
+  assert.equal(looksLikeAccountRequest('jag vill skapa ett konto som lärare'), true);
+  assert.equal(looksLikeAccountRequest('hur registrerar jag ett konto?'), true);
+  assert.equal(looksLikeAccountRequest('var hittar jag mitt konto?'), false);
+  assert.equal(looksLikeAccountRequest('hur skapar jag en klass?'), false);
+  assert.equal(looksLikeAccountRequest('vad kostar det?'), false);
+  assert.equal(looksLikeAccountRequest(''), false);
+});
+
+test('boten svarar på frågor om konto, pris och lösenord', () => {
+  assert.match(helpReply('vad kostar Elda?'), /gratis/i);
+  assert.match(helpReply('hur skapar jag ett konto?'), /chatten/i);
+  assert.match(helpReply('hur lång tid tar det?'), /minut/i);
+  assert.match(helpReply('kan jag ändra namn senare?'), /Profil/i);
+  assert.match(helpReply('fungerar det på mobilen?'), /webbläsare/i);
+  assert.match(helpReply('är det säkert?'), /sparas/i);
+  assert.match(helpReply('vilket lösenord ska jag välja?'), /8 tecken/i);
+  assert.match(helpReply('vilken typ ska jag välja?'), /Privat elev/i);
+  assert.match(helpReply('var hittar jag klasskoden?'), /lärare/i);
+  assert.equal(helpReply('Anna'), null);
+  // "skapar" om något annat än ett konto ska inte bli kontosvaret.
+  assert.equal(helpReply('hur skapar jag en klass?'), null);
 });
 
 test('en tidsgräns ger ett begripligt fel i stället för att hänga', async () => {

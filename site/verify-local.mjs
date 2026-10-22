@@ -428,16 +428,15 @@ async function responder(req, res) {
     }
 
     const username = `test${Date.now().toString(36).slice(-6)}`;
-    // Lärarkonton granskas alltid av en administratör — kontot skapas men blir
-    // begränsat till dess. Elevkonton utan varningssignaler skapas direkt.
-    const autoApprove = kind !== 'larare';
-    row.status = autoApprove ? 'skapad' : 'vantar';
+    // Boten skapar kontot direkt för alla kontotyper. Eventuella flaggor sparas
+    // för efterhandsgranskning men begränsar aldrig kontot.
+    row.status = 'skapad';
     row.created_username = username;
     row.summary = buildSummary(kind, answers);
     row.updated_at = new Date().toISOString();
 
     ok({
-      status: autoApprove ? 'skapad' : 'vantar',
+      status: 'skapad',
       trackingCode,
       username,
       role: kind === 'larare' ? 'lärare' : 'elev',
@@ -445,10 +444,8 @@ async function responder(req, res) {
       classCode: null,
       classMessage: null,
       joinMessage: null,
-      review: autoApprove ? 'auto' : 'granskas',
-      message: autoApprove
-        ? 'Klart! Logga in med ditt användarnamn och lösenordet du valde.'
-        : 'Kontot är skapat men en administratör granskar uppgifterna först.',
+      review: 'auto',
+      message: 'Klart! Logga in med ditt användarnamn och lösenordet du valde.',
     });
     return;
   }
@@ -608,7 +605,9 @@ async function main() {
 
   const teacherSubmit = await bot.submit(tCode, 'mittEget123');
   if (!teacherSubmit.ok) throw new Error(`lärare submit: ${teacherSubmit.error}`);
-  if (teacherSubmit.data.status !== 'vantar') throw new Error(`lärare ska granskas, fick ${teacherSubmit.data.status}`);
+  if (teacherSubmit.data.status !== 'skapad') {
+    throw new Error(`lärarens konto ska skapas direkt, fick ${teacherSubmit.data.status}`);
+  }
 
   server.close();
   console.log('OK');

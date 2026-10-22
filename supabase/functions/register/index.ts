@@ -20,7 +20,10 @@
 // Det här är den enda publika vägen till ett konto. Registreringsboten på
 // Eldas hemsida (site/registrera.html) är dess enda gränssnitt, och den här
 // funktionen äger hela flödet: den skapar ansökan, validerar varje svar och
-// skapar kontot först när underlaget är komplett och godkänt. Ingen roll,
+// skapar kontot så snart underlaget är komplett. Kontot blir alltid aktivt och
+// utan begränsning — ingen behöver vänta på att en administratör godkänner det.
+// Regelverkets och AI:ns varningsflaggor sparas i stället för att blockera, så
+// att en administratör kan granska ansökan i efterhand. Ingen roll,
 // godkännandestatus eller kontotyp kan sättas direkt av klienten — `kind` är
 // användarens val av kontotyp, och rollen härleds av servern. Administratörens
 // kontoskapande ligger i `admin-users`, som kräver en administratörssession.
@@ -575,15 +578,6 @@ function aiIssueFrom(debug: string[]): AiIssue {
   return 'svar-uteblev';
 }
 
-/** Användarens förklaring till varför ansökan går till manuell granskning. */
-const AI_ISSUE_TEXT: Record<AiIssue, string> = {
-  'kvot-slut':
-    'AI-bedömningen kunde inte göras eftersom gratiskvoten för AI-tjänsten är slut just nu.',
-  'krediter-slut':
-    'AI-bedömningen kunde inte göras eftersom AI-tjänsten saknar krediter just nu.',
-  'svar-uteblev': 'AI-bedömningen kunde inte göras just nu.',
-};
-
 /**
  * Bedömer ansökan en gång — vid inskickandet. Frågeflödet anropar aldrig AI:n,
  * så ett svar i boten kostar inget modellanrop. Tidsgränsen är hård och
@@ -1114,9 +1108,10 @@ Deno.serve(async (req) => {
         ].filter((value) => FEATURES.includes(value))
       : [];
 
-    // Regelverket kan godkänna eleven direkt. Lärare och speciallärare kräver
-    // alltid en granskning: boten kan inte verifiera anställning eller identitet.
-    const ruleAutoApprove = evaluation.autoApprove && ruleFlags.length === 0;
+    // Boten skapar kontot direkt för alla kontotyper. Regelverkets och AI:ns
+    // varningsflaggor sparas för administratörens efterhandsgranskning, men
+    // begränsar aldrig kontot: ingen ska behöva vänta på ett godkännande för
+    // att kunna logga in och använda Elda.
 
     let createdUser: { id: string; username: string } | null = null;
 
@@ -1137,10 +1132,10 @@ Deno.serve(async (req) => {
           role,
           active: true,
           must_change_password: false,
-          // Kontotypen styr vilka klassfunktioner eleven erbjuds, och
-          // 'limited' märker ett konto vars ansökan väntar på granskning.
+          // Kontotypen styr vilka klassfunktioner eleven erbjuds. Kontot
+          // skapas alltid utan begränsning.
           account_type: accountType,
-          limited: !ruleAutoApprove,
+          limited: false,
           features,
         },
         user_metadata: {
@@ -1167,7 +1162,7 @@ Deno.serve(async (req) => {
         account_type: accountType,
         organisation: kind === 'larare' ? clean(answers.organisation) || null : null,
         features,
-        limited: !ruleAutoApprove,
+        limited: false,
         created_by_application: row.id,
       });
 
@@ -1210,13 +1205,11 @@ Deno.serve(async (req) => {
     // AI-bedömningen inväntas först nu. Den startade före kontoskapandet och
     // har oftast redan svarat; värsta fallet är dess egen tidsgräns.
     const assessment = await assessmentPromise;
-    // Konfigurerad AI som inte svarade: då godkänns inget automatiskt. Ett
-    // system som inte kan bedöma ansökan ska hellre granska än släppa igenom.
+    // Konfigurerad AI som inte svarade påverkar inte kontot — det är redan
+    // skapat. Orsaken sparas så att drift och admin ser vad som behöver åtgärdas.
     const aiUnavailable = assessment.attempted && !assessment.ok;
     // 402 = kontot saknar credits, 429 = kvoten för gratismodellerna är slut.
-    // skillnaden sparas så att drift och admin ser vad som behöver åtgärdas.
     const aiIssue: AiIssue | null = aiUnavailable ? aiIssueFrom(assessment.debug) : null;
-    const aiCreditMissing = aiIssue === 'krediter-slut';
     if (aiUnavailable) {
       console.warn(
         aiIssue === 'krediter-slut'
@@ -1229,39 +1222,6 @@ Deno.serve(async (req) => {
     }
     const aiFlags = assessment.flags;
     const flags = [...new Set([...ruleFlags, ...aiFlags])];
-    const autoApprove = ruleAutoApprove && !aiUnavailable && aiFlags.length === 0;
-    // Den exakta orsaken sparas för admin (t.ex. om credits saknas); utåt
-    // används en neutral etikett så att svaret inte avslöjar driftdetaljer.
-    const reasonCode = autoApprove
-      ? null
-      : staffRole
-        ? 'roll-kraver-granskning'
-        : aiCreditMissing
-          ? 'ai-kredit-saknas'
-          : aiUnavailable
-            ? 'ai-bedomning-saknas'
-            : flags.length > 0
-              ? 'varningssignaler'
-              : 'granskas';
-    const reviewReason = reasonCode === 'ai-kredit-saknas' ? 'ai-bedomning-saknas' : reasonCode;
-
-    if (ruleAutoApprove && !autoApprove) {
-      // Kontot skapades utan begränsning men får inte godkännas automatiskt.
-      // Begränsningen sätts i profilen (auktoritativ) och i app_metadata, som
-      // följer med i nästa session.
-      await admin.from('profiles').update({ limited: true }).eq('id', createdUser.id);
-      try {
-        const { data: authUser } = await admin.auth.admin.getUserById(createdUser.id);
-        await admin.auth.admin.updateUserById(createdUser.id, {
-          app_metadata: {
-            ...(authUser?.user?.app_metadata ?? {}),
-            limited: true,
-          },
-        });
-      } catch {
-        /* profilen styr behörigheten — fortsätt ändå */
-      }
-    }
 
     // Villkor och granskningslogg.
     await admin.from('terms_acceptances').insert({
@@ -1304,51 +1264,44 @@ Deno.serve(async (req) => {
       application: row.id,
       role,
       accountType,
-      autoApprove,
     });
 
-    // Lärare som vill ha en klass får den direkt (endast vid automatisk
-    // godkännande — annars väntar klasskapandet på admin).
+    // Lärare som vill ha en klass får den direkt — kontot är redan aktiverat.
     let classCode: string | null = null;
     let classId: string | null = null;
     let classMessage: string | null = null;
 
     if (kind === 'larare' && answers.wantsClass === true) {
-      if (autoApprove) {
-        const className =
-          clean(answers.className) || `Klass ${clean(answers.lastName) || clean(answers.firstName)}`;
-        for (let attempt = 0; attempt < 5 && !classCode; attempt++) {
-          const { data: codeRow } = await admin.rpc('generate_class_code');
-          const code = typeof codeRow === 'string' ? codeRow : '';
-          if (!code) continue;
-          const { data: classRow, error: classErr } = await admin
-            .from('classes')
-            .insert({
-              name: className.slice(0, 80),
-              description: null,
-              created_by: createdUser.id,
-              join_code: code,
-              join_code_rotated_at: new Date().toISOString(),
-            })
-            .select('id')
-            .single();
-          if (classErr || !classRow) continue;
-          classId = String(classRow.id);
-          classCode = code;
-          await admin.from('class_members').insert({
-            class_id: classId,
-            user_id: createdUser.id,
-            member_role: 'larare',
-            added_by: createdUser.id,
-          });
-          await audit(admin, 'class.created', 'class', classId, { application: row.id });
-        }
-        if (!classCode) {
-          classMessage = 'Klassen kunde inte skapas nu — skapa den under Mina klasser efter inloggning.';
-        }
-      } else {
-        classMessage =
-          'En administratör tittar på din ansökan innan klassen skapas. Du kan skapa klassen själv efter godkännandet.';
+      const className =
+        clean(answers.className) || `Klass ${clean(answers.lastName) || clean(answers.firstName)}`;
+      for (let attempt = 0; attempt < 5 && !classCode; attempt++) {
+        const { data: codeRow } = await admin.rpc('generate_class_code');
+        const code = typeof codeRow === 'string' ? codeRow : '';
+        if (!code) continue;
+        const { data: classRow, error: classErr } = await admin
+          .from('classes')
+          .insert({
+            name: className.slice(0, 80),
+            description: null,
+            created_by: createdUser.id,
+            join_code: code,
+            join_code_rotated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+        if (classErr || !classRow) continue;
+        classId = String(classRow.id);
+        classCode = code;
+        await admin.from('class_members').insert({
+          class_id: classId,
+          user_id: createdUser.id,
+          member_role: 'larare',
+          added_by: createdUser.id,
+        });
+        await audit(admin, 'class.created', 'class', classId, { application: row.id });
+      }
+      if (!classCode) {
+        classMessage = 'Klassen kunde inte skapas nu — skapa den under Mina klasser efter inloggning.';
       }
     }
 
@@ -1356,11 +1309,11 @@ Deno.serve(async (req) => {
     await admin
       .from('registration_applications')
       .update({
-        status: autoApprove ? 'skapad' : 'vantar',
+        status: 'skapad',
         summary,
         risk_flags: flags,
-        bot_decision: autoApprove ? 'auto_godkand' : `granskas:${reasonCode ?? 'okand'}`,
-        decided_at: autoApprove ? new Date().toISOString() : null,
+        bot_decision: 'auto_godkand',
+        decided_at: new Date().toISOString(),
         created_user_id: createdUser.id,
         created_username: createdUser.username,
         created_class_id: classId,
@@ -1371,24 +1324,23 @@ Deno.serve(async (req) => {
       })
       .eq('id', row.id);
 
-    await audit(
-      admin,
-      autoApprove ? 'application.auto_approved' : 'application.needs_review',
-      'application',
-      String(row.id),
-      { kind, flags },
-    );
+    await audit(admin, 'application.auto_approved', 'application', String(row.id), {
+      kind,
+      flags,
+    });
     await logMessage(
       admin,
       String(row.id),
       'system',
-      autoApprove ? 'Ansökan godkändes automatiskt.' : 'Ansökan skickades till granskning.',
+      flags.length > 0
+        ? 'Kontot skapades. Boten flaggade något i ansökan för efterhandsgranskning.'
+        : 'Kontot skapades och godkändes automatiskt av boten.',
     );
 
-    // Rutten är den samma oavsett: en AI-bedömning är inte en verifiering av
-    // yrkesidentitet, och det säger vi också till användaren.
+    // Kontot är skapat och fullt användbart. Varningsflaggor och en misslyckad
+    // AI-bedömning påverkar inte inloggningen; de finns kvar för admin.
     return json({
-      status: autoApprove ? 'skapad' : 'vantar',
+      status: 'skapad',
       trackingCode,
       username: createdUser.username,
       role,
@@ -1396,22 +1348,16 @@ Deno.serve(async (req) => {
       classCode,
       classMessage,
       joinMessage,
-      review: autoApprove ? 'auto' : 'granskas',
+      review: 'auto',
       riskFlags: flags,
-      reviewReason,
-      state: autoApprove ? 'klart' : 'granskas',
-      // Begränsade konton får inga nedladdningslänkar förrän de är godkända.
-      canDownload: autoApprove,
+      reviewReason: null,
+      state: 'klart',
+      canDownload: true,
       ai: assessment.attempted ? (assessment.ok ? 'anvand' : 'misslyckades') : 'saknas',
-      // Varför automatiken inte kunde bedöma ansökan, så att sidan kan säga det
-      // rakt ut i stället för att bara visa ett allmänt besked. Null när AI:n
-      // svarade eller när ingen AI är konfigurerad.
+      // Varför automatiken inte kunde bedöma ansökan. Kontot skapas ändå; sidan
+      // kan nämna att underlaget kan granskas i efterhand.
       aiIssue,
-      message: autoApprove
-        ? 'Klart! Logga in med ditt användarnamn och lösenordet du valde.'
-        : aiIssue
-          ? `Kontot är skapat. ${AI_ISSUE_TEXT[aiIssue]} En administratör granskar därför ansökan manuellt. Du kan logga in redan nu, men nedladdningen öppnas först när kontot är godkänt.`
-          : 'Kontot är skapat men en administratör granskar uppgifterna först. Du kan logga in redan nu, men vissa delar är begränsade till dess.',
+      message: 'Klart! Logga in med ditt användarnamn och lösenordet du valde.',
     });
   }
 

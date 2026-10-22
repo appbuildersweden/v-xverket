@@ -1,356 +1,124 @@
-#!/usr/bin/env node
-/**
- * Bygger Elda-hemsidan till ./dist med riktiga releaseuppgifter.
+/* Bygger den publika webbplatsen i site/dist.
  *
- * - Hämta releaser från GitHub (GITHUB_TOKEN om repo:n är privat).
- * - Skriver releases.json som appen läser i webbläsaren (inga hemligheter
- *   någonsin i klienten).
- * - Kopierar statiska filer till dist/, som är det enda som publiceras.
+ * Innehåll:
+ *   index.html, registrera.html, feedback.html  – sidorna
+ *   app.js, site.css, bot.js, config.json       – logik och konfiguration
+ *   assets/                                     – ikon och bilder
+ *   skola/                                      – den byggda Elda Skola-appen
+ *
+ * Ett steg, ingen versionshistorik och inga nedladdningsfiler: webbplatsen
+ * beskriver skolplattformen och länkar dit. Adressen till plattformen läses
+ * från ELDA_SKOLA_URL (via skola-url.mjs) och bara https godkänns.
  */
-import { copyFile, cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
-import { buildSiteConfig, normalizeSkolaUrl } from './skola-url.mjs';
-import { dirname, join } from 'node:path';
+import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  buildUpdateManifest,
-  findUpdaterArtifact,
-} from './update-manifest.mjs';
+import { normalizeSkolaUrl } from './skola-url.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const DIST = join(HERE, 'dist');
-const REPO = process.env.ELDA_REPO || 'appbuildersweden/v-xverket';
-const API = `https://api.github.com/repos/${REPO}/releases?per_page=30`;
-// Den publicerade sajten. Används bara som reserv när GitHub inte kan läsas:
-// då behålls den versionshistorik som redan är publicerad i stället för att
-// raderas av ett lokalt bygge utan token.
-const LIVE_SITE = (process.env.ELDA_UPDATER_BASE || 'https://elda-6a9.pages.dev').replace(
-  /\/$/,
-  '',
-);
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '..');
+const out = path.join(here, 'dist');
+const skolaDist = path.join(root, 'elda-skola', 'dist');
 
-/** Appens version står i Tauri-konfigurationen och är den som byggs in. */
-async function appVersion() {
-  const raw = await readFile(join(HERE, '..', 'src-tauri', 'tauri.conf.json'), 'utf8');
-  const version = JSON.parse(raw)?.version;
-  if (!version) throw new Error('Version saknas i src-tauri/tauri.conf.json');
-  return version;
-}
-
-/** Delar upp release-anteckningar i rubrik + punktlistor. */
-function parseNotes(body) {
-  const sections = [];
-  let current = null;
-  let summary = '';
-
-  for (const rawLine of String(body || '').split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    const heading = /^#{2,4}\s+(.*)$/.exec(line);
-    if (heading) {
-      current = { heading: heading[1].replace(/[:：]\s*$/, ''), items: [] };
-      sections.push(current);
-      continue;
-    }
-    const bullet = /^[-*+]\s+(.*)$/.exec(line);
-    if (bullet) {
-      if (!current) { current = { heading: 'Ändringar', items: [] }; sections.push(current); }
-      current.items.push(bullet[1].replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\*\*/g, ''));
-      continue;
-    }
-    if (!current && !summary) {
-      summary = line.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '');
-    }
-  }
-  return { summary, sections: sections.filter((s) => s.items.length) };
-}
-
-/**
- * Läser den versionshistorik som redan ligger publicerad.
- *
- * Ett bygge utan GitHub-token (t.ex. lokalt) får inte tömma sajtens
- * versionshistorik: då skulle en publicering se ut som att inga versioner
- * någonsin funnits. Den publicerade listan används därför som reserv.
- */
-async function fetchPublishedReleases() {
-  const res = await fetch(`${LIVE_SITE}/releases.json`, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data?.releases) ? data.releases : [];
-}
-
-/**
- * Sparad kopia av den publicerade historiken, tagen från sajten själv.
- *
- * Sista utvägen när varken GitHub eller den publicerade sajten kan läsas
- * (t.ex. ett lokalt bygge utan nätverk). Filen innehåller bara sådant som
- * redan varit offentligt på sajten — inga hemligheter.
- */
-async function readReleasesSnapshot() {
-  const raw = await readFile(join(HERE, 'releases-snapshot.json'), 'utf8');
-  const data = JSON.parse(raw);
-  return Array.isArray(data?.releases) ? data.releases : [];
-}
-
-async function fetchReleases() {
-  const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'elda-site' };
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(API, { headers });
-  if (!res.ok) {
-    throw new Error(`GitHub svarade ${res.status} vid hämtning av releaser`);
-  }
-  const rows = await res.json();
-
-  return rows.map((r) => {
-    const { summary, sections } = parseNotes(r.body);
-    return {
-      tag: r.tag_name,
-      name: r.name || r.tag_name,
-      url: r.html_url,
-      publishedAt: r.published_at,
-      prerelease: Boolean(r.prerelease),
-      draft: Boolean(r.draft),
-      summary,
-      sections,
-      // Endast metadata om filerna publiceras. Själva nedladdningen går genom
-      // den skyddade funktionen, så ingen publik filadress hamnar i sidan.
-      assets: (r.assets || [])
-        .filter((a) => !a.name.endsWith('.json'))
-        .map((a) => ({
-          name: a.name,
-          size: a.size,
-          os: a.name.includes('x64') || a.name.includes('setup') ? 'Windows' : '',
-        })),
-    };
-  });
-}
-
-/**
- * Den publika Supabase-konfigurationen för registreringssidan.
- *
- * Anon-nyckeln är publik och ligger redan i den byggda appen — den ger ingen
- * behörighet i sig (RLS och serverfunktionerna avgör). Service role-nyckeln
- * får aldrig hamna här, och inga värden skrivs ut i loggen.
- *
- * Värdena tas från byggmiljön (samma Actions-variabler som appbygget använder)
- * eller från repots .env, så att inga nycklar behöver kopieras till en ny fil.
- */
-async function supabaseConfig() {
-  const url = (process.env.VITE_SUPABASE_URL || '').trim();
-  const key = (process.env.VITE_SUPABASE_ANON_KEY || '').trim();
-  if (url && key) return { supabaseUrl: url, supabaseAnonKey: key };
-
-  let raw = '';
-  try {
-    raw = await readFile(join(HERE, '..', '.env'), 'utf8');
-  } catch {
-    return { supabaseUrl: url, supabaseAnonKey: key };
-  }
-
-  const pick = (name) => {
-    const line = raw
-      .split(/\r?\n/)
-      .find((row) => row.trim().startsWith(`${name}=`));
-    if (!line) return '';
-    return line
-      .slice(line.indexOf('=') + 1)
-      .trim()
-      .replace(/^["']|["']$/g, '');
-  };
-
-  return {
-    supabaseUrl: url || pick('VITE_SUPABASE_URL'),
-    supabaseAnonKey: key || pick('VITE_SUPABASE_ANON_KEY'),
-  };
-}
-
-/**
- * Publicera det signerade uppdateringspaketet och skriv update.json.
- *
- * Tauri hämtar manifestet från en fast adress (se plugins.updater.endpoints i
- * tauri.conf.json) och laddar sedan ner filen från den adress manifestet
- * anger. Därför måste både manifestet och filen vara publika – annars kan den
- * installerade appen aldrig upptäcka en ny version. Signaturen i manifestet
- * är samma .sig som releasen skapade, så innehållet kan inte bytas ut.
- */
-async function writeUpdaterArtifacts(version, releases) {
-  const downloads = join(HERE, 'downloads');
-  const updatesDir = join(DIST, 'updates');
-  await rm(updatesDir, { recursive: true, force: true });
-
-  let names = [];
-  try {
-    names = await readdir(downloads);
-  } catch {
-    names = [];
-  }
-
-  const artifact = findUpdaterArtifact(names, version);
-  if (!artifact) {
-    console.warn(
-      `! hittade inget uppdateringspaket för ${version} i site/downloads – update.json publiceras inte`,
-    );
-    return false;
-  }
-  if (!artifact.hasSignature) {
-    throw new Error(`Signatur saknas för ${artifact.file} – vägrar publicera osignerad uppdatering.`);
-  }
-
-  const source = join(downloads, artifact.file);
-  const bytes = (await stat(source)).size;
-  const signature = await readFile(join(downloads, artifact.signatureFile), 'utf8');
-  const release = releases.find(
-    (r) => r.tag === `v${version}` || r.tag === version,
-  );
-
-  const manifest = buildUpdateManifest({
-    version,
-    notes:
-      process.env.ELDA_UPDATE_NOTES ||
-      release?.summary ||
-      `Elda ${version}`,
-    signature,
-    fileName: artifact.file,
-    baseUrl: process.env.ELDA_UPDATER_BASE,
-    pubDate: release?.publishedAt,
-  });
-
-  await mkdir(updatesDir, { recursive: true });
-  await copyFile(source, join(updatesDir, artifact.file));
-  await writeFile(join(DIST, 'update.json'), JSON.stringify(manifest, null, 2) + '\n');
-  console.log(
-    `✓ update.json för ${version} – ${artifact.file} (${bytes} B) och signatur publiceras`,
-  );
+/** Kopierar en fil eller mapp om den finns. */
+async function copyIfExists(from, to) {
+  if (!existsSync(from)) return false;
+  await mkdir(path.dirname(to), { recursive: true });
+  await cp(from, to, { recursive: true });
   return true;
 }
 
-async function main() {
-  // Skriv över i stället för att radera mappen – mappen kan vara låst av en
-  // förhandsgranskning eller av OneDrive, och filuppsättningen är fast.
-  await mkdir(DIST, { recursive: true });
-
-  let releases = [];
-  let fetchedAt = new Date().toISOString();
-  try {
-    releases = await fetchReleases();
-    console.log(`✓ ${releases.length} release(s) hämtade från GitHub`);
-  } catch (err) {
-    // Webbplatsen ska fungera även utan tillgång till GitHub – men en tom
-    // lista får inte ersätta en historik som redan är publicerad.
-    fetchedAt = new Date().toISOString();
-    console.warn(`! kunde inte hämta releaser: ${err.message}`);
-    try {
-      const published = await fetchPublishedReleases();
-      // En tom lista betyder att historiken redan är borta — då är den sparade
-      // kopian bättre än ingenting.
-      if (published.length === 0) throw new Error('den publicerade historiken är tom');
-      releases = published;
-      console.warn(
-        `! behåller ${releases.length} redan publicerad(e) release(s) i stället för att tömma historiken`,
-      );
-    } catch (fallbackErr) {
-      console.warn(`! kunde inte läsa den publicerade historiken heller: ${fallbackErr.message}`);
-      try {
-        releases = await readReleasesSnapshot();
-        console.warn(`! använder den sparade historiken (${releases.length} release(s))`);
-      } catch (snapshotErr) {
-        console.warn(`! ingen historik tillgänglig: ${snapshotErr.message}`);
-        releases = [];
-      }
-    }
-  }
-
-  // Uppdateringsmanifestet måste alltid finnas på den adress appen frågar
-  // efter. Det byggs från samma signerade fil som releasen publicerade, så
-  // version, adress och signatur hör ihop. Saknas filerna (t.ex. vid ett
-  // lokalt sidbygge) publiceras inget manifest – men ett gammalt manifest får
-  // aldrig ligga kvar och peka på en fil som inte finns.
-  await rm(join(DIST, 'update.json'), { force: true });
-  const updaterPublished = await writeUpdaterArtifacts(
-    await appVersion(),
-    releases.filter((r) => !r.draft),
-  );
-
-  const payload = {
-    repo: `https://github.com/${REPO}`,
-    source: `https://github.com/${REPO}/releases`,
-    fetchedAt,
-    // Automatiska uppdateringar kräver att update.json och det signerade
-    // uppdateringspaketet är publika. Signaturen verifieras av Tauri med den
-    // publika nyckeln i appen; själva nedladdningsknappen på sidan går
-    // fortfarande genom den inloggade nedladdningsfunktionen.
-    updater: updaterPublished,
-    releases,
+/** Läser Supabase-adressen ur miljön; samma publika värden som appen använder. */
+function supabaseConfig() {
+  const url = (process.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '');
+  const anon = (process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  const okUrl = /^https:\/\/[^\s]+$/i.test(url);
+  return {
+    supabaseUrl: okUrl ? url : '',
+    supabaseAnonKey: okUrl ? anon : '',
   };
-  await writeFile(join(DIST, 'releases.json'), JSON.stringify(payload, null, 2) + '\n');
+}
 
-  for (const file of [
-    'index.html',
-    'elda.html',
-    'skola.html',
-    'versioner.html',
-    'feedback.html',
-    'site.css',
-    'app.js',
-    // Gamla direktlänkar till installationsfiler ska aldrig servera en fil.
-    '_redirects',
-    // Registreringssidan (boten) — hemsidans enda publika väg till ett konto.
-    'registrera.html',
-    'registrera.css',
-    'registrera.js',
-    'bot.js',
-  ]) {
-    await copyFile(join(HERE, file), join(DIST, file));
+/** Skriver config.json som app.js läser i webbläsaren. */
+async function writeConfig() {
+  const { supabaseUrl, supabaseAnonKey } = supabaseConfig();
+  const skolaUrl = normalizeSkolaUrl(process.env.ELDA_SKOLA_URL);
+  if (!skolaUrl && (process.env.ELDA_SKOLA_URL || '').trim()) {
+    console.warn('ELDA_SKOLA_URL ignoreras: adressen måste vara en https-adress.');
   }
-  await cp(join(HERE, 'assets'), join(DIST, 'assets'), { recursive: true });
+  const config = { supabaseUrl, supabaseAnonKey, skolaUrl };
+  await writeFile(path.join(out, 'config.json'), JSON.stringify(config, null, 2) + '\n', 'utf8');
+  return config;
+}
 
-  // Registreringssidan behöver veta var servern finns, och sektionen om
-  // Elda-skola behöver veta var skolplattformen ligger. Saknas
-  // konfigurationen publiceras sidan ändå — nedladdningen och uppdateringarna
-  // ska aldrig blockeras — men då visar sidan ett tydligt besked i stället för
-  // en knapp som inte fungerar.
-  //
-  // Skoladressen sätts vid bygget och valideras: en lokal testadress eller en
-  // http-adress får aldrig följa med till en publicerad sida.
-  // Standard: Elda Skola ligger under samma domän på /skola (se release.yml).
-  const skolaRaw = (process.env.ELDA_SKOLA_URL || 'https://elda-6a9.pages.dev/skola').trim();
-  const skolaUrl = normalizeSkolaUrl(skolaRaw, {
-    allowLocal: process.env.ELDA_ALLOW_LOCAL_SKOLA === '1',
-  });
-  if (skolaRaw && !skolaUrl) {
+/** Publicerar den byggda skolappen under /skola/. */
+async function buildSkola(copied) {
+  if (!copied) {
     console.warn(
-      '! ELDA_SKOLA_URL avvisades – bara https-adresser utan inloggning, fråga eller ankare publiceras. Sektionen visar att plattformen inte går att öppna ännu.',
+      'elda-skola/dist saknas. Kör `ELDA_SKOLA_BUILD=1 npm run build` i elda-skola först – annars publiceras webbplatsen utan plattformen.',
+    );
+    return;
+  }
+
+  // Skolappen måste vara byggd med basen /skola/, annars pekar dess filer på
+  // /assets och sidan blir ostylad och tom. Fånga det här i stället för live.
+  const html = await readFile(path.join(out, 'skola', 'index.html'), 'utf8').catch(() => '');
+  if (!html.includes('/skola/assets/')) {
+    throw new Error(
+      'elda-skola/dist är byggd utan base /skola/. Bygg om med ELDA_SKOLA_BUILD=1.',
     );
   }
+}
 
-  const configFile = join(DIST, 'config.json');
-  const supabase = await supabaseConfig();
-  const config = buildSiteConfig({ ...supabase, skolaUrl });
-  if (Object.keys(config).length > 0) {
-    await writeFile(configFile, JSON.stringify(config, null, 2) + '\n');
-    const delar = [
-      config.supabaseUrl ? 'registreringen kan nå servern' : '',
-      config.skolaUrl ? `länk till Elda-skola: ${config.skolaUrl}` : '',
-    ].filter(Boolean);
-    console.log(`✓ config.json skriven – ${delar.join(', ')}`);
-  } else {
-    await rm(configFile, { force: true });
-    console.warn(
-      '! Ingen config.json – registreringssidan publiceras utan serveradress och skolsektionen utan länk (båda visar "inte tillgänglig").',
-    );
+/** Tar bort filer som hörde till den nedlagda Windows-appen. */
+async function removeStale() {
+  const stale = ['elda.html', 'versioner.html', 'skola.html', 'releases-snapshot.json', 'downloads'];
+  for (const name of stale) {
+    await rm(path.join(out, name), { recursive: true, force: true });
+  }
+}
+
+async function main() {
+  await rm(out, { recursive: true, force: true });
+  await mkdir(out, { recursive: true });
+
+  await copyIfExists(path.join(here, 'index.html'), path.join(out, 'index.html'));
+  await copyIfExists(path.join(here, 'registrera.html'), path.join(out, 'registrera.html'));
+  await copyIfExists(path.join(here, 'feedback.html'), path.join(out, 'feedback.html'));
+  await copyIfExists(path.join(here, 'registrera.js'), path.join(out, 'registrera.js'));
+  await copyIfExists(path.join(here, 'app.js'), path.join(out, 'app.js'));
+  await copyIfExists(path.join(here, 'site.css'), path.join(out, 'site.css'));
+  // Registreringssidan har egna stilar utöver site.css.
+  await copyIfExists(path.join(here, 'styles.css'), path.join(out, 'styles.css'));
+  await copyIfExists(path.join(here, 'registrera.css'), path.join(out, 'registrera.css'));
+  await copyIfExists(path.join(here, 'bot.js'), path.join(out, 'bot.js'));
+  await copyIfExists(path.join(here, '_redirects'), path.join(out, '_redirects'));
+  await copyIfExists(path.join(here, 'assets'), path.join(out, 'assets'));
+
+  const config = await writeConfig();
+  if (!config.supabaseUrl) {
+    console.warn('VITE_SUPABASE_URL saknas: registrering och förslag är avstängda på sidan.');
   }
 
-  // Installationsfilerna publiceras aldrig med sidan. De ligger i den privata
-  // Storage-bucketen och nås bara via den skyddade nedladdningsfunktionen.
-  // En gammal kopia i dist/ skulle vara en publik genväg förbi skyddet.
-  await rm(join(DIST, 'downloads'), { recursive: true, force: true });
+  const copiedSkola = await copyIfExists(skolaDist, path.join(out, 'skola'));
+  await buildSkola(copiedSkola);
+  await removeStale();
 
-  console.log(`✓ byggd till dist/ (updater=${payload.updater})`);
+  // Kontroll: de filer som sidan måste ha.
+  const required = ['index.html', 'app.js', 'site.css', 'config.json'];
+  for (const name of required) {
+    const info = await stat(path.join(out, name)).catch(() => null);
+    if (!info) throw new Error(`Publiceringen saknar ${name}`);
+  }
+
+  const files = await readdir(out);
+  console.log(`✓ site/dist byggd (${files.length} poster): ${files.sort().join(', ')}`);
+  if (copiedSkola) console.log('✓ /skola/ innehåller Elda Skola');
+  console.log(config.skolaUrl ? `✓ Plattformsadress: ${config.skolaUrl}` : '! Ingen plattformsadress (ELDA_SKOLA_URL)');
 }
 
 main().catch((err) => {
-  console.error('Byggfel:', err.message);
+  console.error(err);
   process.exitCode = 1;
 });

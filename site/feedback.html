@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Förslag och feedback – Elda</title>
-<meta name="description" content="Skicka ett förslag till Elda-appen eller Elda Skola.">
+<title>Förslag och feedback – Elda Skola</title>
+<meta name="description" content="Skicka ett förslag till Elda Skola, skolplattformen för lärare och elever.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/png" href="./assets/elda-icon.png">
 <link rel="stylesheet" href="./site.css">
@@ -26,17 +26,14 @@
   <div class="nav-inner">
     <a class="brand" href="./index.html">
       <img src="./assets/elda-icon.png" alt="" width="28" height="28">
-      <span>Elda</span>
+      <span>Elda Skola</span>
     </a>
     <nav class="nav-links" id="navlinks" aria-label="Huvudmeny">
       <a href="./index.html">Start</a>
-      <a href="./elda.html">Elda-appen</a>
-      <a href="./skola.html">Elda Skola</a>
-      <a href="./elda.html#nedladdning">Nedladdning</a>
-      <a href="./versioner.html">Versionshistorik</a>
-      <a href="./elda.html#faq">Vanliga frågor</a>
-      <a href="./feedback.html" aria-current="page">Förslag</a>
+      <a href="./index.html#funktioner">Funktioner</a>
+      <a href="./index.html#kom-igang">Kom igång</a>
       <a href="./registrera.html">Skapa konto</a>
+      <a href="./feedback.html" aria-current="page">Förslag</a>
     </nav>
     <div class="nav-actions">
       <button type="button" class="icon-btn" id="theme-toggle" aria-label="Växla mellan ljust och mörkt läge">
@@ -58,25 +55,15 @@
   <section class="page-hero">
     <div class="wrap wrap-narrow">
       <p class="eyebrow">Förslag och feedback</p>
-      <h1>Vad skulle göra Elda bättre?</h1>
-      <p class="lede">Berätta om en idé eller något som fungerar dåligt. Välj vilken produkt förslaget gäller.</p>
+      <h1>Vad skulle göra Elda Skola bättre?</h1>
+      <p class="lede">Berätta om en idé eller något som fungerar dåligt i plattformen.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="wrap wrap-narrow">
       <form class="card reveal" id="feedback-form" novalidate>
-        <fieldset class="choice-group">
-          <legend class="field-legend">Vilken produkt gäller förslaget?</legend>
-          <label class="choice">
-            <input type="radio" name="product" value="elda" checked>
-            <span><strong>Elda-appen</strong><small>Windows-appen för studiearbete</small></span>
-          </label>
-          <label class="choice">
-            <input type="radio" name="product" value="skola">
-            <span><strong>Elda Skola</strong><small>Skolplattformen för lärare och elever</small></span>
-          </label>
-        </fieldset>
+        <input type="hidden" name="product" value="skola">
 
         <div class="field">
           <label for="fb-message">Beskriv ditt förslag</label>
@@ -97,22 +84,19 @@
     <div class="footer-brand">
       <a class="brand" href="./index.html">
         <img src="./assets/elda-icon.png" alt="" width="26" height="26">
-        <span>Elda</span>
+        <span>Elda Skola</span>
       </a>
-      <p>Elda och Elda Skola – två produkter för lärande och skolarbete.</p>
+      <p>Skolplattformen för lärare och elever.</p>
     </div>
-    <nav class="footer-col" aria-label="Produkter">
-      <h2>Produkter</h2>
-      <a href="./elda.html">Elda-appen</a>
-      <a href="./elda.html#nedladdning">Nedladdning</a>
-      <a href="./skola.html">Elda Skola</a>
+    <nav class="footer-col" aria-label="Plattformen">
+      <h2>Plattformen</h2>
+      <a href="./index.html#funktioner">Funktioner</a>
+      <a href="./index.html#kom-igang">Kom igång</a>
+      <a href="./registrera.html">Skapa konto</a>
     </nav>
     <nav class="footer-col" aria-label="Hjälp">
       <h2>Hjälp</h2>
-      <a href="./versioner.html">Versionshistorik</a>
-      <a href="./elda.html#faq">Vanliga frågor</a>
       <a href="./feedback.html">Förslag och feedback</a>
-      <a href="./registrera.html">Skapa konto</a>
     </nav>
   </div>
   <div class="wrap footer-bottom">

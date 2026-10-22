@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Elda – appen och skolplattformen</title>
-<meta name="description" content="Elda samlar två produkter: Elda-appen för studiearbete på Windows och Elda Skola för klasser, uppgifter och inlämningar.">
+<title>Elda Skola – skolplattformen för lärare och elever</title>
+<meta name="description" content="Elda Skola samlar uppgifter, inlämningar, klasser, kalender och meddelanden för lärare och elever.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/png" href="./assets/elda-icon.png">
 <link rel="stylesheet" href="./site.css">
@@ -26,17 +26,14 @@
   <div class="nav-inner">
     <a class="brand" href="./index.html">
       <img src="./assets/elda-icon.png" alt="" width="28" height="28">
-      <span>Elda</span>
+      <span>Elda Skola</span>
     </a>
     <nav class="nav-links" id="navlinks" aria-label="Huvudmeny">
       <a href="./index.html" aria-current="page">Start</a>
-      <a href="./elda.html">Elda-appen</a>
-      <a href="./skola.html">Elda Skola</a>
-      <a href="./elda.html#nedladdning">Nedladdning</a>
-      <a href="./versioner.html">Versionshistorik</a>
-      <a href="./elda.html#faq">Vanliga frågor</a>
-      <a href="./feedback.html">Förslag</a>
+      <a href="#funktioner">Funktioner</a>
+      <a href="#kom-igang">Kom igång</a>
       <a href="./registrera.html">Skapa konto</a>
+      <a href="./feedback.html">Förslag</a>
     </nav>
     <div class="nav-actions">
       <button type="button" class="icon-btn" id="theme-toggle" aria-label="Växla mellan ljust och mörkt läge">
@@ -60,127 +57,79 @@
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow anim" style="--d:60ms">ELDA</p>
-        <h1 class="anim" style="--d:140ms">Lärande och skolarbete, samlat på ett ställe.</h1>
+        <p class="eyebrow anim" style="--d:60ms">ELDA SKOLA</p>
+        <h1 class="anim" style="--d:140ms">Skolarbetet samlat på ett ställe.</h1>
         <p class="lede anim" style="--d:240ms">
-          Elda består av två produkter med olika användningsområden. Elda-appen är ditt
-          personliga studieverktyg på Windows. Elda Skola är skolplattformen för lärare och elever.
+          Elda Skola är skolplattformen för lärare och elever: uppgifter, inlämningar,
+          klasser, kalender och meddelanden – med en egen panel för varje roll.
         </p>
         <div class="hero-actions anim" style="--d:340ms">
-          <a class="btn btn-primary" href="./elda.html">Upptäck Elda-appen</a>
-          <a class="btn btn-ghost" href="./skola.html">Upptäck Elda Skola</a>
+          <a class="btn btn-primary" id="skola-open" href="#" hidden>Öppna Elda Skola</a>
+          <a class="btn btn-ghost" href="./registrera.html">Skapa konto</a>
         </div>
-      </div>
-
-      <div class="hero-visual anim" style="--d:300ms">
-        <div class="window" role="img" aria-label="Förhandsvisning av Eldas gränssnitt med sidomeny och samtalsvy">
-          <div class="window-bar">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <span class="window-title">Elda</span>
-          </div>
-          <div class="window-body">
-            <div class="window-rail" aria-hidden="true">
-              <span class="rail-mark"></span>
-              <span class="rail-row"></span><span class="rail-row"></span>
-              <span class="rail-row"></span><span class="rail-row short"></span>
-            </div>
-            <div class="window-main" aria-hidden="true">
-              <span class="line w-40"></span>
-              <span class="bubble bubble-me"></span>
-              <span class="bubble bubble-ai w-70"></span>
-              <span class="bubble bubble-ai w-55"></span>
-              <span class="line w-30 dim"></span>
-            </div>
-          </div>
-        </div>
+        <p class="download-note" id="skola-status">
+          Plattformen har ingen publicerad adress just nu. Konton skapas av skolan.
+        </p>
       </div>
     </div>
   </section>
 
-  <!-- VÄLJ PRODUKT -->
-  <section class="section section-alt" id="produkter">
+  <!-- FUNKTIONER -->
+  <section class="section section-alt" id="funktioner">
     <div class="wrap">
       <div class="section-head reveal">
-        <p class="eyebrow">Välj din produkt</p>
-        <h2>Två produkter, ett varumärke.</h2>
-        <p class="section-lede">Båda hör ihop, men de används på olika sätt och av olika människor.</p>
+        <p class="eyebrow">Funktioner</p>
+        <h2>Det som behövs i vardagen.</h2>
+        <p class="section-lede">Allt är byggt för skolans roller – elev, lärare, speciallärare och administratör.</p>
       </div>
 
       <div class="grid-2">
         <article class="card card-product reveal" style="--d:0ms">
-          <span class="badge">Windows-app</span>
-          <h3>Elda-appen</h3>
-          <p>Ett personligt studieverktyg för planering, studiehjälp och dokument. Installeras på din Windows-dator.</p>
-          <ul class="check-list">
-            <li>AI-studiehjälp i chatten</li>
-            <li>Planering och uppgifter med prioritet och förfallodatum</li>
-            <li>Belöningar och framsteg när uppgifter blir klara</li>
-            <li>Dokument på beställning som Word-filer</li>
-          </ul>
-          <div class="card-actions">
-            <a class="btn btn-primary" href="./elda.html">Upptäck Elda-appen</a>
-            <a class="btn btn-ghost" href="./elda.html#nedladdning">Till nedladdning</a>
-          </div>
-        </article>
-
-        <article class="card card-product skola reveal" style="--d:100ms">
-          <span class="badge sand">Skolplattform</span>
-          <h3>Elda Skola</h3>
-          <p>Skolplattformen för lärare och elever. Konton skapas av skolan, och varje roll får sin egen panel.</p>
+          <span class="badge sand">Elev</span>
+          <h3>Uppgifter och inlämningar</h3>
           <ul class="check-list sand">
-            <li>Uppgifter och inlämningar</li>
-            <li>Undervisningsmaterial och ämnen</li>
-            <li>Klasser och tilldelningar</li>
-            <li>Kalender och meddelanden</li>
+            <li>Se uppgifter med deadline och status</li>
+            <li>Lämna in och följ återkoppling</li>
+            <li>Ämnen, material och kalender</li>
+            <li>Framsteg, XP och butik</li>
           </ul>
-          <div class="card-actions">
-            <a class="btn btn-primary" href="./skola.html">Upptäck Elda Skola</a>
-            <a class="btn btn-accent" id="home-skola-open" href="#" hidden>Öppna Elda Skola</a>
-          </div>
         </article>
-      </div>
-    </div>
-  </section>
 
-  <!-- SENASTE VERSION -->
-  <section class="section">
-    <div class="wrap">
-      <div class="section-head reveal">
-        <p class="eyebrow">Senaste version</p>
-        <h2>Vad som är nytt i Elda-appen.</h2>
-      </div>
-      <div class="card reveal latest-card">
-        <p class="latest-version"><span id="home-latest-version">–</span> <span class="muted" id="home-latest-date"></span></p>
-        <p class="muted" id="home-latest-summary" hidden></p>
-        <p class="download-note" id="home-latest-note" hidden>Hämtar versionsinformation…</p>
-        <p class="cta-row">
-          <a class="text-link" href="./versioner.html">Se all versionshistorik →</a>
-        </p>
+        <article class="card card-product reveal" style="--d:100ms">
+          <span class="badge">Lärare</span>
+          <h3>Klasser och undervisning</h3>
+          <ul class="check-list">
+            <li>Klasser, elever och klasskoder</li>
+            <li>Uppgifter, aktiviteter och material</li>
+            <li>Inlämningar med rättning</li>
+            <li>Anpassningar och meddelanden</li>
+          </ul>
+        </article>
       </div>
     </div>
   </section>
 
   <!-- KOM IGÅNG -->
-  <section class="section section-alt">
+  <section class="section" id="kom-igang">
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow">Så kommer du igång</p>
-        <h2>Tre steg till rätt produkt.</h2>
+        <h2>Tre steg in i plattformen.</h2>
       </div>
       <ol class="steps">
-        <li class="reveal"><span class="step-n">1</span><div><h3>Välj produkt</h3><p>Elda-appen för eget studiearbete på Windows, eller Elda Skola om din skola använder plattformen.</p></div></li>
-        <li class="reveal" style="--d:100ms"><span class="step-n">2</span><div><h3>Skaffa konto</h3><p>Elda-appen kräver ett konto som skapas via registreringen. Elda Skola-konton skapas av skolan.</p></div></li>
-        <li class="reveal" style="--d:200ms"><span class="step-n">3</span><div><h3>Ladda ner eller logga in</h3><p>Ladda ner appen från nedladdningssidan, eller öppna skolplattformen från dess informationssida.</p></div></li>
+        <li class="reveal"><span class="step-n">1</span><div><h3>Skaffa konto</h3><p>Skolkonton skapas av skolan. Har du ingen skola ännu kan du ansöka om ett konto via registreringen.</p></div></li>
+        <li class="reveal" style="--d:100ms"><span class="step-n">2</span><div><h3>Logga in</h3><p>Logga in med användarnamn och lösenord. Första gången byter du det tillfälliga lösenordet.</p></div></li>
+        <li class="reveal" style="--d:200ms"><span class="step-n">3</span><div><h3>Börja arbeta</h3><p>Beroende på roll öppnas elev-, lärar-, speciallärar- eller administratörspanelen.</p></div></li>
       </ol>
     </div>
   </section>
 
   <!-- FEEDBACK -->
-  <section class="section">
+  <section class="section section-alt">
     <div class="wrap wrap-narrow">
       <div class="card reveal cta-card">
         <h2>Har du en idé?</h2>
-        <p class="muted">Berätta vad som skulle göra Elda eller Elda Skola bättre.</p>
+        <p class="muted">Berätta vad som skulle göra Elda Skola bättre.</p>
         <p><a class="btn btn-ghost" href="./feedback.html">Skicka ett förslag</a></p>
       </div>
     </div>
@@ -192,22 +141,19 @@
     <div class="footer-brand">
       <a class="brand" href="./index.html">
         <img src="./assets/elda-icon.png" alt="" width="26" height="26">
-        <span>Elda</span>
+        <span>Elda Skola</span>
       </a>
-      <p>Elda och Elda Skola – två produkter för lärande och skolarbete.</p>
+      <p>Skolplattformen för lärare och elever.</p>
     </div>
-    <nav class="footer-col" aria-label="Produkter">
-      <h2>Produkter</h2>
-      <a href="./elda.html">Elda-appen</a>
-      <a href="./elda.html#nedladdning">Nedladdning</a>
-      <a href="./skola.html">Elda Skola</a>
+    <nav class="footer-col" aria-label="Plattformen">
+      <h2>Plattformen</h2>
+      <a href="./index.html#funktioner">Funktioner</a>
+      <a href="./index.html#kom-igang">Kom igång</a>
+      <a href="./registrera.html">Skapa konto</a>
     </nav>
     <nav class="footer-col" aria-label="Hjälp">
       <h2>Hjälp</h2>
-      <a href="./versioner.html">Versionshistorik</a>
-      <a href="./elda.html#faq">Vanliga frågor</a>
       <a href="./feedback.html">Förslag och feedback</a>
-      <a href="./registrera.html">Skapa konto</a>
     </nav>
   </div>
   <div class="wrap footer-bottom">

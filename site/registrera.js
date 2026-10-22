@@ -5,6 +5,10 @@
  * ligger i bot.js; här finns bara rendering och händelser. Frågorna, valideringen
  * och beslutet kommer från servern — den här filen visar dem och skickar svaren.
  *
+ * Sidan är en chatt: boten ställer en fråga i taget, den sökande skriver sitt
+ * svar (eller en fråga) i samma ruta, och snabbvalen under chatten är bara ett
+ * bekvämare sätt att skriva samma svar.
+ *
  * Ingen text från servern skrivs som HTML: allt sätts med textContent, så att
  * ett svar aldrig kan bli kod i sidan.
  */
@@ -13,14 +17,19 @@ import {
   KIND_LABELS,
   KINDS,
   TRACKING_KEY,
-  answerValueFor,
   createBotClient,
-  createSiteClient,
+  firstNameFrom,
+  greetingReply,
+  helpReply,
+  looksLikeAccountRequest,
+  looksLikeQuestion,
   newIdempotencyKey,
+  parseChatAnswer,
+  parseKind,
   questionFor,
   readConfig,
   validateNewPassword,
-} from './bot.js';
+} from './bot.js?v=20261022-8';
 
 /* ------------------------------- Tema ---------------------------------- */
 const themeBtn = document.getElementById('theme-toggle');
@@ -99,32 +108,39 @@ const state = {
   current: null,
   complete: false,
   busy: false,
+  replying: false,
+  name: '',
   values: {},
 };
 
 const nodes = {
   card: $('reg-card'),
   configError: $('reg-config-error'),
-  kindStep: $('step-kind'),
-  kindPicker: $('kind-picker'),
-  kindError: $('kind-error'),
-  resumeBtn: $('resume-btn'),
+  chatStep: $('step-bot'),
+  heading: $('bot-heading'),
+  log: $('bot-log'),
+  quick: $('bot-quick'),
+  error: $('bot-error'),
+  form: $('bot-form'),
+  input: $('bot-input'),
+  send: $('bot-send'),
+  sendLabel: $('bot-send-label'),
+  typing: $('bot-typing'),
+  status: $('bot-status'),
+  kindLabel: $('bot-kind'),
+  passwordForm: $('password-form'),
+  password: $('reg-password'),
+  password2: $('reg-password-2'),
+  terms: $('reg-terms'),
+  summary: $('reg-summary'),
   statusForm: $('status-form'),
   statusOut: $('status-out'),
-  botStep: $('step-bot'),
-  botHeading: $('bot-heading'),
-  botFallback: $('bot-fallback'),
-  botLog: $('bot-log'),
-  botError: $('bot-error'),
-  botForm: $('bot-form'),
-  botField: $('bot-field'),
-  botSend: $('bot-send'),
-  allModeBtn: $('all-mode-btn'),
-  allForm: $('all-form'),
-  allFields: $('all-fields'),
-  oneModeBtn: $('one-mode-btn'),
-  passwordForm: $('password-form'),
-  summary: $('reg-summary'),
+  resumeBtn: $('resume-btn'),
+  resultStep: $('step-result'),
+  resultHeading: $('result-heading'),
+  resultBody: $('result-body'),
+  resultRestart: $('result-restart'),
+  resultSkola: $('result-skola'),
   deleteForm: $('delete-form'),
   deleteCode: $('delete-code'),
   deletePassword: $('delete-password'),
@@ -132,28 +148,75 @@ const nodes = {
   deleteSubmit: $('delete-submit'),
   deleteError: $('delete-error'),
   deleteOut: $('delete-out'),
-  password: $('reg-password'),
-  password2: $('reg-password-2'),
-  terms: $('reg-terms'),
-  resultStep: $('step-result'),
-  resultHeading: $('result-heading'),
-  resultBody: $('result-body'),
-  resultRestart: $('result-restart'),
 };
 
-// Löpande id:n så att etiketter och inmatningar hör ihop även när samma fält
-// visas både i frågeläget och i formulärläget.
-let fieldSeq = 0;
-
 let bot = null;
-let siteClient = null;
+// Håller reda på förra hälsningen så att boten inte upprepar samma mening.
+let lastGreetingIndex = -1;
 
+/** Förnamnet, om boten har fått det. Används för att tilltala personen. */
+function myName() {
+  return state.name || firstNameFrom(state.values);
+}
+
+/** Skriver en rad i chatten. Allt är text, aldrig HTML. */
 function say(role, message) {
-  nodes.botLog.appendChild(text('p', `reg-line reg-line-${role}`, message));
-  nodes.botLog.scrollTop = nodes.botLog.scrollHeight;
+  if (!nodes.log || !message) return;
+  const row = document.createElement('div');
+  row.className = `chat-row chat-row-${role}`;
+  if (role === 'bot') {
+    const avatar = document.createElement('img');
+    avatar.className = 'chat-bubble-avatar';
+    avatar.src = './assets/elda-icon.png';
+    avatar.alt = '';
+    avatar.width = 26;
+    avatar.height = 26;
+    row.appendChild(avatar);
+  }
+  row.appendChild(text('p', `reg-line reg-line-${role}`, message));
+  nodes.log.appendChild(row);
+  nodes.log.scrollTop = nodes.log.scrollHeight;
+}
+
+/** "Elda-boten skriver…" medan servern svarar. */
+function setTyping(typing) {
+  if (!nodes.typing) return;
+  show(nodes.typing, typing);
+  if (typing && nodes.log) nodes.log.scrollTop = nodes.log.scrollHeight;
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Boten svarar inte i samma ögonblick som meddelandet skickas. Den "skriver"
+ * först en kort stund — längre för längre svar, men aldrig mer än knappt en
+ * sekund — så att chatten känns som en konversation i stället för ett formulär.
+ */
+function replyDelay(message) {
+  return Math.min(950, 350 + String(message ?? '').length * 12);
+}
+
+async function botSays(messages) {
+  const list = (Array.isArray(messages) ? messages : [messages]).filter(Boolean);
+  if (!list.length) return;
+  state.replying = true;
+  try {
+    for (const message of list) {
+      setTyping(true);
+      await wait(replyDelay(message));
+      setTyping(false);
+      say('bot', message);
+      // Liten andhämtning mellan två botrader, så att de inte klistras ihop.
+      if (list.length > 1) await wait(140);
+    }
+  } finally {
+    setTyping(false);
+    state.replying = false;
+  }
 }
 
 function setError(node, message) {
+  if (!node) return;
   if (!message) {
     show(node, false);
     node.textContent = '';
@@ -166,23 +229,72 @@ function setError(node, message) {
 function setBusy(busy) {
   state.busy = busy;
   for (const button of nodes.card.querySelectorAll('button')) button.disabled = busy;
+  if (nodes.sendLabel) nodes.sendLabel.textContent = busy ? 'Skickar…' : 'Skicka';
+}
+
+/** Snabbval under chatten: samma sak som att skriva svaret, ett tryck kortare. */
+function setQuick(options) {
+  if (!nodes.quick) return;
+  clear(nodes.quick);
+  if (!options.length) {
+    show(nodes.quick, false);
+    return;
+  }
+  for (const option of options) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = option.label;
+    if (option.hint) button.title = option.hint;
+    button.addEventListener('click', () => void handleMessage(option.value));
+    nodes.quick.appendChild(button);
+  }
+  show(nodes.quick, true);
+}
+
+function setKindQuick() {
+  setQuick(
+    KINDS.map((kind) => ({
+      label: KIND_LABELS[kind] ?? kind,
+      value: kind,
+      hint: KIND_DESCRIPTIONS[kind] ?? '',
+    })),
+  );
+}
+
+function setQuickFor(field) {
+  if (!field) {
+    setQuick([]);
+    return;
+  }
+  if (field.type === 'boolean') {
+    setQuick([
+      { label: 'Ja', value: 'ja' },
+      { label: 'Nej', value: 'nej' },
+    ]);
+    return;
+  }
+  if (field.type === 'choice') {
+    setQuick((field.options ?? []).map((option) => ({ label: String(option), value: String(option) })));
+    return;
+  }
+  setQuick([]);
 }
 
 /**
  * Förklarar varför automatiken inte kunde bedöma ansökan.
  *
  * Servern skickar en kod (aldrig några driftdetaljer utöver att en kvot eller
- * kredit är slut) och sidan säger rakt ut vad det betyder för den sökande:
- * ansökan går till manuell granskning och nedladdningen öppnas först när någon
- * har godkänt den. Inget allmänt "något gick fel".
+ * kredit är slut) och sidan säger rakt ut vad det betyder: kontot är skapat och
+ * fungerar, men underlaget kan granskas i efterhand. Inget allmänt "något gick
+ * fel", och ingen behöver vänta på ett godkännande.
  */
 const AI_ISSUE_NOTICE = {
   'kvot-slut':
-    'AI-bedömningen kunde inte göras eftersom gratiskvoten för AI-tjänsten är slut just nu. Din ansökan går därför till manuell granskning — den är inte avslagen, men det kan ta lite längre tid.',
+    'AI-bedömningen kunde inte göras eftersom gratiskvoten för AI-tjänsten är slut just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
   'krediter-slut':
-    'AI-bedömningen kunde inte göras eftersom AI-tjänsten saknar krediter just nu. Din ansökan går därför till manuell granskning — den är inte avslagen, men det kan ta lite längre tid.',
+    'AI-bedömningen kunde inte göras eftersom AI-tjänsten saknar krediter just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
   'svar-uteblev':
-    'AI-bedömningen kunde inte göras just nu. Din ansökan går därför till manuell granskning — den är inte avslagen, men det kan ta lite längre tid.',
+    'AI-bedömningen kunde inte göras just nu. Kontot är skapat och fungerar som vanligt — en administratör kan granska underlaget i efterhand.',
 };
 
 /** Visar ansökans resultat eller status — alltid som text, aldrig som HTML. */
@@ -214,7 +326,7 @@ function renderResult(data) {
       text(
         'p',
         'reg-note-text',
-        'En administratör tittar på ansökan innan alla delar öppnas.',
+        'Boten flaggade något i ansökan. En administratör kan granska den i efterhand — kontot fungerar som vanligt.',
       ),
     );
   }
@@ -225,150 +337,90 @@ function renderResult(data) {
   }
   if (data.username) {
     nodes.resultBody.appendChild(
-      text('p', 'reg-note-text', 'Logga in i appen med användarnamnet och lösenordet du valde.'),
+      text('p', 'reg-note-text', 'Logga in i plattformen med användarnamnet och lösenordet du valde.'),
     );
   }
   if (data.status === 'skapad') {
     nodes.resultBody.appendChild(
-      text('p', 'reg-note-text', 'Kontot är godkänt — du kan ladda ner appen direkt via knappen nedan.'),
+      text('p', 'reg-note-text', 'Kontot är godkänt — du kan logga in i plattformen direkt.'),
     );
   } else if (data.status === 'vantar') {
     nodes.resultBody.appendChild(
       text(
         'p',
         'reg-note-text',
-        'Nedladdningen öppnas när en administratör har godkänt kontot. Du kan logga in i appen redan nu.',
+        'Klassverktygen öppnas när en administratör har godkänt kontot. Du kan logga in i plattformen redan nu.',
       ),
     );
   }
 
   nodes.resultHeading.textContent = data.message || 'Ansökan är skickad';
-  show(nodes.kindStep, false);
-  show(nodes.botStep, false);
+  setTyping(false);
+  show(nodes.chatStep, false);
   show(nodes.passwordForm, false);
   show(nodes.resultStep, true);
+  setQuick([]);
 }
 
-/** Fältets inmatning byggs efter fälttypen som servern anger. */
-function renderField(container, field) {
-  clear(container);
-  const wrapper = document.createElement('div');
-  wrapper.className = 'reg-field';
+/* ----------------------------- Chatten --------------------------------- */
 
-  const id = `f-${field.id}-${++fieldSeq}`;
-  const label = text('label', 'reg-label', field.label);
-  label.htmlFor = id;
-  wrapper.appendChild(label);
-  if (field.hint) wrapper.appendChild(text('p', 'reg-hint', field.hint));
-
-  let input;
-  if (field.type === 'choice') {
-    input = document.createElement('div');
-    input.className = 'reg-choices';
-    (field.options ?? []).forEach((option, index) => {
-      const row = document.createElement('label');
-      row.className = 'reg-check';
-      const box = document.createElement('input');
-      box.type = 'checkbox';
-      box.value = option;
-      if (index === 0) box.id = id;
-      row.append(box, text('span', '', option));
-      input.appendChild(row);
-    });
-  } else if (field.type === 'boolean') {
-    input = document.createElement('div');
-    input.className = 'reg-choices';
-    [
-      ['ja', 'Ja'],
-      ['nej', 'Nej'],
-    ].forEach(([value, caption], index) => {
-      const row = document.createElement('label');
-      row.className = 'reg-check';
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = id;
-      radio.value = value;
-      if (index === 0) radio.id = id;
-      row.append(radio, text('span', '', caption));
-      input.appendChild(row);
-    });
-  } else if (field.type === 'longtext') {
-    input = document.createElement('textarea');
-    input.className = 'reg-input';
-    input.rows = 4;
-    input.maxLength = 1000;
-    input.id = id;
-  } else {
-    input = document.createElement('input');
-    input.className = 'reg-input';
-    input.type = field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : 'text';
-    input.maxLength = 120;
-    input.autocomplete = 'off';
-    input.id = id;
+/** Visar vilken kontotyp ansökan gäller i chattens rubrik. */
+function setHeaderFor(kind) {
+  if (nodes.kindLabel) {
+    nodes.kindLabel.textContent = KIND_LABELS[kind] ?? kind;
+    show(nodes.kindLabel, true);
   }
-
-  // Fyll i det som redan är sparat (efter ett avbrott eller ett byte mellan
-  // frågeläget och formulärläget) i stället för att visa tomma fält.
-  const stored = state.values?.[field.id];
-  if (stored !== undefined && stored !== null) {
-    if (field.type === 'choice') {
-      const list = (Array.isArray(stored) ? stored : [stored]).map(String);
-      for (const box of input.querySelectorAll('input')) {
-        box.checked = list.includes(box.value);
-      }
-    } else if (field.type === 'boolean') {
-      const yes = stored === true || stored === 'true' || stored === 'ja';
-      const target = input.querySelector(`input[value="${yes ? 'ja' : 'nej'}"]`);
-      if (target) target.checked = true;
-    } else {
-      input.value = String(stored);
-    }
-  }
-
-  wrapper.appendChild(input);
-  const errorNode = text('p', 'reg-hint reg-hint-error', '');
-  errorNode.hidden = true;
-  wrapper.appendChild(errorNode);
-  container.appendChild(wrapper);
-
-  field.__errorNode = errorNode;
-  field.__input = input;
-
-  const first = input.querySelector?.('input') ?? input;
-  first?.focus?.({ preventScroll: true });
-  return input;
+  if (nodes.status) nodes.status.textContent = 'Frågar och svarar direkt';
 }
 
-/** Läser av det användaren har skrivit för ett fält. */
-function readField(field) {
-  const input = field.__input;
-  if (field.type === 'choice') {
-    return [...input.querySelectorAll('input:checked')].map((box) => box.value);
-  }
-  if (field.type === 'boolean') {
-    const checked = input.querySelector('input:checked');
-    return checked ? checked.value : '';
-  }
-  return input.value;
+/** Botens hälsning: kontotypen är det första den frågar efter. */
+async function greet() {
+  await botSays([
+    'Hej! Jag är Elda-boten och hjälper dig att skapa ett Elda-konto.',
+    'Vilken typ av konto vill du ha?',
+  ]);
+  say(
+    'system',
+    'Du kan också ställa en fråga när som helst — till exempel "vad kostar det?".',
+  );
+  setKindQuick();
+  nodes.input?.focus();
 }
 
-/* ----------------------------- Frågeflödet ----------------------------- */
+/** Frågar efter kontotypen — det svar som krävs innan ansökan kan börja. */
+async function offerKinds(named = null) {
+  const lines = ['Absolut — det fixar vi!', 'Vilken typ av konto vill du ha?'];
+  if (named) {
+    lines.push(
+      `Du nämnde ${String(KIND_LABELS[named] ?? named).toLowerCase()}. Välj den om det stämmer — annars den typ som passar dig.`,
+    );
+  }
+  await botSays(lines);
+  setKindQuick();
+}
+
+/** Startar en ansökan för vald kontotyp och ställer den första frågan. */
 async function begin(kind) {
   if (state.busy) return;
   setBusy(true);
-  setError(nodes.kindError, null);
+  setError(nodes.error, null);
+  setTyping(true);
 
+  const label = KIND_LABELS[kind] ?? kind;
   const res = await bot.start(kind, newIdempotencyKey());
+  setTyping(false);
   setBusy(false);
 
   if (!res.ok) {
-    setError(nodes.kindError, res.error);
+    say('system', res.error);
     return;
   }
 
   state.kind = kind;
   state.trackingCode = res.data.trackingCode;
   state.fields = res.data.fields ?? [];
+  state.values = {};
+  state.name = '';
   state.complete = false;
   try {
     localStorage.setItem(TRACKING_KEY, state.trackingCode);
@@ -376,87 +428,67 @@ async function begin(kind) {
     /* utan lokal lagring går registreringen ändå */
   }
 
-  nodes.botHeading.textContent = `Registrering · ${KIND_LABELS[kind] ?? kind}`;
-  show(nodes.botFallback, res.data.aiAvailable === false);
-  clear(nodes.botLog);
-  say('bot', `Hej! Vi fixar ett ${String(KIND_LABELS[kind] ?? '').toLowerCase()}-konto tillsammans.`);
-  say('bot', questionFor(state.fields[0] ?? {}, res.data.firstQuestion));
-
-  show(nodes.kindStep, false);
-  show(nodes.botStep, true);
-  show(nodes.resultStep, false);
+  setHeaderFor(kind);
+  clear(nodes.log);
   show(nodes.passwordForm, false);
-  show(nodes.allForm, false);
-  show(nodes.botForm, true);
-
+  show(nodes.resultStep, false);
+  await botSays([
+    `Då skapar vi ett konto åt dig som ${String(label).toLowerCase()}. Jag frågar en sak i taget.`,
+    questionFor(state.fields[0] ?? {}, res.data.firstQuestion),
+  ]);
   setCurrent(state.fields[0] ?? null);
 }
 
-function setSendLabel() {
-  if (!nodes.botSend) return;
-  // Ett frivilligt fält får lämnas tomt — då hoppar servern över det. Det står på
-  // knappen, så ingen behöver gissa att ett tomt svar går bra.
-  nodes.botSend.textContent = state.current?.required
-    ? 'Skicka svar'
-    : 'Skicka svar (tomt hoppar över)';
-}
-
+/** Sätter frågan som väntar och de snabbval som hör till den. */
 function setCurrent(field) {
-  state.current = field;
-  setError(nodes.botError, null);
-  if (!field) {
-    show(nodes.botForm, false);
-    return;
+  state.current = field ?? null;
+  setError(nodes.error, null);
+  setQuickFor(state.current);
+  if (nodes.input) {
+    nodes.input.placeholder = state.current
+      ? 'Skriv ditt svar eller en fråga…'
+      : 'Skriv ett meddelande…';
   }
-  renderField(nodes.botField, field);
-  setSendLabel();
-  show(nodes.botForm, true);
+  if (state.current) nodes.input?.focus();
 }
 
-async function sendCurrent() {
-  const field = state.current;
-  if (!field || state.busy) return;
-
-  const parsed = answerValueFor(field, readField(field));
-  if (!parsed.ok) {
-    field.__errorNode.textContent = parsed.error;
-    field.__errorNode.hidden = false;
-    return;
-  }
-
+/** Skickar ett svar på den väntande frågan och hämtar nästa. */
+async function sendAnswer(field, value) {
   setBusy(true);
-  setError(nodes.botError, null);
-  // Direkt kvitto på att svaret skickats — innan servern hunnit svara.
-  if (nodes.botSend) nodes.botSend.textContent = 'Skickar…';
-  const res = await bot.answerStep(state.trackingCode, field.id, parsed.value);
+  setError(nodes.error, null);
+  setTyping(true);
+  const res = await bot.answerStep(state.trackingCode, field.id, value);
+  setTyping(false);
   setBusy(false);
-  setSendLabel();
 
   if (!res.ok) {
     const own = res.problems?.[field.id];
-    if (own) {
-      field.__errorNode.textContent = own;
-      field.__errorNode.hidden = false;
-      return;
-    }
-    setError(nodes.botError, res.error);
+    say('system', own || res.error);
     return;
   }
 
   state.values = res.data.answers ?? state.values;
-  show(nodes.botFallback, res.data.aiAvailable === false);
+  const given = firstNameFrom(state.values);
+  if (given) state.name = given;
 
   if (!res.data.complete) {
-    const next = res.data.nextField ?? null;
-    if (res.data.question) say('bot', res.data.question);
-    setCurrent(next);
+    // Boten kommer ihåg namnet och använder det i fortsättningen, men bara när
+    // servern har accepterat svaret.
+    const name = myName();
+    if (field.id === 'firstName' && name) {
+      await botSays(`Trevligt att träffas, ${name}!`);
+    } else if (field.id === 'lastName' && name) {
+      await botSays(`Tack så mycket, ${name}!`);
+    }
+    if (res.data.question) await botSays(res.data.question);
+    setCurrent(res.data.nextField ?? null);
     return;
   }
 
-  finishQuestions(res.data);
+  await finishQuestions(res.data);
 }
 
-/** Sammanfattning före inskickandet: användaren ska se vad som sparas. */
+/** Sammanfattning före inskickandet: den sökande ska se vad som sparas. */
 function renderSummary(data) {
   if (!nodes.summary) return;
   clear(nodes.summary);
@@ -487,75 +519,123 @@ function renderSummary(data) {
   show(nodes.summary, list.children.length > 0);
 }
 
-function finishQuestions(data) {
+/** Alla frågor är besvarade: visa sammanfattningen och lösenordssteget. */
+async function finishQuestions(data) {
   state.complete = true;
   state.current = null;
-  show(nodes.botForm, false);
-  show(nodes.allForm, false);
+  setQuick([]);
   renderSummary(data);
-  show(nodes.passwordForm, true);
-  say('bot', data.question || 'Tack! Nu återstår bara ditt lösenord.');
+  const name = myName();
+  await botSays(
+    data.question ||
+      (name
+        ? `Tack, ${name}! Nu återstår bara att du väljer ett lösenord.`
+        : 'Tack! Nu återstår bara att du väljer ett lösenord.'),
+  );
   if (Array.isArray(data.missingRequired) && data.missingRequired.length > 0) {
     say('system', `Innan vi kan skicka in behöver vi: ${data.missingRequired.join(', ')}.`);
   }
+  show(nodes.passwordForm, true);
+  nodes.password?.focus();
 }
 
-async function sendAll() {
-  if (state.busy) return;
-  const answers = {};
-  for (const field of state.fields) {
-    const parsed = answerValueFor(field, readField(field));
-    if (!parsed.ok) {
-      field.__errorNode.textContent = parsed.error;
-      field.__errorNode.hidden = false;
+/**
+ * Tar emot ett skrivet meddelande. Tre saker kan hända, i den här ordningen:
+ *  - det är en fråga till boten och boten kan svara,
+ *  - det är valet av kontotyp (innan ansökan har börjat),
+ *  - det är svaret på frågan som väntar.
+ */
+async function handleMessage(raw) {
+  const message = String(raw ?? '').replace(/\s+/g, ' ').trim();
+  if (!message || state.busy || state.replying) return;
+
+  say('user', message);
+  if (nodes.input) nodes.input.value = '';
+
+  // "Kan jag få skapa konto?" ska alltid leda till frågan om kontotyp — även
+  // när meddelandet redan nämner en typ, så att valet blir medvetet.
+  if (!state.kind && looksLikeAccountRequest(message)) {
+    await offerKinds(parseKind(message));
+    return;
+  }
+
+  // Kontotypen går också att bara skriva, t.ex. "lärare".
+  if (!state.kind) {
+    const kind = parseKind(message);
+    if (kind) {
+      await begin(kind);
       return;
     }
-    // Tomma frivilliga fält skickas med som null så att servern markerar dem som
-    // överhoppade. Annars skulle frågan om ett frivilligt svar komma tillbaka och
-    // ansökan aldrig kunna skickas in.
-    if (parsed.value === '' || parsed.value === null) {
-      if (!field.required) answers[field.id] = null;
-      continue;
+  }
+
+  const asked = looksLikeQuestion(message) ? helpReply(message) : null;
+  if (asked) {
+    await botSays(asked);
+    // Innan ansökan har börjat ska kontotypen alltid finnas ett tryck bort.
+    if (!state.kind) setKindQuick();
+    return;
+  }
+  if (looksLikeQuestion(message)) {
+    const name = myName();
+    await botSays(
+      `Det där är jag inte säker på${name ? `, ${name}` : ''}. Jag kan hjälpa till med konto, lösenord, klasskod och vad som händer med uppgifterna – skriv /hjälp så visar jag exempel, eller svara på frågan ovan.`,
+    );
+    if (!state.kind) setKindQuick();
+    return;
+  }
+
+  if (state.complete) {
+    say('system', 'Alla frågor är besvarade — välj lösenord och skicka in ansökan nedan.');
+    return;
+  }
+
+  // Artigheter och hälsningar ska inte sparas som svar på en fråga (t.ex. som
+  // förnamn). Boten kvitterar i stället och låter frågan ligga kvar.
+  if (state.current && /^(hej|hejsan|tja|tjena|hallå|halla|god dag|godmorgon)\b/i.test(message)) {
+    const name = myName();
+    await botSays(
+      name
+        ? `Hej ${name}! Vi fortsätter där vi var — svara på frågan ovan när du är redo.`
+        : 'Hej! Vi fortsätter där vi var — svara på frågan ovan när du är redo.',
+    );
+    return;
+  }
+  if (state.current && /^(tack|tackar|tusen tack|okej|ok|toppen)[!., ]*$/i.test(message)) {
+    await botSays('Varsågod! Vi fortsätter där vi var.');
+    return;
+  }
+
+  if (!state.kind || !state.trackingCode) {
+    if (/^(hej|hejsan|tja|tjena|hallå|halla|god dag|godmorgon)\b/i.test(message)) {
+      const greeting = greetingReply(lastGreetingIndex);
+      lastGreetingIndex = greeting.index;
+      await botSays(greeting.text);
+      setKindQuick();
+      return;
     }
-    answers[field.id] = parsed.value;
-  }
-
-  setBusy(true);
-  setError(nodes.botError, null);
-  const res = await bot.answerMany(state.trackingCode, answers);
-  setBusy(false);
-
-  if (!res.ok) {
-    setError(nodes.botError, res.error);
-    if (res.problemsList) say('system', `Kvar att fylla i: ${res.problemsList.join(', ')}.`);
+    const kind = parseKind(message);
+    if (kind) {
+      await begin(kind);
+      return;
+    }
+    await botSays(
+      'Vilken typ av konto passar dig bäst: skolelev, privat elev eller lärare?',
+    );
+    setKindQuick();
     return;
   }
 
-  state.values = res.data.answers ?? state.values;
-  show(nodes.allForm, false);
-  if (res.data.complete) {
-    finishQuestions(res.data);
+  if (!state.current) {
+    say('system', 'Jag väntar på serverns nästa fråga. Försök igen om en stund.');
     return;
   }
-  show(nodes.botForm, true);
-  say('bot', res.data.question || 'Tack!');
-  if (Array.isArray(res.data.missingRequired) && res.data.missingRequired.length > 0) {
-    say('system', `Kvar att fylla i: ${res.data.missingRequired.join(', ')}.`);
-  }
-  setCurrent(res.data.nextField ?? null);
-}
 
-/** Formulärläget: alla fält på en gång, utan den ena frågan i taget. */
-function showAllMode() {
-  clear(nodes.allFields);
-  for (const field of state.fields) {
-    const holder = document.createElement('div');
-    nodes.allFields.appendChild(holder);
-    renderField(holder, field);
+  const parsed = parseChatAnswer(state.current, message);
+  if (!parsed.ok) {
+    say('system', parsed.error);
+    return;
   }
-  show(nodes.botForm, false);
-  show(nodes.allForm, true);
-  setError(nodes.botError, null);
+  await sendAnswer(state.current, parsed.value);
 }
 
 /* --------------------------- Skicka in ansökan ------------------------- */
@@ -565,16 +645,16 @@ async function submitApplication(event) {
 
   const problem = validateNewPassword(nodes.password.value, nodes.password2.value);
   if (problem) {
-    setError(nodes.botError, problem);
+    setError(nodes.error, problem);
     return;
   }
   if (!nodes.terms.checked) {
-    setError(nodes.botError, 'Du behöver godkänna användarvillkoren för att skapa kontot.');
+    setError(nodes.error, 'Du behöver godkänna användarvillkoren för att skapa kontot.');
     return;
   }
 
   setBusy(true);
-  setError(nodes.botError, null);
+  setError(nodes.error, null);
   const submitBtn = $('reg-submit');
   if (submitBtn) submitBtn.textContent = 'Skapar konto…';
   const res = await bot.submit(state.trackingCode, nodes.password.value);
@@ -582,21 +662,12 @@ async function submitApplication(event) {
   if (submitBtn) submitBtn.textContent = 'Skicka in ansökan';
 
   if (!res.ok) {
-    setError(nodes.botError, res.error);
+    setError(nodes.error, res.error);
     if (res.problemsList) say('system', `Kvar att fylla i: ${res.problemsList.join(', ')}.`);
     return;
   }
 
   if (res.data.status === 'skapad' || res.data.status === 'vantar') {
-    // Samma konto som i appen: logga in direkt med uppgifterna som just valdes,
-    // så att nedladdningen på startsidan kan öppnas utan en andra inloggning.
-    if (siteClient && res.data.username) {
-      try {
-        await siteClient.login(res.data.username, nodes.password.value);
-      } catch {
-        /* inloggningen kan göras manuellt på nedladdningssidan */
-      }
-    }
     try {
       localStorage.removeItem(TRACKING_KEY);
     } catch {
@@ -660,7 +731,6 @@ async function deleteAccount(event) {
 async function loadStatus(code) {
   if (!code || state.busy) return;
   setBusy(true);
-  setError(nodes.kindError, null);
   const res = await bot.status(code);
   setBusy(false);
 
@@ -705,7 +775,6 @@ async function loadStatus(code) {
 async function resume(code) {
   if (!code || state.busy) return;
   setBusy(true);
-  setError(nodes.kindError, null);
   const res = await bot.status(code);
   setBusy(false);
 
@@ -715,7 +784,7 @@ async function resume(code) {
     } catch {
       /* ignoreras */
     }
-    setError(nodes.kindError, res.error);
+    say('system', res.error);
     return;
   }
 
@@ -728,36 +797,38 @@ async function resume(code) {
     return;
   }
 
-  // Fortsätt fråga för fråga. Ett tomt svar betyder "säg vad som saknas": servern
-  // svarar med nästa obesvarade fält, så en avbruten ansökan fortsätter rätt.
   state.kind = res.data.kind;
   state.trackingCode = code;
+  state.complete = false;
   const questions = await bot.questions(res.data.kind);
   state.fields = questions.ok ? questions.data.fields ?? [] : [];
 
-  nodes.botHeading.textContent = `Registrering · ${KIND_LABELS[res.data.kind] ?? res.data.kind}`;
-  clear(nodes.botLog);
-  say('bot', `Vi fortsätter din ansökan (${KIND_LABELS[res.data.kind] ?? res.data.kind}).`);
-  say('bot', res.data.message);
-
-  show(nodes.kindStep, false);
-  show(nodes.botStep, true);
+  setHeaderFor(res.data.kind);
+  clear(nodes.log);
+  show(nodes.chatStep, true);
   show(nodes.resultStep, false);
   show(nodes.passwordForm, false);
-  show(nodes.allForm, false);
+  show(nodes.statusOut, false);
+  await botSays([
+    `Vi fortsätter din ansökan (${KIND_LABELS[res.data.kind] ?? res.data.kind}).`,
+    res.data.message,
+  ]);
 
+  // Ett tomt svar betyder "säg vad som saknas": servern svarar med nästa
+  // obesvarade fält, så en avbruten ansökan fortsätter rätt.
   const pending = await bot.answerMany(code, {});
   if (!pending.ok) {
-    setError(nodes.botError, pending.error);
-    show(nodes.botForm, false);
+    say('system', pending.error);
+    setQuick([]);
     return;
   }
   state.values = pending.data.answers ?? {};
+  state.name = firstNameFrom(state.values);
   if (pending.data.complete) {
-    finishQuestions(pending.data);
+    await finishQuestions(pending.data);
     return;
   }
-  say('bot', pending.data.question || '');
+  if (pending.data.question) await botSays(pending.data.question);
   setCurrent(pending.data.nextField ?? null);
 }
 
@@ -782,41 +853,34 @@ async function main() {
 
   try {
     bot = createBotClient(config);
-    siteClient = createSiteClient(config);
   } catch {
     showConfigError();
     return;
   }
 
-  show(nodes.card, true);
-
-  // Steg 1: kontotyperna byggs från samma lista som appen och servern känner.
-  for (const kind of KINDS) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'kind-option';
-    button.appendChild(text('span', 'kind-option-label', KIND_LABELS[kind]));
-    button.appendChild(text('span', 'kind-option-hint', KIND_DESCRIPTIONS[kind]));
-    button.addEventListener('click', () => void begin(kind));
-    nodes.kindPicker.appendChild(button);
+  // Länken till plattformen visas bara när adressen är en godkänd https-adress.
+  const skolaUrl = typeof config.skolaUrl === 'string' ? config.skolaUrl : '';
+  if (nodes.resultSkola && /^https:\/\//i.test(skolaUrl)) {
+    nodes.resultSkola.href = skolaUrl;
+    nodes.resultSkola.rel = 'noopener';
+    nodes.resultSkola.hidden = false;
   }
 
-  nodes.botForm.addEventListener('submit', (event) => {
+  show(nodes.card, true);
+  show(nodes.chatStep, true);
+
+  nodes.form.addEventListener('submit', (event) => {
     event.preventDefault();
-    void sendCurrent();
+    void handleMessage(nodes.input?.value ?? '');
   });
-  nodes.allForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    void sendAll();
+  // Enter skickar, Shift+Enter ger en ny rad.
+  nodes.input?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      void handleMessage(nodes.input.value);
+    }
   });
   nodes.passwordForm.addEventListener('submit', (event) => void submitApplication(event));
-  nodes.allModeBtn.addEventListener('click', showAllMode);
-  nodes.oneModeBtn.addEventListener('click', () => {
-    show(nodes.allForm, false);
-    // Rendera om frågan: annars pekar fältets inmatning kvar på formulärlägets
-    // (nu dolda) element och svaret skulle läsas från fel ställe.
-    setCurrent(state.current ?? state.fields[0] ?? null);
-  });
   nodes.statusForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const code = $('status-code').value.trim();
@@ -837,6 +901,8 @@ async function main() {
     show(nodes.resumeBtn, true);
     nodes.resumeBtn.addEventListener('click', () => void resume(stored));
   }
+
+  void greet();
 }
 
 void main();
