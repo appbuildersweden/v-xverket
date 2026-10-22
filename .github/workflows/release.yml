@@ -4,7 +4,7 @@ name: Release
 #   1. Bygg Windows-paketen (NSIS + MSI)
 #   2. Signera dem med updater-nyckeln
 #   3. Skapa en GitHub Release med filerna
-#   4. Publicera nedladdningsfiler + update.json till Cloudflare Pages
+#   4. Publicera webbplatsen (skolplattformen) till Cloudflare Pages
 #
 # Startas genom att pusha en tagg, t.ex.:  git tag v0.2.0 && git push origin v0.2.0
 #
@@ -15,7 +15,6 @@ name: Release
 #   CLOUDFLARE_ACCOUNT_ID              – kontots ID
 #
 # Variabler (Settings -> Secrets and variables -> Actions -> Variables):
-#   ELDA_DOWNLOAD_BASE                 – t.ex. https://elda.pages.dev/downloads
 #   VITE_SUPABASE_URL                  – projektets adress
 #   VITE_SUPABASE_ANON_KEY             – publik anon-nyckel (ligger i klienten)
 #   ELDA_SKOLA_URL                     – adressen till Elda-skola (frivillig)
@@ -48,10 +47,8 @@ jobs:
     runs-on: windows-latest
     env:
       # secrets-contexten får inte användas direkt i ett step-if, därför
-      # räknas villkoret ut en gång här. Webbplatsen och uppdateringsmanifestet
-      # publiceras när Cloudflare-token finns – det är manifestet som gör att
-      # installerade appar hittar nya versioner, så det får inte hänga på
-      # nedladdningsadressen.
+      # räknas villkoret ut en gång här. Webbplatsen publiceras när
+      # Cloudflare-token finns.
       PUBLISH_SITE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
@@ -126,8 +123,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Elda ${{ github.ref_name }}'
-          # Texten läses från RELEASE_NOTES.md och hamnar både i GitHub-releasen
-          # och i webbplatsens versionshistorik (site/build.mjs läser den).
+          # Texten läses från RELEASE_NOTES.md och hamnar i GitHub-releasen.
           releaseBody: ${{ steps.release-notes.outputs.body }}
           releaseDraft: false
           prerelease: false
@@ -159,30 +155,11 @@ jobs:
           fi
           echo "✓ Supabase-adressen finns i det byggda gränssnittet"
 
-      - name: Hämta signerade filer för webbplatsen
-        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Rensa mappen först: annars ligger föregående versions filer kvar och
-          # publiceras tillsammans med den nya versionen.
-          rm -rf site/downloads
-          mkdir -p site/downloads
-          gh release download "${{ github.ref_name }}" \
-            --dir site/downloads \
-            --pattern '*.exe' --pattern '*.msi' --pattern '*.sig'
-          ls -la site/downloads
-
       - name: Bygg webbplatsen
         if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
         working-directory: site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ELDA_DOWNLOAD_BASE: ${{ vars.ELDA_DOWNLOAD_BASE }}
-          # Basadress för update.json. Tom variabel faller tillbaka på appens
-          # befintliga endpoint (elda-6a9.pages.dev).
-          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
           # Registreringsboten på hemsidan är enda publika vägen till ett konto.
           # Samma publika variabler som appbygget använder, så att bygget kan
           # skriva dist/config.json. Utan dem publiceras sidan utan serveradress
@@ -219,22 +196,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler pages deploy dist --project-name elda --branch main
-
-      - name: Kontrollera publicerat uppdateringsmanifest
-        # Fångar det som annars bara märks i en installerad app: 404, fel
-        # version, fel signatur eller en adress som serverar HTML.
-        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
-        env:
-          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
-        run: node scripts/kontrollera-uppdatering.mjs
-
-      - name: Kontrollera att den nya versionen ligger ute
-        # En lyckad uppladdning är inte samma sak som att sidan serverar den nya
-        # versionen. Jämför det som faktiskt svarar med det som byggdes.
-        if: ${{ github.ref_type == 'tag' && env.PUBLISH_SITE == 'true' }}
-        env:
-          ELDA_UPDATER_BASE: ${{ vars.ELDA_UPDATER_BASE }}
-        run: node scripts/kontrollera-publikation.mjs
 
       - name: Stoppa tyst utebliven publicering
         # Annars blir körningen grön trots att bara appen släpptes. Det var
